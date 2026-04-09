@@ -32,13 +32,8 @@ export const CommunityCard = ({
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <span className="truncate text-[15px] font-bold text-white">
-            {community.name}
-          </span>
-          <span className="shrink-0 rounded bg-white/[0.06] px-1.5 py-px text-[11px] font-bold text-copy-muted">
-            {community.ticker}
-          </span>
+        <div className="truncate text-[15px] font-bold text-white">
+          {community.name}
         </div>
         <p className="mt-0.5 line-clamp-1 text-[13px] text-copy-muted">
           {community.tagline}

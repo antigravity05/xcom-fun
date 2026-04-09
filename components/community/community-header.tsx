@@ -131,16 +131,11 @@ export const CommunityHeader = ({
           <h1 className="text-[22px] font-extrabold leading-7 text-white">
             {community.name}
           </h1>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <span className="rounded bg-white/[0.06] px-1.5 py-px text-[12px] font-bold text-copy-muted">
-              {community.ticker}
-            </span>
-            {community.contractAddress ? (
-              <span className="text-[12px] text-copy-soft">
-                {shortenContractAddress(community.contractAddress)}
-              </span>
-            ) : null}
-          </div>
+          {community.contractAddress ? (
+            <div className="mt-1 text-[12px] text-copy-soft">
+              {shortenContractAddress(community.contractAddress)}
+            </div>
+          ) : null}
           <p className="mt-1.5 max-w-lg text-[15px] leading-5 text-copy-muted">
             {community.tagline}
           </p>
