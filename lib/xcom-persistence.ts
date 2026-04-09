@@ -1,7 +1,5 @@
 import "server-only";
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
 import type {
   CommunityPostMedia,
   CommunityRole,
@@ -31,8 +29,13 @@ const getDbPersistence = async () => {
   return await import("@/lib/db-persistence");
 };
 
-const dataDirectory = path.join(process.cwd(), "data");
-const storeFilePath = path.join(dataDirectory, "xcom-store.json");
+/** Filesystem helpers — only loaded when DATABASE_URL is NOT set (local dev). */
+const getFileStorePaths = () => {
+  const path = require("node:path") as typeof import("node:path");
+  const dataDirectory = path.join(process.cwd(), "data");
+  const storeFilePath = path.join(dataDirectory, "xcom-store.json");
+  return { dataDirectory, storeFilePath };
+};
 
 const createSeedUser = (
   id: string,
@@ -282,6 +285,8 @@ export const initialStoreSnapshot: XcomStoreSnapshot = {
 };
 
 const ensureStoreFile = async () => {
+  const { mkdir, readFile, writeFile } = await import("node:fs/promises");
+  const { dataDirectory, storeFilePath } = getFileStorePaths();
   await mkdir(dataDirectory, { recursive: true });
 
   try {
@@ -297,12 +302,24 @@ export const readXcomStore = async (): Promise<XcomStoreSnapshot> => {
     return await dbPersistence.readXcomStore();
   }
 
+  // Serverless environments (Vercel) have a read-only filesystem.
+  // If DATABASE_URL is missing there, we cannot fall back to JSON.
+  if (process.env.VERCEL) {
+    throw new Error(
+      "DATABASE_URL is required in production. Set it in Vercel Environment Variables.",
+    );
+  }
+
   await ensureStoreFile();
+  const { readFile } = await import("node:fs/promises");
+  const { storeFilePath } = getFileStorePaths();
   const content = await readFile(storeFilePath, "utf8");
   return JSON.parse(content) as XcomStoreSnapshot;
 };
 
 const writeXcomStore = async (snapshot: XcomStoreSnapshot) => {
+  const { writeFile } = await import("node:fs/promises");
+  const { storeFilePath } = getFileStorePaths();
   await ensureStoreFile();
   await writeFile(storeFilePath, JSON.stringify(snapshot, null, 2), "utf8");
 };

@@ -1,7 +1,5 @@
 "use server";
 
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -31,12 +29,6 @@ const createCommunityPayloadSchema = z.object({
 
 const bodySchema = z.string().trim().min(2).max(1000);
 const maxBannerSizeBytes = 5 * 1024 * 1024;
-const bannerUploadDirectory = path.join(
-  process.cwd(),
-  "public",
-  "uploads",
-  "community-banners",
-);
 
 const slugifyCommunityName = (value: string) => {
   return value
@@ -127,6 +119,13 @@ const detectImageExtension = (bytes: Uint8Array) => {
   return null;
 };
 
+const mimeForExtension: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif",
+};
+
 const storeCommunityBanner = async (file: File, slug: string) => {
   if (!(file instanceof File) || file.size === 0) {
     throw new Error("Banner image is required.");
@@ -143,6 +142,24 @@ const storeCommunityBanner = async (file: File, slug: string) => {
     throw new Error("Banner must be a PNG, JPG, WEBP or GIF image.");
   }
 
+  // In production (Vercel), the filesystem is read-only.
+  // Store the image as a data URL. For a real production app you'd use
+  // an object storage service (e.g. Vercel Blob, S3, Cloudflare R2).
+  if (process.env.VERCEL || process.env.DATABASE_URL) {
+    const mime = mimeForExtension[extension] ?? "application/octet-stream";
+    const base64 = Buffer.from(bytes).toString("base64");
+    return `data:${mime};base64,${base64}`;
+  }
+
+  // Local dev: write to public/uploads
+  const path = await import("node:path");
+  const { mkdir, writeFile } = await import("node:fs/promises");
+  const bannerUploadDirectory = path.join(
+    process.cwd(),
+    "public",
+    "uploads",
+    "community-banners",
+  );
   await mkdir(bannerUploadDirectory, { recursive: true });
 
   const fileName = `${slug}-${randomUUID()}.${extension}`;
