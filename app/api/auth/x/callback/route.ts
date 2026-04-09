@@ -9,6 +9,27 @@ import { saveUserTokens } from "@/lib/x/token-store";
 import { readXcomStore, updateXcomStore } from "@/lib/xcom-persistence";
 import type { XcomStoreUser } from "@/lib/xcom-store";
 
+const upsertUserInDb = async (newUser: XcomStoreUser) => {
+  if (!process.env.DATABASE_URL) return;
+  try {
+    const { getDb } = await import("@/lib/database/client");
+    const { users } = await import("@/drizzle/schema");
+    const db = getDb();
+    await db
+      .insert(users)
+      .values({
+        id: newUser.id,
+        xUserId: newUser.xUserId,
+        xHandle: newUser.xHandle,
+        displayName: newUser.displayName,
+        avatarUrl: newUser.avatar,
+      })
+      .onConflictDoNothing();
+  } catch (err) {
+    console.error("Failed to upsert user in DB:", err);
+  }
+};
+
 const SESSION_COOKIE_NAME = "xcom_demo_user_id";
 
 export async function GET(request: Request) {
@@ -64,10 +85,13 @@ export async function GET(request: Request) {
           .join(""),
       };
 
-      await updateXcomStore((snap) => ({
-        ...snap,
-        users: [...snap.users, newUser],
-      }));
+      await upsertUserInDb(newUser);
+      if (!process.env.DATABASE_URL) {
+        await updateXcomStore((snap) => ({
+          ...snap,
+          users: [...snap.users, newUser],
+        }));
+      }
 
       user = newUser;
     }

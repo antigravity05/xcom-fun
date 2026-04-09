@@ -293,12 +293,8 @@ const ensureStoreFile = async () => {
 
 export const readXcomStore = async (): Promise<XcomStoreSnapshot> => {
   if (useDatabase()) {
-    try {
-      const dbPersistence = await getDbPersistence();
-      return await dbPersistence.readXcomStore();
-    } catch (error) {
-      console.error("Database read failed, falling back to JSON:", error);
-    }
+    const dbPersistence = await getDbPersistence();
+    return await dbPersistence.readXcomStore();
   }
 
   await ensureStoreFile();
@@ -314,6 +310,13 @@ const writeXcomStore = async (snapshot: XcomStoreSnapshot) => {
 export const updateXcomStore = async (
   mutator: (snapshot: XcomStoreSnapshot) => XcomStoreSnapshot,
 ) => {
+  if (useDatabase()) {
+    // In DB mode, read from DB, apply mutation, but don't write back to JSON.
+    // The caller should use the specific apply* functions instead.
+    const currentSnapshot = await readXcomStore();
+    return mutator(currentSnapshot);
+  }
+
   const currentSnapshot = await readXcomStore();
   const nextSnapshot = mutator(currentSnapshot);
   await writeXcomStore(nextSnapshot);
@@ -326,12 +329,8 @@ const withDbFallback = <T extends unknown[]>(
 ) => {
   return async (...args: T): Promise<XcomStoreSnapshot> => {
     if (useDatabase()) {
-      try {
-        const dbPersistence = await getDbPersistence();
-        return await (dbPersistence as Record<string, (...args: unknown[]) => Promise<XcomStoreSnapshot>>)[dbMethod](...args);
-      } catch (error) {
-        console.error(`Database ${dbMethod} failed, falling back to JSON:`, error);
-      }
+      const dbPersistence = await getDbPersistence();
+      return await (dbPersistence as Record<string, (...args: unknown[]) => Promise<XcomStoreSnapshot>>)[dbMethod](...args);
     }
     return jsonFallback(...args);
   };
