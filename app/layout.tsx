@@ -15,11 +15,20 @@ export const metadata: Metadata = {
     siteName: "X-COM",
     url: "https://x-com.fun",
     type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "X-COM — Crypto Communities",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "X-COM — Crypto Communities",
     description: "The home for crypto communities. Post here, it goes to X.",
+    images: ["/og-image.png"],
   },
 };
 

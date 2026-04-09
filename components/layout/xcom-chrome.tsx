@@ -6,6 +6,7 @@ import {
   Zap,
 } from "lucide-react";
 import { disconnectDemoAccountAction } from "@/app/xcom-actions";
+import { Logo } from "@/components/brand/logo";
 
 type NavigationKey = "discover" | "create" | "connect" | "community";
 
@@ -32,8 +33,11 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
               href="/"
               className="mb-6 flex size-[50px] items-center justify-center rounded-full transition hover:bg-white/[0.06] xl:mb-4 xl:ml-1 xl:size-auto xl:justify-start xl:px-3"
             >
-              <span className="text-[24px] font-black tracking-tight text-white">
-                X<span className="hidden text-accent-secondary xl:inline">-COM</span>
+              <span className="xl:hidden">
+                <Logo variant="icon" height={28} />
+              </span>
+              <span className="hidden xl:block">
+                <Logo variant="full" height={28} />
               </span>
             </Link>
 
@@ -118,11 +122,8 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
           {/* ── Mobile header ── */}
           <header className="sticky top-0 z-30 border-b border-white/[0.08] bg-background/85 backdrop-blur lg:hidden">
             <div className="flex min-h-[53px] items-center justify-between px-4">
-              <Link
-                href="/"
-                className="text-[20px] font-black tracking-tight text-white"
-              >
-                X<span className="text-accent-secondary">-COM</span>
+              <Link href="/" className="flex items-center">
+                <Logo variant="full" height={24} />
               </Link>
               {viewer ? (
                 <div className="flex size-8 items-center justify-center rounded-full bg-accent-secondary/20 text-xs font-bold text-white">

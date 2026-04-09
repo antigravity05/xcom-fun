@@ -83,8 +83,10 @@ export const hasZernioEnvironment = (): boolean => {
  */
 export const getTwitterConnectUrl = (redirectUrl: string): string => {
   const profileId = getProfileId();
+  const apiKey = getApiKey();
   const params = new URLSearchParams({
     profileId,
+    apiKey,
     redirect_url: redirectUrl,
   });
   return `${ZERNIO_API_BASE}/connect/twitter?${params.toString()}`;

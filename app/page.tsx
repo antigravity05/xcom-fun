@@ -11,6 +11,7 @@ import {
   Zap,
 } from "lucide-react";
 import { CommunityCard } from "@/components/community/community-card";
+import { Logo } from "@/components/brand/logo";
 import { XcomChrome } from "@/components/layout/xcom-chrome";
 import { formatCompactNumber } from "@/lib/xcom-formatters";
 import {
@@ -89,8 +90,14 @@ export default async function Home({ searchParams }: HomePageProps) {
 
             <div className="relative px-4 pb-12 pt-16 sm:px-8 sm:pb-16 sm:pt-20">
               <div className="mx-auto max-w-xl text-center">
+                {/* Logo */}
+                <div className="flex justify-center">
+                  <Logo variant="full" height={48} className="sm:hidden" />
+                  <Logo variant="full" height={64} className="hidden sm:block" />
+                </div>
+
                 {/* Badge */}
-                <div className="inline-flex items-center gap-2 rounded-full border border-accent-secondary/20 bg-accent-secondary/[0.08] px-4 py-1.5 text-[13px] font-medium text-accent-secondary">
+                <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-accent-secondary/20 bg-accent-secondary/[0.08] px-4 py-1.5 text-[13px] font-medium text-accent-secondary">
                   <Zap className="size-3.5" />
                   Replacing X Communities
                 </div>
