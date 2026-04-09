@@ -48,7 +48,7 @@ export default async function ConnectXPage({
             description={
               hasXOAuth
                 ? "Link your X account to join communities and have posts sync directly to your profile."
-                : "Demo mode: pick an account to test joining, posting and liking."
+                : "Pick an account to explore communities, post, and interact."
             }
           />
 
@@ -115,7 +115,7 @@ export default async function ConnectXPage({
             </section>
           ) : null}
 
-          {/* Demo mode account picker */}
+          {/* Account picker (fallback when OAuth is not configured) */}
           {!hasXOAuth && (
             <section className="border-b border-white/10">
               <div className="signal-divider px-4 py-4 text-[13px] font-bold uppercase tracking-[0.16em] text-copy-muted sm:px-6">

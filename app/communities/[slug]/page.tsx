@@ -270,7 +270,7 @@ export default async function CommunityPage({
                       />
                       <div className="mt-2 flex items-center justify-between border-t border-white/10 pt-3">
                         <span className="text-[12px] text-copy-soft">
-                          Posts sync to your X profile
+                          Share with the community
                         </span>
                         <button
                           type="submit"
@@ -307,8 +307,13 @@ export default async function CommunityPage({
                     />
                   ))
                 ) : (
-                  <div className="px-4 py-6 text-sm text-copy-muted sm:px-6">
-                    No posts yet.
+                  <div className="px-4 py-12 text-center sm:px-6">
+                    <div className="text-[15px] font-medium text-copy-muted">
+                      No posts yet
+                    </div>
+                    <div className="mt-1 text-[13px] text-copy-soft">
+                      Be the first to share something with this community.
+                    </div>
                   </div>
                 )}
               </section>

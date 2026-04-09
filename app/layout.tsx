@@ -3,11 +3,22 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "XCOM",
+    default: "XCOM — Crypto Communities",
     template: "%s | XCOM",
   },
   description:
-    "Public crypto communities that feel like classic X Communities, with local feeds and reliable X distribution.",
+    "The home for crypto communities. Create a space for your project, post updates, and everything syncs to X. All the signal, none of the noise.",
+  openGraph: {
+    title: "XCOM — Crypto Communities",
+    description: "The home for crypto communities. Post here, it goes to X.",
+    siteName: "XCOM",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "XCOM — Crypto Communities",
+    description: "The home for crypto communities. Post here, it goes to X.",
+  },
 };
 
 export default function RootLayout({
@@ -16,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className="h-full antialiased">
+    <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}
       </body>

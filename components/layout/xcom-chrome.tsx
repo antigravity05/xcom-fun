@@ -45,10 +45,10 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
           <div className="sticky top-0 flex h-screen w-full max-w-[259px] flex-col px-2 py-2">
             <Link
               href="/"
-              className="mb-4 ml-1 inline-flex size-[50px] items-center justify-center rounded-full transition hover:bg-white/[0.06]"
+              className="mb-4 ml-1 inline-flex h-[50px] items-center justify-center rounded-full px-2 transition hover:bg-white/[0.06]"
             >
-              <span className="text-[28px] font-black tracking-tighter text-white">
-                X
+              <span className="text-[24px] font-black tracking-tight text-white">
+                X<span className="text-accent-secondary">COM</span>
               </span>
             </Link>
 
@@ -150,9 +150,9 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
             <div className="flex min-h-[53px] items-center justify-between px-4 py-2.5">
               <Link
                 href="/"
-                className="text-[24px] font-black tracking-tighter text-white"
+                className="text-[20px] font-black tracking-tight text-white"
               >
-                X
+                X<span className="text-accent-secondary">COM</span>
               </Link>
               {viewer ? (
                 <div className="flex items-center gap-3">

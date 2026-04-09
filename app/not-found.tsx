@@ -1,24 +1,24 @@
 import Link from "next/link";
+import { Compass } from "lucide-react";
 
 export default function NotFound() {
   return (
     <div className="flex min-h-screen items-center justify-center px-6">
-      <div className="panel-shell max-w-xl rounded-[32px] p-8 text-center">
-        <div className="text-[0.68rem] font-semibold uppercase tracking-[0.32em] text-copy-soft">
-          Community not found
+      <div className="panel-shell max-w-xl rounded-[32px] p-8 text-center sm:p-12">
+        <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-accent-secondary/10">
+          <Compass className="size-7 text-accent-secondary" />
         </div>
-        <h1 className="font-display mt-4 text-4xl font-bold tracking-tight text-white">
-          This room does not exist yet
+        <h1 className="mt-6 text-[28px] font-extrabold tracking-tight text-white sm:text-[32px]">
+          Page not found
         </h1>
-        <p className="mt-4 text-sm leading-7 text-copy-muted">
-          Try one of the seeded communities first, then we can wire persistence and live
-          creation on top of the same route contract.
+        <p className="mx-auto mt-3 max-w-sm text-[15px] leading-6 text-copy-muted">
+          This community or page doesn't exist. It may have been removed, or the link might be wrong.
         </p>
         <Link
           href="/"
-          className="mt-6 inline-flex rounded-full border border-accent-primary/35 bg-accent-primary/10 px-5 py-3 text-sm font-semibold text-white"
+          className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-[15px] font-bold text-black transition hover:bg-white/90"
         >
-          Back to discover
+          Explore communities
         </Link>
       </div>
     </div>

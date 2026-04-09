@@ -1,5 +1,7 @@
 "use client";
 
+import { RefreshCw } from "lucide-react";
+
 export default function GlobalError({
   error,
   reset,
@@ -8,45 +10,30 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <div
-      style={{
-        padding: "2rem",
-        color: "white",
-        background: "#0a0a0a",
-        minHeight: "100vh",
-        fontFamily: "monospace",
-      }}
-    >
-      <h1 style={{ color: "#ef4444", fontSize: "24px" }}>Something went wrong</h1>
-      <p style={{ color: "#fbbf24", marginTop: "1rem" }}>{error.message}</p>
-      {error.digest ? (
-        <p style={{ color: "#888", marginTop: "0.5rem" }}>Digest: {error.digest}</p>
-      ) : null}
-      <pre
-        style={{
-          fontSize: "12px",
-          color: "#888",
-          whiteSpace: "pre-wrap",
-          marginTop: "1rem",
-        }}
-      >
-        {error.stack}
-      </pre>
-      <button
-        onClick={reset}
-        style={{
-          marginTop: "1.5rem",
-          padding: "0.75rem 1.5rem",
-          background: "#3b82f6",
-          color: "white",
-          border: "none",
-          borderRadius: "8px",
-          cursor: "pointer",
-          fontSize: "14px",
-        }}
-      >
-        Try again
-      </button>
+    <div className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
+      <div className="panel-shell max-w-xl rounded-[32px] p-8 text-center sm:p-12">
+        <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-danger-soft/10">
+          <span className="text-[28px]">!</span>
+        </div>
+        <h1 className="mt-6 text-[28px] font-extrabold tracking-tight text-white">
+          Something went wrong
+        </h1>
+        <p className="mx-auto mt-3 max-w-sm text-[15px] leading-6 text-copy-muted">
+          {error.message || "An unexpected error occurred. Please try again."}
+        </p>
+        {error.digest ? (
+          <p className="mt-2 text-[12px] text-copy-soft">
+            Error ID: {error.digest}
+          </p>
+        ) : null}
+        <button
+          onClick={reset}
+          className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-[15px] font-bold text-black transition hover:bg-white/90"
+        >
+          <RefreshCw className="size-4" />
+          Try again
+        </button>
+      </div>
     </div>
   );
 }

@@ -35,13 +35,18 @@ export default async function Home({ searchParams }: HomePageProps) {
     const message = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack : "";
     return (
-      <div style={{ padding: "2rem", color: "white", background: "#0a0a0a", minHeight: "100vh", fontFamily: "monospace" }}>
-        <h1 style={{ color: "#ef4444" }}>Startup Error</h1>
-        <p style={{ color: "#fbbf24" }}>{message}</p>
-        <pre style={{ fontSize: "12px", color: "#888", whiteSpace: "pre-wrap", marginTop: "1rem" }}>{stack}</pre>
-        <p style={{ marginTop: "1rem", color: "#888" }}>
-          Check <a href="/api/health" style={{ color: "#60a5fa" }}>/api/health</a> for diagnostics.
-        </p>
+      <div className="flex min-h-screen items-center justify-center bg-background px-6">
+        <div className="panel-shell max-w-lg rounded-[32px] p-8 text-center sm:p-12">
+          <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-danger-soft/10">
+            <span className="text-[28px] text-danger-soft">!</span>
+          </div>
+          <h1 className="mt-6 text-[24px] font-extrabold text-white">
+            Unable to load communities
+          </h1>
+          <p className="mt-3 text-[15px] leading-6 text-copy-muted">
+            {message}
+          </p>
+        </div>
       </div>
     );
   }
@@ -99,6 +104,41 @@ export default async function Home({ searchParams }: HomePageProps) {
               </div>
             </form>
           </CenterColumnHeader>
+
+          {/* Hero section for logged-out users */}
+          {!viewer && !query ? (
+            <section className="relative overflow-hidden border-b border-white/10">
+              <div className="absolute inset-0 signal-grid opacity-40" />
+              <div className="absolute inset-0 bg-gradient-to-b from-accent-secondary/[0.06] via-transparent to-transparent" />
+              <div className="relative px-4 py-10 sm:px-6 sm:py-14">
+                <div className="mx-auto max-w-lg text-center">
+                  <h2 className="text-[28px] font-extrabold leading-tight tracking-tight text-white sm:text-[36px]">
+                    Crypto communities,<br />
+                    <span className="text-accent-secondary">powered by X</span>
+                  </h2>
+                  <p className="mx-auto mt-4 max-w-md text-[15px] leading-6 text-copy-muted">
+                    Join communities for your favorite projects. Post here, it goes straight to your X profile. All the signal, none of the noise.
+                  </p>
+                  <div className="mt-6 flex items-center justify-center gap-3">
+                    <a
+                      href="/connect-x"
+                      className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-[15px] font-bold text-black transition hover:bg-white/90"
+                    >
+                      Connect X to start
+                    </a>
+                  </div>
+                  <div className="mt-4 flex items-center justify-center gap-4 text-[13px] text-copy-soft">
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block size-1.5 rounded-full bg-accent-tertiary animate-pulse-glow" />
+                      {formatCompactNumber(communities.length)} communities
+                    </span>
+                    <span>·</span>
+                    <span>Free to join</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          ) : null}
 
           {/* Trending section — only when not searching */}
           {!query && trendingCommunities.length > 0 ? (
@@ -185,10 +225,15 @@ export default async function Home({ searchParams }: HomePageProps) {
             </section>
 
             <section className="panel-shell rounded-2xl p-5">
-              <div className="text-[13px] leading-5 text-copy-muted">
-                xcom.fun is the community hub for crypto projects.
-                Join a community, post, and your content syncs
-                directly to X.
+              <div className="text-[15px] font-bold text-white">
+                About XCOM
+              </div>
+              <div className="mt-2 text-[13px] leading-5 text-copy-muted">
+                The home for crypto communities. Create a space for your project, share updates, and keep your community in the loop — all in one place.
+              </div>
+              <div className="mt-3 flex items-center gap-2 text-[12px] text-copy-soft">
+                <span className="inline-block size-1.5 rounded-full bg-accent-tertiary animate-pulse-glow" />
+                <span>xcom.fun</span>
               </div>
             </section>
           </div>

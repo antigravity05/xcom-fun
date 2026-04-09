@@ -14,7 +14,7 @@ export const CommunityCard = ({
   return (
     <Link
       href={`/communities/${community.slug}`}
-      className="group flex items-start gap-3 px-4 py-3.5 transition hover:bg-white/[0.03]"
+      className="group flex items-start gap-3 px-4 py-3.5 transition hover:bg-white/[0.03] animate-fade-in"
     >
       {showRank ? (
         <div className="w-8 pt-1 text-center text-[14px] font-bold text-copy-soft">
