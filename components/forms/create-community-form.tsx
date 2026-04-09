@@ -16,24 +16,33 @@ export const CreateCommunityForm = ({ action }: CreateCommunityFormProps) => {
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setServerMessage(null);
 
+    const formData = new FormData(e.currentTarget);
+
     startTransition(async () => {
-      const result = await action(formData);
+      try {
+        const result = await action(formData);
 
-      if (!result.ok) {
-        setServerMessage(result.error);
-        return;
+        if (!result.ok) {
+          setServerMessage(result.error);
+          return;
+        }
+
+        router.push(`/communities/${result.slug}`);
+        router.refresh();
+      } catch (err) {
+        setServerMessage(
+          err instanceof Error ? err.message : "Something went wrong.",
+        );
       }
-
-      router.push(`/communities/${result.slug}`);
-      router.refresh();
     });
   };
 
   return (
-    <form action={handleSubmit} className="border-b border-white/10">
+    <form onSubmit={handleSubmit} className="border-b border-white/10">
       <div className="px-4 py-5 sm:px-6">
         <p className="text-[15px] leading-6 text-copy-muted">
           Launch your community in seconds. Give it a name and description
