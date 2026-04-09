@@ -60,7 +60,11 @@ export const readXcomStore = async (): Promise<XcomStoreSnapshot> => {
     xUserId: user.xUserId,
     xHandle: user.xHandle,
     displayName: user.displayName,
-    avatar: user.avatarUrl || "",
+    avatar: user.avatarUrl || user.displayName
+      .split(" ")
+      .slice(0, 2)
+      .map((part) => part.slice(0, 1).toUpperCase())
+      .join("") || "X",
   }));
 
   const storeCommunities = allCommunities.map((community) => ({

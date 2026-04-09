@@ -166,6 +166,9 @@ export type ZernioAccount = {
   username?: string;
   displayName?: string;
   profileId: string;
+  avatarUrl?: string;
+  profileImageUrl?: string;
+  avatar?: string;
 };
 
 /**

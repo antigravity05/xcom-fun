@@ -14,12 +14,14 @@ type XcomChromeProps = {
   viewer?: {
     displayName: string;
     xHandle: string;
+    avatar?: string;
   } | null;
   children: React.ReactNode;
 };
 
 export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
-  const viewerAvatar = viewer?.displayName.slice(0, 1).toUpperCase() ?? "X";
+  const viewerAvatarUrl = viewer?.avatar?.startsWith("http") ? viewer.avatar : null;
+  const viewerAvatarInitial = viewer?.displayName.slice(0, 1).toUpperCase() ?? "X";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -76,8 +78,12 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
                     href="/"
                     className="flex size-10 items-center justify-center rounded-full bg-accent-secondary/15 text-sm font-bold text-white xl:size-auto xl:gap-3 xl:rounded-full xl:px-3 xl:py-3 xl:transition xl:hover:bg-white/[0.06]"
                   >
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-secondary/20 text-sm font-bold text-white xl:size-10">
-                      {viewerAvatar}
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-secondary/20 text-sm font-bold text-white xl:size-10 overflow-hidden">
+                      {viewerAvatarUrl ? (
+                        <img src={viewerAvatarUrl} alt={viewer.displayName} className="size-full object-cover" />
+                      ) : (
+                        viewerAvatarInitial
+                      )}
                     </span>
                     <span className="hidden min-w-0 flex-1 xl:block">
                       <span className="block truncate text-[15px] font-bold leading-5 text-white">
@@ -125,8 +131,12 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
                 X<span className="text-accent-secondary">-COM</span>
               </Link>
               {viewer ? (
-                <div className="flex size-8 items-center justify-center rounded-full bg-accent-secondary/20 text-xs font-bold text-white">
-                  {viewerAvatar}
+                <div className="flex size-8 items-center justify-center rounded-full bg-accent-secondary/20 text-xs font-bold text-white overflow-hidden">
+                  {viewerAvatarUrl ? (
+                    <img src={viewerAvatarUrl} alt={viewer.displayName} className="size-full object-cover" />
+                  ) : (
+                    viewerAvatarInitial
+                  )}
                 </div>
               ) : (
                 <Link

@@ -99,7 +99,7 @@ export default async function CommunityPage({
       active="community"
       viewer={
         viewer
-          ? { displayName: viewer.displayName, xHandle: viewer.xHandle }
+          ? { displayName: viewer.displayName, xHandle: viewer.xHandle, avatar: viewer.avatar }
           : null
       }
     >
@@ -270,12 +270,20 @@ export default async function CommunityPage({
                   />
                   <div className="flex gap-3">
                     <div
-                      className="flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-                      style={{
-                        background: `linear-gradient(135deg, ${community.coverTo}, ${community.accentColor})`,
-                      }}
+                      className="flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white overflow-hidden"
+                      style={
+                        viewer?.avatar?.startsWith("http")
+                          ? undefined
+                          : {
+                              background: `linear-gradient(135deg, ${community.coverTo}, ${community.accentColor})`,
+                            }
+                      }
                     >
-                      {viewer?.avatar ?? "?"}
+                      {viewer?.avatar?.startsWith("http") ? (
+                        <img src={viewer.avatar} alt={viewer.displayName} className="size-full object-cover" />
+                      ) : (
+                        viewer?.avatar ?? "?"
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <textarea
@@ -447,8 +455,12 @@ const MemberRow = ({
   return (
     <div className="group signal-divider flex items-center justify-between gap-4 px-4 py-4 transition-colors hover:bg-white/[0.02] last:border-b-0 sm:px-6">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-sm font-bold text-white">
-          {member.avatar}
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-sm font-bold text-white overflow-hidden">
+          {member.avatar?.startsWith("http") ? (
+            <img src={member.avatar} alt={member.displayName} className="size-full object-cover" />
+          ) : (
+            member.avatar
+          )}
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">

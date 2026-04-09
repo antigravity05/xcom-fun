@@ -66,17 +66,48 @@ export async function GET(request: Request) {
     // Look up the connected account
     let xHandle = username ? `@${username.replace(/^@/, "")}` : null;
     let xUserId = accountId ?? "";
+    let avatarUrl: string | undefined;
+    let resolvedDisplayName: string | undefined;
 
-    if (username && !accountId) {
+    // Try to get full account info from Zernio (includes avatar, display name)
+    if (username || accountId) {
+      try {
+        const { listAccounts } = await import("@/lib/zernio/client");
+        const accounts = await listAccounts();
+        const cleanUsername = username?.replace(/^@/, "").toLowerCase();
+        const match = accounts.find((a) =>
+          a.platform === "twitter" &&
+          (cleanUsername ? a.username?.toLowerCase() === cleanUsername : a.id === accountId),
+        );
+        if (match) {
+          xUserId = xUserId || match.id;
+          xHandle = xHandle || (match.username ? `@${match.username}` : null);
+          resolvedDisplayName = match.displayName || undefined;
+          // Zernio may return avatar under various field names
+          avatarUrl = match.avatarUrl ?? match.profileImageUrl ?? match.avatar ?? undefined;
+        }
+      } catch (err) {
+        console.error("[auth/callback] Failed to fetch Zernio account details:", err);
+      }
+    }
+
+    if (username && !accountId && !xUserId) {
       const account = await findTwitterAccount(username);
       if (account) {
         xUserId = account.id;
         xHandle = `@${account.username}`;
+        avatarUrl = avatarUrl ?? account.avatarUrl ?? account.profileImageUrl ?? account.avatar;
       }
     }
 
     if (!xHandle) {
       xHandle = `@user_${xUserId.slice(0, 8)}`;
+    }
+
+    // Fall back to unavatar.io for Twitter profile pictures
+    const cleanHandle = xHandle.replace(/^@/, "");
+    if (!avatarUrl && cleanHandle) {
+      avatarUrl = `https://unavatar.io/twitter/${cleanHandle}`;
     }
 
     // Create or find user in our store
@@ -86,17 +117,17 @@ export async function GET(request: Request) {
     );
 
     if (!user) {
-      const displayName = username ?? xUserId.slice(0, 12);
+      const displayName = resolvedDisplayName ?? username ?? xUserId.slice(0, 12);
       const newUser: XcomStoreUser = {
         id: randomUUID(),
         xUserId,
         xHandle: xHandle!,
         displayName,
-        avatar: displayName
+        avatar: avatarUrl ?? (displayName
           .split(" ")
           .slice(0, 2)
           .map((part) => part.slice(0, 1).toUpperCase())
-          .join("") || "X",
+          .join("") || "X"),
       };
 
       await upsertUserInDb(newUser);
@@ -108,6 +139,23 @@ export async function GET(request: Request) {
       }
 
       user = newUser;
+    } else if (avatarUrl && (!user.avatar || !user.avatar.startsWith("http"))) {
+      // User exists but doesn't have a profile image yet — update it
+      try {
+        if (process.env.DATABASE_URL) {
+          const { getDb } = await import("@/lib/database/client");
+          const { users: usersTable } = await import("@/drizzle/schema");
+          const { eq } = await import("drizzle-orm");
+          const db = getDb();
+          await db.update(usersTable).set({
+            avatarUrl,
+            displayName: resolvedDisplayName ?? user.displayName,
+          }).where(eq(usersTable.id, user.id));
+          user = { ...user, avatar: avatarUrl, displayName: resolvedDisplayName ?? user.displayName };
+        }
+      } catch (err) {
+        console.error("[auth/callback] Failed to update user avatar:", err);
+      }
     }
 
     // Store the Zernio accountId so we can post on behalf of this user

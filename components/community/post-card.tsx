@@ -60,9 +60,13 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
         {/* Avatar */}
         <Link
           href={`/communities/${post.communitySlug}`}
-          className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-sm font-bold text-white ring-0 ring-white/10 transition hover:ring-2"
+          className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-sm font-bold text-white ring-0 ring-white/10 transition hover:ring-2 overflow-hidden"
         >
-          {post.author.avatar}
+          {post.author.avatar?.startsWith("http") ? (
+            <img src={post.author.avatar} alt={post.author.displayName} className="size-full object-cover" />
+          ) : (
+            post.author.avatar
+          )}
         </Link>
 
         <div className="min-w-0 flex-1">
@@ -313,8 +317,12 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
                 <div className="space-y-3">
                   {post.replies.map((reply) => (
                     <div key={reply.id} className="flex gap-2.5">
-                      <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-[10px] font-bold text-white">
-                        {reply.author.avatar}
+                      <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-[10px] font-bold text-white overflow-hidden">
+                        {reply.author.avatar?.startsWith("http") ? (
+                          <img src={reply.author.avatar} alt={reply.author.displayName} className="size-full object-cover" />
+                        ) : (
+                          reply.author.avatar
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">

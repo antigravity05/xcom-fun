@@ -30,7 +30,7 @@ export default async function ConnectXPage({
       active="connect"
       viewer={
         viewer
-          ? { displayName: viewer.displayName, xHandle: viewer.xHandle }
+          ? { displayName: viewer.displayName, xHandle: viewer.xHandle, avatar: viewer.avatar }
           : null
       }
     >

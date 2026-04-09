@@ -300,7 +300,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       active="discover"
       viewer={
         viewer
-          ? { displayName: viewer.displayName, xHandle: viewer.xHandle }
+          ? { displayName: viewer.displayName, xHandle: viewer.xHandle, avatar: viewer.avatar }
           : null
       }
     >

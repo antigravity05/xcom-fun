@@ -36,7 +36,7 @@ export default async function CreateCommunityPage() {
       active="create"
       viewer={
         viewer
-          ? { displayName: viewer.displayName, xHandle: viewer.xHandle }
+          ? { displayName: viewer.displayName, xHandle: viewer.xHandle, avatar: viewer.avatar }
           : null
       }
     >

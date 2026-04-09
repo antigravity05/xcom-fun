@@ -44,6 +44,7 @@ export default async function EditCommunityPage({
           ? {
               displayName: view.viewer.displayName,
               xHandle: view.viewer.xHandle,
+              avatar: view.viewer.avatar,
             }
           : null
       }
