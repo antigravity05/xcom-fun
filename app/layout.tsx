@@ -3,20 +3,20 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "XCOM — Crypto Communities",
-    template: "%s | XCOM",
+    default: "X-COM — Crypto Communities",
+    template: "%s | X-COM",
   },
   description:
     "The home for crypto communities. Create a space for your project, post updates, and everything syncs to X. All the signal, none of the noise.",
   openGraph: {
-    title: "XCOM — Crypto Communities",
+    title: "X-COM — Crypto Communities",
     description: "The home for crypto communities. Post here, it goes to X.",
-    siteName: "XCOM",
+    siteName: "X-COM",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "XCOM — Crypto Communities",
+    title: "X-COM — Crypto Communities",
     description: "The home for crypto communities. Post here, it goes to X.",
   },
 };

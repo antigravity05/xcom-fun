@@ -12,7 +12,7 @@ import {
 } from "@/lib/xcom-read-models";
 
 export const metadata: Metadata = {
-  title: "xcom.fun — Crypto Communities",
+  title: "X-COM — Crypto Communities",
 };
 
 type HomePageProps = {
@@ -226,14 +226,14 @@ export default async function Home({ searchParams }: HomePageProps) {
 
             <section className="panel-shell rounded-2xl p-5">
               <div className="text-[15px] font-bold text-white">
-                About XCOM
+                About X-COM
               </div>
               <div className="mt-2 text-[13px] leading-5 text-copy-muted">
                 The home for crypto communities. Create a space for your project, share updates, and keep your community in the loop — all in one place.
               </div>
               <div className="mt-3 flex items-center gap-2 text-[12px] text-copy-soft">
                 <span className="inline-block size-1.5 rounded-full bg-accent-tertiary animate-pulse-glow" />
-                <span>xcom.fun</span>
+                <span>x-com.fun</span>
               </div>
             </section>
           </div>

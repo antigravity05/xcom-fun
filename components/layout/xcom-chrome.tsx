@@ -47,8 +47,8 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
               href="/"
               className="mb-4 ml-1 inline-flex h-[50px] items-center justify-center rounded-full px-2 transition hover:bg-white/[0.06]"
             >
-              <span className="text-[24px] font-black tracking-tight text-white">
-                X<span className="text-accent-secondary">COM</span>
+              <span className="text-[22px] font-black tracking-tight text-white">
+                X<span className="text-accent-secondary">-COM</span>
               </span>
             </Link>
 
@@ -152,7 +152,7 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
                 href="/"
                 className="text-[20px] font-black tracking-tight text-white"
               >
-                X<span className="text-accent-secondary">COM</span>
+                X<span className="text-accent-secondary">-COM</span>
               </Link>
               {viewer ? (
                 <div className="flex items-center gap-3">
