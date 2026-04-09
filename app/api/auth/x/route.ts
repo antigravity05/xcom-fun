@@ -14,8 +14,19 @@ export async function GET() {
   if (isZernioMode()) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://x-com.fun";
     const callbackUrl = `${baseUrl}/api/auth/x/callback`;
-    const connectUrl = getTwitterConnectUrl(callbackUrl);
-    redirect(connectUrl);
+    try {
+      const authUrl = await getTwitterConnectUrl(callbackUrl);
+      redirect(authUrl);
+    } catch (error) {
+      console.error("Zernio connect error:", error);
+      return Response.json(
+        {
+          error: "Failed to connect via Zernio",
+          details: error instanceof Error ? error.message : String(error),
+        },
+        { status: 500 },
+      );
+    }
   }
 
   /* ── Legacy direct X OAuth PKCE ── */

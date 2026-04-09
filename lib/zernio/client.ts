@@ -81,15 +81,54 @@ export const hasZernioEnvironment = (): boolean => {
  * Redirect the user here — Zernio handles the full OAuth dance
  * and redirects back to our callback URL.
  */
-export const getTwitterConnectUrl = (redirectUrl: string): string => {
+/**
+ * Calls the Zernio API server-side to get the OAuth connect URL.
+ * The API authenticates via Bearer token and returns an authUrl
+ * that we then redirect the user to.
+ */
+export const getTwitterConnectUrl = async (
+  redirectUrl: string,
+): Promise<string> => {
   const profileId = getProfileId();
-  const apiKey = getApiKey();
   const params = new URLSearchParams({
     profileId,
-    apiKey,
     redirect_url: redirectUrl,
   });
-  return `${ZERNIO_API_BASE}/connect/twitter?${params.toString()}`;
+
+  const response = await fetch(
+    `${ZERNIO_API_BASE}/connect/twitter?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${getApiKey()}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    let details: unknown;
+    try {
+      details = await response.json();
+    } catch {
+      details = await response.text();
+    }
+    throw new ZernioAPIError(
+      response.status,
+      `Zernio connect error: ${response.statusText}`,
+      details,
+    );
+  }
+
+  const data = (await response.json()) as { authUrl?: string; url?: string };
+  const authUrl = data.authUrl ?? data.url;
+
+  if (!authUrl) {
+    throw new Error(
+      "Zernio connect response missing authUrl: " + JSON.stringify(data),
+    );
+  }
+
+  return authUrl;
 };
 
 /* ── Accounts ── */
