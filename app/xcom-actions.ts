@@ -440,8 +440,9 @@ export const createPostAction = async (formData: FormData) => {
     body,
   });
 
-  // ── X/Twitter sync: publish tweet in background ──
-  // Find the newly created post by diffing snapshots
+  // ── X/Twitter sync: publish tweet BEFORE redirect ──
+  // On Vercel serverless, fire-and-forget promises get killed by redirect().
+  // We must await the publication so the tweet actually gets posted.
   const community = nextSnapshot.communities.find((c) => c.slug === communitySlug);
   if (community) {
     const newPost = nextSnapshot.posts.find(
@@ -452,10 +453,12 @@ export const createPostAction = async (formData: FormData) => {
     );
 
     if (newPost) {
-      // Fire-and-forget: don't block the redirect on X API
-      publishToX(viewerUserId, newPost.id, body).catch((err) => {
-        console.error("[x-sync] Background publication failed:", err);
-      });
+      try {
+        await publishToX(viewerUserId, newPost.id, body);
+      } catch (err) {
+        // Don't block the user if X sync fails — just log it
+        console.error("[x-sync] Publication failed:", err);
+      }
     }
   }
 

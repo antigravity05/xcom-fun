@@ -46,6 +46,7 @@ export const readXcomStore = async (): Promise<XcomStoreSnapshot> => {
   const allPosts = await db.query.posts.findMany();
   const allReplies = await db.query.postReplies.findMany();
   const allReactions = await db.query.postReactions.findMany();
+  const allPublications = await db.query.postPublications.findMany();
 
   // Transform database records to store snapshot format
   const storeUsers = allUsers.map((user) => ({
@@ -81,12 +82,13 @@ export const readXcomStore = async (): Promise<XcomStoreSnapshot> => {
   }));
 
   const storePosts = allPosts.map((post) => {
-    // Find publication status for this post
-    const publication = allReactions.find((r) => r.postId === post.id);
-    let xSyncStatus: PublicationStatus = "pending";
-
-    // For now, default to pending. In a real system, you'd query post_publications table
-    // This is a simplified version - you may want to query postPublications separately
+    // Look up the real publication status from postPublications table
+    const publication = allPublications.find(
+      (p) => p.postId === post.id && p.provider === "x",
+    );
+    const xSyncStatus: PublicationStatus = publication
+      ? (publication.status as PublicationStatus)
+      : "pending";
 
     return {
       id: post.id,
@@ -97,8 +99,8 @@ export const readXcomStore = async (): Promise<XcomStoreSnapshot> => {
       isPinned: post.isPinned || false,
       replyCount: allReplies.filter((r) => r.postId === post.id).length,
       likeCount: allReactions.filter((r) => r.postId === post.id && r.kind === "like").length,
-      repostCount: 0, // Repost kind not in current schema, using 0
-      viewCount: 0, // View count not tracked in schema, using 0
+      repostCount: 0,
+      viewCount: 0,
       createdAt: post.createdAt.toISOString(),
       xSyncStatus,
     };
