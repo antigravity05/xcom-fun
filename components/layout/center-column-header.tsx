@@ -12,7 +12,7 @@ export const CenterColumnHeader = ({
   children,
 }: CenterColumnHeaderProps) => {
   return (
-    <div className="sticky top-0 z-20 border-b border-white/[0.08] bg-background/85 backdrop-blur">
+    <div className="sticky top-[53px] z-20 border-b border-white/[0.08] bg-background/85 backdrop-blur lg:top-0">
       <div className="flex min-h-[53px] items-center justify-between gap-4 px-4 sm:px-6">
         <h1 className="text-[20px] font-extrabold text-white">{title}</h1>
         {action ? <div className="shrink-0">{action}</div> : null}

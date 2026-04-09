@@ -275,7 +275,7 @@ export default async function CommunityPage({
                       <textarea
                         name="body"
                         rows={2}
-                        className="signal-focus min-h-[52px] w-full resize-none border-0 bg-transparent px-0 py-2 text-[20px] leading-7 text-white placeholder:text-copy-soft focus:outline-none"
+                        className="signal-focus min-h-[44px] w-full resize-none border-0 bg-transparent px-0 py-2 text-[17px] leading-6 text-white placeholder:text-copy-soft focus:outline-none sm:min-h-[52px] sm:text-[20px] sm:leading-7"
                         placeholder="What's happening?"
                       />
                       <div className="mt-1 flex items-center justify-between border-t border-white/[0.08] pt-3">

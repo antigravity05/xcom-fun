@@ -30,7 +30,7 @@ export const CommunityHeader = ({
   return (
     <section>
       {/* Sticky top bar */}
-      <div className="sticky top-0 z-20 flex min-h-[53px] items-center gap-3 border-b border-white/[0.08] bg-background/80 px-4 backdrop-blur sm:px-6">
+      <div className="sticky top-[53px] z-20 flex min-h-[53px] items-center gap-3 border-b border-white/[0.08] bg-background/80 px-4 backdrop-blur lg:top-0 sm:px-6">
         <Link
           href="/"
           className="inline-flex size-9 items-center justify-center rounded-full text-white transition hover:bg-white/[0.06]"
@@ -118,7 +118,7 @@ export const CommunityHeader = ({
 
         {/* Community info */}
         <div className="mt-2 sm:mt-3">
-          <h1 className="text-[22px] font-extrabold leading-7 text-white">
+          <h1 className="text-[20px] font-extrabold leading-7 text-white sm:text-[22px]">
             {community.name}
           </h1>
           {community.contractAddress ? (

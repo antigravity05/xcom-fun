@@ -43,7 +43,7 @@ export default async function CreateCommunityPage() {
       <div className="grid w-full max-w-[990px] xl:grid-cols-[600px_350px]">
         <div className="min-w-0 border-x border-white/[0.08]">
           {/* Header */}
-          <div className="sticky top-0 z-20 border-b border-white/[0.08] bg-background/85 backdrop-blur">
+          <div className="sticky top-[53px] z-20 border-b border-white/[0.08] bg-background/85 backdrop-blur lg:top-0">
             <div className="flex min-h-[53px] items-center px-4 sm:px-6">
               <h1 className="text-[20px] font-extrabold text-white">
                 New community

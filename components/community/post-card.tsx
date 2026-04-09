@@ -79,11 +79,11 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
                 <BadgeCheck className="size-[18px] shrink-0 fill-accent-secondary text-background" />
               ) : null}
               {post.author.role && post.author.role !== "member" ? (
-                <span className="ml-0.5 inline-flex shrink-0 items-center rounded bg-accent-secondary/15 px-1.5 py-px text-[11px] font-bold uppercase tracking-wide text-accent-secondary">
+                <span className="ml-0.5 hidden shrink-0 items-center rounded bg-accent-secondary/15 px-1.5 py-px text-[11px] font-bold uppercase tracking-wide text-accent-secondary sm:inline-flex">
                   {post.author.role}
                 </span>
               ) : null}
-              <span className="shrink-0 text-copy-muted">{post.author.handle}</span>
+              <span className="hidden shrink-0 text-copy-muted sm:inline">{post.author.handle}</span>
               <span className="shrink-0 text-copy-soft">·</span>
               <time className="shrink-0 text-copy-muted hover:underline">
                 {formatRelativeTime(post.createdAt)}
@@ -203,7 +203,7 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
           ) : null}
 
           {/* Interaction bar — Twitter-style layout */}
-          <div className="-ml-2 mt-1 flex max-w-[425px] items-center justify-between">
+          <div className="-ml-2 mt-1 flex items-center justify-between sm:max-w-[425px]">
             {/* Reply */}
             <button
               type="button"
