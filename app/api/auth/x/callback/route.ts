@@ -67,10 +67,18 @@ export async function GET(request: Request) {
   let userProfile;
   try {
     tokenResponse = await exchangeCodeForTokens(code, codeVerifier);
-    userProfile = await getXUserProfile(tokenResponse.access_token);
   } catch (err) {
     console.error("OAuth callback error (token exchange):", err);
-    redirect("/?auth_error=exchange_failed");
+    const msg = encodeURIComponent(err instanceof Error ? err.message : String(err));
+    redirect(`/?auth_error=exchange_failed&detail=${msg}`);
+  }
+
+  try {
+    userProfile = await getXUserProfile(tokenResponse.access_token);
+  } catch (err) {
+    console.error("OAuth callback error (user profile):", err);
+    const msg = encodeURIComponent(err instanceof Error ? err.message : String(err));
+    redirect(`/?auth_error=profile_failed&detail=${msg}`);
   }
 
   const snapshot = await readXcomStore();

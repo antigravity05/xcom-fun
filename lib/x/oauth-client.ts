@@ -66,16 +66,17 @@ export const exchangeCodeForTokens = async (
     );
   }
 
+  const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+
   const response = await fetch(X_TOKEN_ENDPOINT, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${basicAuth}`,
     },
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      client_id: clientId,
-      client_secret: clientSecret,
       redirect_uri: callbackUrl,
       code_verifier: codeVerifier,
     }).toString(),
@@ -99,16 +100,17 @@ export const refreshAccessToken = async (
     throw new Error("X_CLIENT_ID and X_CLIENT_SECRET environment variables are required");
   }
 
+  const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+
   const response = await fetch(X_TOKEN_ENDPOINT, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${basicAuth}`,
     },
     body: new URLSearchParams({
       grant_type: "refresh_token",
       refresh_token: refreshToken,
-      client_id: clientId,
-      client_secret: clientSecret,
     }).toString(),
   });
 
