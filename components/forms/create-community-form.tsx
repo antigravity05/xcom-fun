@@ -2,9 +2,16 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createCommunityAction } from "@/app/create-community/actions";
 
-export const CreateCommunityForm = () => {
+type ActionResult =
+  | { ok: true; slug: string }
+  | { ok: false; error: string };
+
+type CreateCommunityFormProps = {
+  action: (formData: FormData) => Promise<ActionResult>;
+};
+
+export const CreateCommunityForm = ({ action }: CreateCommunityFormProps) => {
   const router = useRouter();
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -13,7 +20,7 @@ export const CreateCommunityForm = () => {
     setServerMessage(null);
 
     startTransition(async () => {
-      const result = await createCommunityAction(formData);
+      const result = await action(formData);
 
       if (!result.ok) {
         setServerMessage(result.error);

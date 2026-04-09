@@ -4,6 +4,7 @@ import { CreateCommunityForm } from "@/components/forms/create-community-form";
 import { CenterColumnHeader } from "@/components/layout/center-column-header";
 import { XcomChrome } from "@/components/layout/xcom-chrome";
 import { getViewer } from "@/lib/xcom-read-models";
+import { createCommunityAction } from "./actions";
 
 export const metadata: Metadata = {
   title: "Create community",
@@ -42,7 +43,7 @@ export default async function CreateCommunityPage() {
           />
 
           {viewer ? (
-            <CreateCommunityForm />
+            <CreateCommunityForm action={createCommunityAction} />
           ) : (
             <section className="border-b border-white/10 px-4 py-6 sm:px-6">
               <p className="text-sm leading-6 text-copy-muted">
