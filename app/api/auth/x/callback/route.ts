@@ -63,70 +63,72 @@ export async function GET(request: Request) {
     return;
   }
 
+  let tokenResponse;
+  let userProfile;
   try {
-    const tokenResponse = await exchangeCodeForTokens(code, codeVerifier);
-    const userProfile = await getXUserProfile(tokenResponse.access_token);
-
-    const snapshot = await readXcomStore();
-    let user = snapshot.users.find(
-      (u) => u.xUserId === userProfile.id || u.xHandle === `@${userProfile.username}`,
-    );
-
-    if (!user) {
-      const newUser: XcomStoreUser = {
-        id: `user-${userProfile.id}`,
-        xUserId: userProfile.id,
-        xHandle: `@${userProfile.username}`,
-        displayName: userProfile.name,
-        avatar: userProfile.name
-          .split(" ")
-          .slice(0, 2)
-          .map((part) => part.slice(0, 1).toUpperCase())
-          .join(""),
-      };
-
-      await upsertUserInDb(newUser);
-      if (!process.env.DATABASE_URL) {
-        await updateXcomStore((snap) => ({
-          ...snap,
-          users: [...snap.users, newUser],
-        }));
-      }
-
-      user = newUser;
-    }
-
-    // Store encrypted tokens (DB or filesystem depending on env)
-    const encryptedAccessToken = encryptToken(tokenResponse.access_token);
-    const encryptedRefreshToken = tokenResponse.refresh_token
-      ? encryptToken(tokenResponse.refresh_token)
-      : null;
-
-    await saveUserTokens({
-      userId: user.id,
-      accessToken: encryptedAccessToken,
-      refreshToken: encryptedRefreshToken,
-      expiresAt: new Date(
-        Date.now() + tokenResponse.expires_in * 1000,
-      ).toISOString(),
-    });
-
-    // Set session cookie
-    cookieStore.set(SESSION_COOKIE_NAME, user.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    });
-
-    // Clear PKCE cookies
-    cookieStore.delete("x_oauth_code_verifier");
-    cookieStore.delete("x_oauth_state");
-
-    redirect("/");
+    tokenResponse = await exchangeCodeForTokens(code, codeVerifier);
+    userProfile = await getXUserProfile(tokenResponse.access_token);
   } catch (err) {
-    console.error("OAuth callback error:", err);
+    console.error("OAuth callback error (token exchange):", err);
     redirect("/?auth_error=exchange_failed");
   }
+
+  const snapshot = await readXcomStore();
+  let user = snapshot.users.find(
+    (u) => u.xUserId === userProfile.id || u.xHandle === `@${userProfile.username}`,
+  );
+
+  if (!user) {
+    const newUser: XcomStoreUser = {
+      id: `user-${userProfile.id}`,
+      xUserId: userProfile.id,
+      xHandle: `@${userProfile.username}`,
+      displayName: userProfile.name,
+      avatar: userProfile.name
+        .split(" ")
+        .slice(0, 2)
+        .map((part) => part.slice(0, 1).toUpperCase())
+        .join(""),
+    };
+
+    await upsertUserInDb(newUser);
+    if (!process.env.DATABASE_URL) {
+      await updateXcomStore((snap) => ({
+        ...snap,
+        users: [...snap.users, newUser],
+      }));
+    }
+
+    user = newUser;
+  }
+
+  // Store encrypted tokens (DB or filesystem depending on env)
+  const encryptedAccessToken = encryptToken(tokenResponse.access_token);
+  const encryptedRefreshToken = tokenResponse.refresh_token
+    ? encryptToken(tokenResponse.refresh_token)
+    : null;
+
+  await saveUserTokens({
+    userId: user.id,
+    accessToken: encryptedAccessToken,
+    refreshToken: encryptedRefreshToken,
+    expiresAt: new Date(
+      Date.now() + tokenResponse.expires_in * 1000,
+    ).toISOString(),
+  });
+
+  // Set session cookie
+  cookieStore.set(SESSION_COOKIE_NAME, user.id, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
+
+  // Clear PKCE cookies
+  cookieStore.delete("x_oauth_code_verifier");
+  cookieStore.delete("x_oauth_state");
+
+  redirect("/");
 }

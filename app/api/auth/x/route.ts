@@ -8,11 +8,11 @@ import {
 } from "@/lib/x/oauth-client";
 
 export async function GET() {
-  try {
-    const codeVerifier = generateCodeVerifier();
-    const codeChallenge = generateCodeChallenge(codeVerifier);
-    const state = randomUUID();
+  const codeVerifier = generateCodeVerifier();
+  const codeChallenge = generateCodeChallenge(codeVerifier);
+  const state = randomUUID();
 
+  try {
     const cookieStore = await cookies();
 
     cookieStore.set("x_oauth_code_verifier", codeVerifier, {
@@ -30,9 +30,6 @@ export async function GET() {
       path: "/",
       maxAge: 60 * 10,
     });
-
-    const authUrl = buildAuthorizationUrl(codeChallenge, state);
-    redirect(authUrl);
   } catch (error) {
     console.error("OAuth initialization error:", error);
     return Response.json(
@@ -40,7 +37,10 @@ export async function GET() {
         error: "Failed to initialize OAuth flow",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
+
+  const authUrl = buildAuthorizationUrl(codeChallenge, state);
+  redirect(authUrl);
 }

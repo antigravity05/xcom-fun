@@ -7405,3 +7405,236 @@ params:
     [errors]: [ [Error], [Error] ]
   }
 }
+⨯ Error: Failed query: select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"
+params: 
+    at async Module.readXcomStore (lib\db-persistence.ts:43:20)
+    at async readXcomStore (lib\xcom-persistence.ts:297:12)
+    at async getViewer (lib\xcom-read-models.ts:112:20)
+    at async Home (app\page.tsx:28:18)
+  41 |
+  42 |   // Fetch all data from database
+> 43 |   const allUsers = await db.query.users.findMany();
+     |                    ^
+  44 |   const allCommunities = await db.query.communities.findMany();
+  45 |   const allMemberships = await db.query.communityMemberships.findMany();
+  46 |   const allPosts = await db.query.posts.findMany(); {
+  query: 'select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"',
+  params: [],
+  digest: '1481836331',
+  [cause]: AggregateError: 
+      at ignore-listed frames {
+    code: 'ECONNREFUSED',
+    [errors]: [ [Error], [Error] ]
+  }
+}
+⨯ Error: Failed query: select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"
+params: 
+    at async Module.readXcomStore (lib\db-persistence.ts:43:20)
+    at async readXcomStore (lib\xcom-persistence.ts:297:12)
+    at async getViewer (lib\xcom-read-models.ts:112:20)
+    at async Home (app\page.tsx:28:18)
+  41 |
+  42 |   // Fetch all data from database
+> 43 |   const allUsers = await db.query.users.findMany();
+     |                    ^
+  44 |   const allCommunities = await db.query.communities.findMany();
+  45 |   const allMemberships = await db.query.communityMemberships.findMany();
+  46 |   const allPosts = await db.query.posts.findMany(); {
+  query: 'select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"',
+  params: [],
+  digest: '1481836331',
+  [cause]: AggregateError: 
+      at ignore-listed frames {
+    code: 'ETIMEDOUT',
+    [errors]: [ [Error], [Error] ]
+  }
+}
+⨯ Error: Failed query: select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"
+params: 
+    at async Module.readXcomStore (lib\db-persistence.ts:43:20)
+    at async readXcomStore (lib\xcom-persistence.ts:297:12)
+    at async getViewer (lib\xcom-read-models.ts:112:20)
+    at async Home (app\page.tsx:28:18)
+  41 |
+  42 |   // Fetch all data from database
+> 43 |   const allUsers = await db.query.users.findMany();
+     |                    ^
+  44 |   const allCommunities = await db.query.communities.findMany();
+  45 |   const allMemberships = await db.query.communityMemberships.findMany();
+  46 |   const allPosts = await db.query.posts.findMany(); {
+  query: 'select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"',
+  params: [],
+  digest: '1481836331',
+  [cause]: AggregateError: 
+      at ignore-listed frames {
+    code: 'ECONNREFUSED',
+    [errors]: [ [Error], [Error] ]
+  }
+}
+⨯ Error: Failed query: select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"
+params: 
+    at async Module.readXcomStore (lib\db-persistence.ts:43:20)
+    at async readXcomStore (lib\xcom-persistence.ts:297:12)
+    at async getViewer (lib\xcom-read-models.ts:112:20)
+    at async Home (app\page.tsx:28:18)
+  41 |
+  42 |   // Fetch all data from database
+> 43 |   const allUsers = await db.query.users.findMany();
+     |                    ^
+  44 |   const allCommunities = await db.query.communities.findMany();
+  45 |   const allMemberships = await db.query.communityMemberships.findMany();
+  46 |   const allPosts = await db.query.posts.findMany(); {
+  query: 'select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"',
+  params: [],
+  digest: '1481836331',
+  [cause]: AggregateError: 
+      at ignore-listed frames {
+    code: 'ECONNREFUSED',
+    [errors]: [ [Error], [Error] ]
+  }
+}
+⨯ Error: Failed query: select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"
+params: 
+    at async Module.readXcomStore (lib\db-persistence.ts:43:20)
+    at async readXcomStore (lib\xcom-persistence.ts:297:12)
+    at async getViewer (lib\xcom-read-models.ts:112:20)
+    at async Home (app\page.tsx:28:18)
+  41 |
+  42 |   // Fetch all data from database
+> 43 |   const allUsers = await db.query.users.findMany();
+     |                    ^
+  44 |   const allCommunities = await db.query.communities.findMany();
+  45 |   const allMemberships = await db.query.communityMemberships.findMany();
+  46 |   const allPosts = await db.query.posts.findMany(); {
+  query: 'select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"',
+  params: [],
+  digest: '1481836331',
+  [cause]: AggregateError: 
+      at ignore-listed frames {
+    code: 'ECONNREFUSED',
+    [errors]: [ [Error], [Error] ]
+  }
+}
+⨯ Error: Failed query: select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"
+params: 
+    at async Module.readXcomStore (lib\db-persistence.ts:43:20)
+    at async readXcomStore (lib\xcom-persistence.ts:297:12)
+    at async getViewer (lib\xcom-read-models.ts:112:20)
+    at async Home (app\page.tsx:28:18)
+  41 |
+  42 |   // Fetch all data from database
+> 43 |   const allUsers = await db.query.users.findMany();
+     |                    ^
+  44 |   const allCommunities = await db.query.communities.findMany();
+  45 |   const allMemberships = await db.query.communityMemberships.findMany();
+  46 |   const allPosts = await db.query.posts.findMany(); {
+  query: 'select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"',
+  params: [],
+  digest: '1481836331',
+  [cause]: AggregateError: 
+      at ignore-listed frames {
+    code: 'ECONNREFUSED',
+    [errors]: [ [Error], [Error] ]
+  }
+}
+⨯ Error: Failed query: select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"
+params: 
+    at async Module.readXcomStore (lib\db-persistence.ts:43:20)
+    at async readXcomStore (lib\xcom-persistence.ts:297:12)
+    at async getViewer (lib\xcom-read-models.ts:112:20)
+    at async Home (app\page.tsx:28:18)
+  41 |
+  42 |   // Fetch all data from database
+> 43 |   const allUsers = await db.query.users.findMany();
+     |                    ^
+  44 |   const allCommunities = await db.query.communities.findMany();
+  45 |   const allMemberships = await db.query.communityMemberships.findMany();
+  46 |   const allPosts = await db.query.posts.findMany(); {
+  query: 'select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"',
+  params: [],
+  digest: '1481836331',
+  [cause]: AggregateError: 
+      at ignore-listed frames {
+    code: 'ECONNREFUSED',
+    [errors]: [ [Error], [Error] ]
+  }
+}
+⨯ Error: Failed query: select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"
+params: 
+    at async Module.readXcomStore (lib\db-persistence.ts:43:20)
+    at async readXcomStore (lib\xcom-persistence.ts:297:12)
+    at async getViewer (lib\xcom-read-models.ts:112:20)
+    at async Home (app\page.tsx:28:18)
+  41 |
+  42 |   // Fetch all data from database
+> 43 |   const allUsers = await db.query.users.findMany();
+     |                    ^
+  44 |   const allCommunities = await db.query.communities.findMany();
+  45 |   const allMemberships = await db.query.communityMemberships.findMany();
+  46 |   const allPosts = await db.query.posts.findMany(); {
+  query: 'select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"',
+  params: [],
+  digest: '1481836331',
+  [cause]: AggregateError: 
+      at ignore-listed frames {
+    code: 'ECONNREFUSED',
+    [errors]: [ [Error], [Error] ]
+  }
+}
+⨯ Error: Failed query: select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"
+params: 
+    at async Module.readXcomStore (lib\db-persistence.ts:43:20)
+    at async readXcomStore (lib\xcom-persistence.ts:297:12)
+    at async getViewer (lib\xcom-read-models.ts:112:20)
+    at async Home (app\page.tsx:28:18)
+  41 |
+  42 |   // Fetch all data from database
+> 43 |   const allUsers = await db.query.users.findMany();
+     |                    ^
+  44 |   const allCommunities = await db.query.communities.findMany();
+  45 |   const allMemberships = await db.query.communityMemberships.findMany();
+  46 |   const allPosts = await db.query.posts.findMany(); {
+  query: 'select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"',
+  params: [],
+  digest: '1481836331',
+  [cause]: AggregateError: 
+      at ignore-listed frames {
+    code: 'ECONNREFUSED',
+    [errors]: [ [Error], [Error] ]
+  }
+}
+⨯ Error: Failed query: select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"
+params: 
+    at async Module.readXcomStore (lib\db-persistence.ts:43:20)
+    at async readXcomStore (lib\xcom-persistence.ts:297:12)
+    at async getViewer (lib\xcom-read-models.ts:112:20)
+    at async Home (app\page.tsx:28:18)
+  41 |
+  42 |   // Fetch all data from database
+> 43 |   const allUsers = await db.query.users.findMany();
+     |                    ^
+  44 |   const allCommunities = await db.query.communities.findMany();
+  45 |   const allMemberships = await db.query.communityMemberships.findMany();
+  46 |   const allPosts = await db.query.posts.findMany(); {
+  query: 'select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"',
+  params: [],
+  digest: '1481836331',
+  [cause]: AggregateError: 
+      at ignore-listed frames {
+    code: 'ECONNREFUSED',
+    [errors]: [ [Error], [Error] ]
+  }
+}
+[browser] Uncaught Error: Failed query: select "id", "x_user_id", "x_handle", "display_name", "avatar_url", "created_at" from "users" "users"
+params: 
+    at  Module.readXcomStore (lib\db-persistence.ts:43:20)
+    at  readXcomStore (lib\xcom-persistence.ts:297:12)
+    at  getViewer (lib\xcom-read-models.ts:112:20)
+    at  Home (app\page.tsx:28:18)
+  41 |
+  42 |   // Fetch all data from database
+> 43 |   const allUsers = await db.query.users.findMany();
+     |                    ^
+  44 |   const allCommunities = await db.query.communities.findMany();
+  45 |   const allMemberships = await db.query.communityMemberships.findMany();
+  46 |   const allPosts = await db.query.posts.findMany();
