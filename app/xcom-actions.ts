@@ -71,6 +71,97 @@ const publishToX = async (
   }
 };
 
+// ── Helpers to get Zernio account ID and external tweet ID ──
+
+/** Get the user's Zernio account ID from the token store. */
+const getZernioAccountId = async (userId: string): Promise<string | null> => {
+  try {
+    const { isZernioMode } = await import("@/lib/x/oauth-contract");
+    if (!isZernioMode()) return null;
+
+    const { getUserTokens } = await import("@/lib/x/token-store");
+    const tokens = await getUserTokens(userId);
+    return tokens?.accessToken ?? null;
+  } catch {
+    return null;
+  }
+};
+
+/** Get the external tweet ID for a local post (from postPublications). */
+const getExternalTweetId = async (postId: string): Promise<string | null> => {
+  try {
+    const { getDb } = await import("@/lib/database/client");
+    const db = getDb();
+    const row = await db.query.postPublications.findFirst({
+      where: (table, { and, eq }) =>
+        and(eq(table.postId, postId), eq(table.provider, "x"), eq(table.status, "published")),
+    });
+    return row?.externalPostId ?? null;
+  } catch {
+    return null;
+  }
+};
+
+// ── X/Twitter engagement sync helpers (fire-and-forget) ──
+
+const syncLikeToX = async (userId: string, postId: string, isLiking: boolean) => {
+  try {
+    const accountId = await getZernioAccountId(userId);
+    if (!accountId) return;
+
+    const tweetId = await getExternalTweetId(postId);
+    if (!tweetId) return;
+
+    const { likeTweet, unlikeTweet } = await import("@/lib/zernio/client");
+    if (isLiking) {
+      await likeTweet(accountId, tweetId);
+      console.log(`[x-sync] Liked tweet ${tweetId}`);
+    } else {
+      await unlikeTweet(accountId, tweetId);
+      console.log(`[x-sync] Unliked tweet ${tweetId}`);
+    }
+  } catch (err) {
+    console.error("[x-sync] syncLikeToX error:", err);
+  }
+};
+
+const syncRetweetToX = async (userId: string, postId: string, isRetweeting: boolean) => {
+  try {
+    const accountId = await getZernioAccountId(userId);
+    if (!accountId) return;
+
+    const tweetId = await getExternalTweetId(postId);
+    if (!tweetId) return;
+
+    const { retweetPost, undoRetweet } = await import("@/lib/zernio/client");
+    if (isRetweeting) {
+      await retweetPost(accountId, tweetId);
+      console.log(`[x-sync] Retweeted tweet ${tweetId}`);
+    } else {
+      await undoRetweet(accountId, tweetId);
+      console.log(`[x-sync] Undid retweet of tweet ${tweetId}`);
+    }
+  } catch (err) {
+    console.error("[x-sync] syncRetweetToX error:", err);
+  }
+};
+
+const syncReplyToX = async (userId: string, postId: string, body: string) => {
+  try {
+    const accountId = await getZernioAccountId(userId);
+    if (!accountId) return;
+
+    const tweetId = await getExternalTweetId(postId);
+    if (!tweetId) return;
+
+    const { replyToTweet } = await import("@/lib/zernio/client");
+    const result = await replyToTweet(accountId, tweetId, body);
+    console.log(`[x-sync] Replied to tweet ${tweetId}: ${result.id}`);
+  } catch (err) {
+    console.error("[x-sync] syncReplyToX error:", err);
+  }
+};
+
 const createCommunityPayloadSchema = z.object({
   name: z.string().min(3).max(32),
   description: z.string().min(10).max(420),
@@ -515,6 +606,9 @@ export const createReplyAction = async (formData: FormData) => {
     return;
   }
 
+  // Sync reply to X in background (fire-and-forget)
+  syncReplyToX(viewerUserId, postId, body).catch(() => {});
+
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
 };
@@ -629,6 +723,15 @@ export const toggleRepostAction = async (formData: FormData) => {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 
+  // Check current state to determine if we're retweeting or undoing
+  let wasReposted = false;
+  try {
+    const snapshot = await readXcomStore();
+    wasReposted = snapshot.reactions.some(
+      (r) => r.postId === postId && r.userId === viewerUserId && r.kind === "repost",
+    );
+  } catch { /* ignore */ }
+
   try {
     await applyToggleRepost({
       actorUserId: viewerUserId,
@@ -639,6 +742,9 @@ export const toggleRepostAction = async (formData: FormData) => {
     redirect(redirectTo);
     return;
   }
+
+  // Sync to X in background (fire-and-forget)
+  syncRetweetToX(viewerUserId, postId, !wasReposted).catch(() => {});
 
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
@@ -685,6 +791,15 @@ export const toggleLikeAction = async (formData: FormData) => {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 
+  // Check current state to determine if we're liking or unliking
+  let wasLiked = false;
+  try {
+    const snapshot = await readXcomStore();
+    wasLiked = snapshot.reactions.some(
+      (r) => r.postId === postId && r.userId === viewerUserId && r.kind === "like",
+    );
+  } catch { /* ignore — we'll still toggle locally */ }
+
   try {
     await applyToggleLike({
       actorUserId: viewerUserId,
@@ -695,6 +810,9 @@ export const toggleLikeAction = async (formData: FormData) => {
     redirect(redirectTo);
     return;
   }
+
+  // Sync to X in background (fire-and-forget)
+  syncLikeToX(viewerUserId, postId, !wasLiked).catch(() => {});
 
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);

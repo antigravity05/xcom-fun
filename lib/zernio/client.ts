@@ -234,6 +234,26 @@ export const postTweet = async (
 
 /* ── Engagement ── */
 
+export const likeTweet = async (
+  accountId: string,
+  tweetId: string,
+): Promise<void> => {
+  await zernioFetch("/twitter/like", {
+    method: "POST",
+    body: JSON.stringify({ accountId, tweetId }),
+  });
+};
+
+export const unlikeTweet = async (
+  accountId: string,
+  tweetId: string,
+): Promise<void> => {
+  await zernioFetch("/twitter/like", {
+    method: "DELETE",
+    body: JSON.stringify({ accountId, tweetId }),
+  });
+};
+
 export const retweetPost = async (
   accountId: string,
   tweetId: string,
@@ -252,6 +272,19 @@ export const undoRetweet = async (
     method: "DELETE",
     body: JSON.stringify({ accountId, tweetId }),
   });
+};
+
+export const replyToTweet = async (
+  accountId: string,
+  tweetId: string,
+  content: string,
+): Promise<ZernioPostResult> => {
+  const data = (await zernioFetch("/twitter/reply", {
+    method: "POST",
+    body: JSON.stringify({ accountId, tweetId, content }),
+  })) as { post?: ZernioPostResult; reply?: ZernioPostResult };
+
+  return data.post ?? data.reply ?? { id: "", status: "published" };
 };
 
 export const bookmarkTweet = async (
