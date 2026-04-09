@@ -1,44 +1,42 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-type ActionResult =
-  | { ok: true; slug: string }
-  | { ok: false; error: string };
-
-type CreateCommunityFormProps = {
-  action: (formData: FormData) => Promise<ActionResult>;
-};
-
-export const CreateCommunityForm = ({ action }: CreateCommunityFormProps) => {
+export const CreateCommunityForm = () => {
   const router = useRouter();
   const [serverMessage, setServerMessage] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setServerMessage(null);
+    setIsPending(true);
 
-    const formData = new FormData(e.currentTarget);
+    try {
+      const formData = new FormData(e.currentTarget);
 
-    startTransition(async () => {
-      try {
-        const result = await action(formData);
+      const response = await fetch("/api/communities/create", {
+        method: "POST",
+        body: formData,
+      });
 
-        if (!result.ok) {
-          setServerMessage(result.error);
-          return;
-        }
+      const result = await response.json();
 
-        router.push(`/communities/${result.slug}`);
-        router.refresh();
-      } catch (err) {
-        setServerMessage(
-          err instanceof Error ? err.message : "Something went wrong.",
-        );
+      if (!result.ok) {
+        setServerMessage(result.error);
+        return;
       }
-    });
+
+      router.push(`/communities/${result.slug}`);
+      router.refresh();
+    } catch (err) {
+      setServerMessage(
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
