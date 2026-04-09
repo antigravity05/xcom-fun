@@ -147,9 +147,10 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
           ) : null}
 
           {/* X sync status */}
-          <div className={`mt-2 text-[12px] ${syncConfig.className}`}>
+          {/* X sync status label — hidden until X API plan is activated */}
+          {/* <div className={`mt-2 text-[12px] ${syncConfig.className}`}>
             {syncConfig.label}
-          </div>
+          </div> */}
 
           {/* Action buttons */}
           {interaction &&

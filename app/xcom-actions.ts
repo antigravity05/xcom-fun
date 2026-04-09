@@ -440,27 +440,24 @@ export const createPostAction = async (formData: FormData) => {
     body,
   });
 
-  // ── X/Twitter sync: publish tweet BEFORE redirect ──
-  // On Vercel serverless, fire-and-forget promises get killed by redirect().
-  // We must await the publication so the tweet actually gets posted.
-  const community = nextSnapshot.communities.find((c) => c.slug === communitySlug);
-  if (community) {
-    const newPost = nextSnapshot.posts.find(
-      (p) =>
-        p.communityId === community.id &&
-        p.authorUserId === viewerUserId &&
-        !previousSnapshot.posts.some((sp) => sp.id === p.id),
-    );
-
-    if (newPost) {
-      try {
-        await publishToX(viewerUserId, newPost.id, body);
-      } catch (err) {
-        // Don't block the user if X sync fails — just log it
-        console.error("[x-sync] Publication failed:", err);
-      }
-    }
-  }
+  // ── X/Twitter sync: DISABLED until X API Basic plan ($100/mo) is activated ──
+  // Uncomment the block below once you have a paid X API plan.
+  // const community = nextSnapshot.communities.find((c) => c.slug === communitySlug);
+  // if (community) {
+  //   const newPost = nextSnapshot.posts.find(
+  //     (p) =>
+  //       p.communityId === community.id &&
+  //       p.authorUserId === viewerUserId &&
+  //       !previousSnapshot.posts.some((sp) => sp.id === p.id),
+  //   );
+  //   if (newPost) {
+  //     try {
+  //       await publishToX(viewerUserId, newPost.id, body);
+  //     } catch (err) {
+  //       console.error("[x-sync] Publication failed:", err);
+  //     }
+  //   }
+  // }
 
   revalidatePath("/");
   revalidatePath(`/communities/${communitySlug}`);
