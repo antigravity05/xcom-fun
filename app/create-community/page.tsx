@@ -10,7 +10,20 @@ export const metadata: Metadata = {
 };
 
 export default async function CreateCommunityPage() {
-  const viewer = await getViewer();
+  let viewer;
+  try {
+    viewer = await getViewer();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : "";
+    return (
+      <div style={{ padding: "2rem", color: "white", background: "#0a0a0a", minHeight: "100vh", fontFamily: "monospace" }}>
+        <h1 style={{ color: "#ef4444" }}>Create Community Error</h1>
+        <p style={{ color: "#fbbf24" }}>{message}</p>
+        <pre style={{ fontSize: "12px", color: "#888", whiteSpace: "pre-wrap", marginTop: "1rem" }}>{stack}</pre>
+      </div>
+    );
+  }
 
   return (
     <XcomChrome
