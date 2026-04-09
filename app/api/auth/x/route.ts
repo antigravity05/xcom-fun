@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { isZernioMode } from "@/lib/x/oauth-contract";
+import { getTwitterConnectUrl } from "@/lib/zernio/client";
 import {
   generateCodeVerifier,
   generateCodeChallenge,
@@ -8,6 +10,15 @@ import {
 } from "@/lib/x/oauth-client";
 
 export async function GET() {
+  /* ── Zernio mode (preferred) ── */
+  if (isZernioMode()) {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://x-com.fun";
+    const callbackUrl = `${baseUrl}/api/auth/x/callback`;
+    const connectUrl = getTwitterConnectUrl(callbackUrl);
+    redirect(connectUrl);
+  }
+
+  /* ── Legacy direct X OAuth PKCE ── */
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);
   const state = randomUUID();
