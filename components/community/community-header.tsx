@@ -55,7 +55,7 @@ export const CommunityHeader = ({
 
       {/* Banner */}
       <div
-        className="relative h-36 sm:h-[180px]"
+        className="relative h-[125px] sm:h-[200px]"
         style={
           community.bannerUrl
             ? {
@@ -144,7 +144,7 @@ export const CommunityHeader = ({
               <span className="font-bold text-white">
                 {formatCompactNumber(community.memberCount)}
               </span>{" "}
-              members
+              {community.memberCount === 1 ? "member" : "members"}
             </span>
           </div>
         </div>

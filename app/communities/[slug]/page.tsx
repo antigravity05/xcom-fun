@@ -103,7 +103,7 @@ export default async function CommunityPage({
           : null
       }
     >
-      <div className="grid w-full max-w-[1012px] xl:grid-cols-[minmax(0,1fr)_348px]">
+      <div className="grid w-full max-w-[990px] xl:grid-cols-[600px_350px]">
         <div className="min-w-0 border-x border-white/[0.08]">
           <CommunityHeader
             community={community}
@@ -345,8 +345,8 @@ export default async function CommunityPage({
         <aside className="hidden xl:block">
           <div className="sticky top-0 space-y-3 px-5 pt-3">
             {/* About */}
-            <section className="rounded-2xl bg-surface-secondary/60 py-3">
-              <h2 className="px-4 text-[15px] font-bold text-white">About</h2>
+            <section className="rounded-2xl bg-surface-secondary border border-white/[0.04] py-3">
+              <h2 className="px-4 text-[20px] font-extrabold text-white">About</h2>
               <p className="mt-2 px-4 text-[13px] leading-5 text-copy-muted">
                 {community.description}
               </p>
@@ -373,8 +373,8 @@ export default async function CommunityPage({
 
             {/* Related */}
             {relatedCommunities.length > 0 ? (
-              <section className="rounded-2xl bg-surface-secondary/60 py-3">
-                <h2 className="px-4 text-[15px] font-bold text-white">
+              <section className="rounded-2xl bg-surface-secondary border border-white/[0.04] py-3">
+                <h2 className="px-4 text-[20px] font-extrabold text-white">
                   You might like
                 </h2>
                 <div className="mt-1">

@@ -74,7 +74,7 @@ export default async function Home({ searchParams }: HomePageProps) {
           : null
       }
     >
-      <div className="grid w-full max-w-[1012px] xl:grid-cols-[minmax(0,1fr)_348px]">
+      <div className="grid w-full max-w-[990px] xl:grid-cols-[600px_350px]">
         <div className="min-w-0 border-x border-white/[0.08]">
           {/* Sticky search bar */}
           <div className="sticky top-0 z-20 border-b border-white/[0.08] bg-background/85 px-4 py-2 backdrop-blur sm:px-4">
@@ -170,7 +170,7 @@ export default async function Home({ searchParams }: HomePageProps) {
         <aside className="hidden xl:block">
           <div className="sticky top-0 space-y-3 px-5 pt-3">
             {/* Trending widget */}
-            <section className="rounded-2xl bg-surface-secondary/60 py-3">
+            <section className="rounded-2xl bg-surface-secondary border border-white/[0.04] py-3">
               <h2 className="px-4 text-[20px] font-extrabold text-white">
                 Trending
               </h2>

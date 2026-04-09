@@ -36,7 +36,7 @@ export default async function ConnectXPage({
           : null
       }
     >
-      <div className="grid w-full max-w-[1012px] xl:grid-cols-[minmax(0,1fr)_348px]">
+      <div className="grid w-full max-w-[990px] xl:grid-cols-[600px_350px]">
         <div className="min-w-0 border-x border-white/[0.08]">
           {/* Header */}
           <div className="sticky top-0 z-20 flex min-h-[53px] items-center border-b border-white/[0.08] bg-background/85 px-4 backdrop-blur sm:px-6">

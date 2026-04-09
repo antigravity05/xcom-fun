@@ -48,7 +48,7 @@ export default async function EditCommunityPage({
           : null
       }
     >
-      <div className="grid w-full max-w-[1012px] xl:grid-cols-[minmax(0,1fr)_348px]">
+      <div className="grid w-full max-w-[990px] xl:grid-cols-[600px_350px]">
         <div className="min-w-0 border-x border-white/10">
           <CenterColumnHeader
             title="Edit community"
