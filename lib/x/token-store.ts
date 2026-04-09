@@ -18,18 +18,16 @@ type StoredTokens = {
 const getDbTokens = async (userId: string): Promise<StoredTokens | null> => {
   try {
     const { getDb } = await import("@/lib/database/client");
-    const { xAccounts } = await import("@/drizzle/schema");
-    const { eq } = await import("drizzle-orm");
 
     const db = getDb();
-    const rows = await db
-      .select()
-      .from(xAccounts)
-      .where(eq(xAccounts.userId, userId))
-      .limit(1);
+    // Use db.query API (Drizzle's relational query builder) instead of
+    // db.select().from().where() which triggers `e.getSQL is not a function`
+    // in this Drizzle + postgres-js combo.
+    const row = await db.query.xAccounts.findFirst({
+      where: (xAccounts, { eq }) => eq(xAccounts.userId, userId),
+    });
 
-    if (!rows.length) return null;
-    const row = rows[0];
+    if (!row) return null;
 
     return {
       userId,

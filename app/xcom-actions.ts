@@ -22,6 +22,55 @@ import {
 } from "@/lib/xcom-persistence";
 import { clearViewerUserId, getViewerUserId, setViewerUserId } from "@/lib/xcom-session";
 
+// ── X/Twitter auto-sync helper ──
+const publishToX = async (
+  userId: string,
+  postId: string,
+  body: string,
+) => {
+  try {
+    const { queueXPublication } = await import(
+      "@/lib/x/publication-contract"
+    );
+    const { getDb } = await import("@/lib/database/client");
+    const { postPublications } = await import("@/drizzle/schema");
+
+    const result = await queueXPublication({
+      localPostId: postId,
+      xAccountUserId: userId,
+      body,
+    });
+
+    // Record the publication attempt in the DB
+    try {
+      const db = getDb();
+      await db.insert(postPublications).values({
+        postId,
+        provider: "x",
+        status: result.status === "published" ? "published" : "failed",
+        externalPostId: result.externalPostId ?? null,
+        lastError: result.errorMessage ?? null,
+        attemptCount: 1,
+        lastAttemptAt: new Date(),
+      });
+    } catch (dbErr) {
+      console.error("[x-sync] Failed to record publication:", dbErr);
+    }
+
+    if (result.status === "published") {
+      console.log(
+        `[x-sync] Post ${postId} published as tweet ${result.externalPostId}`,
+      );
+    } else {
+      console.warn(
+        `[x-sync] Post ${postId} failed to publish: ${result.errorMessage}`,
+      );
+    }
+  } catch (err) {
+    console.error("[x-sync] publishToX error:", err);
+  }
+};
+
 const createCommunityPayloadSchema = z.object({
   name: z.string().min(3).max(32),
   description: z.string().min(10).max(420),
@@ -384,11 +433,31 @@ export const createPostAction = async (formData: FormData) => {
   }
   const body = bodySchema.parse(String(formData.get("body") ?? ""));
 
-  await applyCreatePost({
+  const previousSnapshot = await readXcomStore();
+  const nextSnapshot = await applyCreatePost({
     actorUserId: viewerUserId,
     communitySlug,
     body,
   });
+
+  // ── X/Twitter sync: publish tweet in background ──
+  // Find the newly created post by diffing snapshots
+  const community = nextSnapshot.communities.find((c) => c.slug === communitySlug);
+  if (community) {
+    const newPost = nextSnapshot.posts.find(
+      (p) =>
+        p.communityId === community.id &&
+        p.authorUserId === viewerUserId &&
+        !previousSnapshot.posts.some((sp) => sp.id === p.id),
+    );
+
+    if (newPost) {
+      // Fire-and-forget: don't block the redirect on X API
+      publishToX(viewerUserId, newPost.id, body).catch((err) => {
+        console.error("[x-sync] Background publication failed:", err);
+      });
+    }
+  }
 
   revalidatePath("/");
   revalidatePath(`/communities/${communitySlug}`);
