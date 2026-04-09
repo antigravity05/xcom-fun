@@ -1,0 +1,129 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Search } from "lucide-react";
+import { CommunityCard } from "@/components/community/community-card";
+import { CenterColumnHeader } from "@/components/layout/center-column-header";
+import { XcomChrome } from "@/components/layout/xcom-chrome";
+import { formatCompactNumber } from "@/lib/xcom-formatters";
+import {
+  getViewer,
+  listCommunityCards,
+  listTrendingCommunityCards,
+} from "@/lib/xcom-read-models";
+
+export const metadata: Metadata = {
+  title: "Discover communities",
+};
+
+type HomePageProps = {
+  searchParams: Promise<{ q?: string }>;
+};
+
+const matchesCommunity = (query: string, candidate: string) => {
+  return candidate.toLowerCase().includes(query);
+};
+
+export default async function Home({ searchParams }: HomePageProps) {
+  const { q = "" } = await searchParams;
+  const viewer = await getViewer();
+  const communities = await listCommunityCards();
+  const query = q.trim().toLowerCase();
+
+  const filteredCommunities = query
+    ? communities.filter((community) => {
+        return (
+          matchesCommunity(query, community.name) ||
+          matchesCommunity(query, community.tagline) ||
+          matchesCommunity(query, community.ticker)
+        );
+      })
+    : communities;
+
+  const trendingCommunities = query
+    ? filteredCommunities.slice(0, 4)
+    : await listTrendingCommunityCards();
+
+  return (
+    <XcomChrome
+      active="discover"
+      viewer={
+        viewer
+          ? { displayName: viewer.displayName, xHandle: viewer.xHandle }
+          : null
+      }
+    >
+      <div className="grid w-full max-w-[1012px] xl:grid-cols-[minmax(0,1fr)_348px]">
+        <div className="min-w-0 border-x border-white/10">
+          <CenterColumnHeader
+            title="Communities"
+            action={
+              <Link
+                href="/create-community"
+                className="rounded-full bg-accent-secondary px-4 py-2 text-[15px] font-bold text-white transition hover:brightness-110"
+              >
+                + Create Community
+              </Link>
+            }
+          >
+            <form>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-copy-soft" />
+                <input
+                  type="search"
+                  name="q"
+                  defaultValue={q}
+                  placeholder="Search Communities"
+                  className="signal-focus w-full rounded-full border border-white/10 bg-background py-3 pl-11 pr-4 text-sm text-white placeholder:text-copy-soft"
+                />
+              </div>
+            </form>
+          </CenterColumnHeader>
+
+          <section className="border-b border-white/10">
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="text-[13px] font-bold uppercase tracking-[0.16em] text-copy-muted">
+                Trending
+              </div>
+              <div className="text-[13px] text-copy-muted">
+                {formatCompactNumber(trendingCommunities.length)}
+              </div>
+            </div>
+            <div>
+              {trendingCommunities.map((community) => (
+                <div key={community.id} className="signal-divider last:border-b-0">
+                  <CommunityCard community={community} showRank />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="text-[13px] font-bold uppercase tracking-[0.16em] text-copy-muted">
+                {query ? "Search results" : "All communities"}
+              </div>
+              <div className="text-[13px] text-copy-muted">
+                {formatCompactNumber(filteredCommunities.length)}
+              </div>
+            </div>
+            <div>
+              {filteredCommunities.length ? (
+                filteredCommunities.map((community) => (
+                  <div key={community.id} className="signal-divider last:border-b-0">
+                    <CommunityCard community={community} />
+                  </div>
+                ))
+              ) : (
+                <div className="px-4 py-8 text-sm text-copy-muted">
+                  No communities match this search.
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+
+        <aside className="hidden xl:block" />
+      </div>
+    </XcomChrome>
+  );
+}

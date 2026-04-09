@@ -1,0 +1,127 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { updateCommunityAction } from "@/app/xcom-actions";
+
+type EditCommunityFormProps = {
+  communitySlug: string;
+  initialName: string;
+  initialDescription: string;
+};
+
+export const EditCommunityForm = ({
+  communitySlug,
+  initialName,
+  initialDescription,
+}: EditCommunityFormProps) => {
+  const router = useRouter();
+  const [serverMessage, setServerMessage] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const handleSubmit = async (formData: FormData) => {
+    setServerMessage(null);
+
+    startTransition(async () => {
+      const result = await updateCommunityAction(formData);
+
+      if (!result.ok) {
+        setServerMessage(result.error);
+        return;
+      }
+
+      router.push(`/communities/${result.slug}?tab=about`);
+      router.refresh();
+    });
+  };
+
+  return (
+    <form
+      action={handleSubmit}
+      className="border-b border-white/10"
+    >
+      <input type="hidden" name="communitySlug" value={communitySlug} />
+
+      <div className="px-4 py-4 text-sm leading-6 text-copy-muted sm:px-6">
+        Update the essentials: community name, description and banner.
+      </div>
+
+      <div className="signal-divider px-4 py-4 sm:px-6">
+        <Field
+          label="Name"
+          input={
+            <input
+              name="name"
+              defaultValue={initialName}
+              className="signal-focus w-full rounded-2xl border border-white/10 bg-background px-4 py-3 text-sm text-white placeholder:text-copy-soft"
+            />
+          }
+        />
+      </div>
+
+      <div className="signal-divider px-4 py-4 sm:px-6">
+        <Field
+          label="Description"
+          input={
+            <textarea
+              name="description"
+              rows={5}
+              defaultValue={initialDescription}
+              className="signal-focus w-full rounded-2xl border border-white/10 bg-background px-4 py-3 text-sm leading-6 text-white placeholder:text-copy-soft"
+            />
+          }
+        />
+      </div>
+
+      <div className="signal-divider px-4 py-4 sm:px-6">
+        <Field
+          label="Replace banner"
+          hint="Optional. PNG, JPG, WEBP or GIF, max 5 MB"
+          input={
+            <input
+              type="file"
+              name="banner"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              className="block w-full rounded-2xl border border-white/10 bg-background px-4 py-3 text-sm text-copy-muted file:mr-4 file:rounded-full file:border-0 file:bg-accent-secondary file:px-4 file:py-2 file:text-sm file:font-bold file:text-white"
+            />
+          }
+        />
+      </div>
+
+      <div className="px-4 py-4 sm:px-6">
+        <div className="flex flex-wrap items-center gap-3 border-t border-white/10 pt-4">
+          <button
+            type="submit"
+            disabled={isPending}
+            className="rounded-full bg-accent-secondary px-4 py-2 text-sm font-bold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isPending ? "Saving..." : "Save community"}
+          </button>
+          {serverMessage ? (
+            <p className="text-sm leading-7 text-danger-soft">{serverMessage}</p>
+          ) : null}
+        </div>
+      </div>
+    </form>
+  );
+};
+
+type FieldProps = {
+  label: string;
+  hint?: string;
+  input: React.ReactNode;
+};
+
+const Field = ({ label, hint, input }: FieldProps) => {
+  return (
+    <label className="grid gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-[13px] font-bold uppercase tracking-[0.16em] text-copy-muted">
+          {label}
+        </span>
+        {hint ? <span className="text-xs text-copy-soft">{hint}</span> : null}
+      </div>
+      {input}
+    </label>
+  );
+};

@@ -1,0 +1,177 @@
+import Link from "next/link";
+import {
+  Compass,
+  LogOut,
+  PlugZap,
+  PlusSquare,
+  Users,
+} from "lucide-react";
+import { disconnectDemoAccountAction } from "@/app/xcom-actions";
+
+type NavigationKey = "discover" | "create" | "connect" | "community";
+
+type XcomChromeProps = {
+  active: NavigationKey;
+  viewer?: {
+    displayName: string;
+    xHandle: string;
+  } | null;
+  children: React.ReactNode;
+};
+
+const navigationItems = [
+  {
+    id: "discover",
+    href: "/",
+    label: "Discover",
+    icon: Compass,
+  },
+  {
+    id: "community",
+    href: "/communities/claude-bug-bounty",
+    label: "Communities",
+    icon: Users,
+  },
+  {
+    id: "create",
+    href: "/create-community",
+    label: "Create community",
+    icon: PlusSquare,
+  },
+  {
+    id: "connect",
+    href: "/connect-x",
+    label: "Connect X",
+    icon: PlugZap,
+  },
+] as const;
+
+export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
+  const viewerAvatar = viewer?.displayName.slice(0, 1).toUpperCase() ?? "X";
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1360px] justify-center">
+        <aside className="hidden w-[275px] shrink-0 lg:flex lg:justify-end">
+          <div className="sticky top-0 flex h-screen w-full max-w-[259px] flex-col px-2 py-2">
+            <Link
+              href="/"
+              className="mb-2 ml-1 inline-flex size-12 items-center justify-center rounded-full text-[2.05rem] leading-none font-black tracking-tight text-white hover:bg-white/[0.06]"
+            >
+              X
+            </Link>
+
+            <nav className="flex flex-1 flex-col gap-0.5 pt-0.5">
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = active === item.id;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`inline-flex w-fit items-center gap-5 rounded-full px-4 py-3 text-[20px] leading-6 text-white ${
+                      isActive
+                        ? "font-bold"
+                        : "font-medium hover:bg-white/[0.06]"
+                    }`}
+                  >
+                    <Icon className="size-7 stroke-[2.1]" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="mt-auto px-2 py-3">
+              {viewer ? (
+                <div className="space-y-2">
+                  <div className="flex w-full items-center gap-3 rounded-full px-3 py-3 hover:bg-white/[0.06]">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#1d9bf0]/15 text-sm font-bold text-white">
+                      {viewerAvatar}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate text-[15px] font-bold text-white">
+                        {viewer.displayName}
+                      </div>
+                      <div className="truncate text-[15px] text-copy-muted">
+                        {viewer.xHandle}
+                      </div>
+                    </div>
+                  </div>
+
+                  <form action={disconnectDemoAccountAction}>
+                    <input type="hidden" name="redirectTo" value="/" />
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-2 rounded-full px-3 py-2.5 text-sm font-semibold text-copy-muted hover:bg-white/[0.06] hover:text-white"
+                    >
+                      <LogOut className="size-4" />
+                      Disconnect
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <Link
+                  href="/connect-x"
+                  className="inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-3 text-[15px] font-bold text-black hover:bg-white/90"
+                >
+                  Connect X
+                </Link>
+              )}
+            </div>
+          </div>
+        </aside>
+
+        <div className="min-w-0 flex-1">
+          <header className="sticky top-0 z-30 border-b border-white/10 bg-background/85 backdrop-blur lg:hidden">
+            <div className="flex min-h-[53px] items-center justify-between px-4 py-2.5">
+              <Link
+                href="/"
+                className="text-2xl font-black tracking-tight text-white"
+              >
+                X
+              </Link>
+              {viewer ? (
+                <span className="text-sm font-medium text-copy-muted">{viewer.xHandle}</span>
+              ) : (
+                <Link
+                  href="/connect-x"
+                  className="rounded-full bg-white px-3 py-1.5 text-sm font-bold text-black hover:bg-white/90"
+                >
+                  Connect X
+                </Link>
+              )}
+            </div>
+
+            <nav className="scrollbar-thin flex gap-2 overflow-x-auto px-4 pb-3">
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = active === item.id;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-[13px] font-semibold whitespace-nowrap ${
+                      isActive
+                        ? "border-white/10 bg-white/[0.09] text-white"
+                        : "border-white/10 bg-transparent text-copy-muted hover:bg-white/[0.04] hover:text-white"
+                    }`}
+                  >
+                    <Icon className="size-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </header>
+
+          <main className="flex min-h-screen justify-center">{children}</main>
+        </div>
+      </div>
+    </div>
+  );
+};
