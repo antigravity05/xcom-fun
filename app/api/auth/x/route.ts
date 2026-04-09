@@ -14,9 +14,10 @@ export async function GET() {
   if (isZernioMode()) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://x-com.fun";
     const callbackUrl = `${baseUrl}/api/auth/x/callback`;
+
+    let authUrl: string;
     try {
-      const authUrl = await getTwitterConnectUrl(callbackUrl);
-      redirect(authUrl);
+      authUrl = await getTwitterConnectUrl(callbackUrl);
     } catch (error) {
       console.error("Zernio connect error:", error);
       return Response.json(
@@ -27,6 +28,10 @@ export async function GET() {
         { status: 500 },
       );
     }
+
+    // redirect() must be called OUTSIDE try/catch because Next.js
+    // implements it by throwing a special NEXT_REDIRECT error
+    redirect(authUrl);
   }
 
   /* ── Legacy direct X OAuth PKCE ── */
