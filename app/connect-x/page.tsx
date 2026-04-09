@@ -13,9 +13,7 @@ export const metadata: Metadata = {
 };
 
 type ConnectXPageProps = {
-  searchParams?:
-    | Promise<{ redirectTo?: string }>
-    | { redirectTo?: string };
+  searchParams?: Promise<{ redirectTo?: string }>;
 };
 
 export default async function ConnectXPage({

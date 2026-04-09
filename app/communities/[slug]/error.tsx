@@ -1,5 +1,7 @@
 "use client";
 
+import { RefreshCw } from "lucide-react";
+
 export default function CommunityError({
   error,
   reset,
@@ -8,56 +10,35 @@ export default function CommunityError({
   reset: () => void;
 }) {
   return (
-    <div
-      style={{
-        padding: "2rem",
-        color: "white",
-        background: "#0a0a0a",
-        minHeight: "100vh",
-        fontFamily: "monospace",
-      }}
-    >
-      <h1 style={{ color: "#ef4444", fontSize: "24px" }}>Community Page Error</h1>
-      <p style={{ color: "#fbbf24", marginTop: "1rem" }}>{error.message}</p>
-      {error.digest ? (
-        <p style={{ color: "#888", marginTop: "0.5rem" }}>Digest: {error.digest}</p>
-      ) : null}
-      <pre
-        style={{
-          fontSize: "12px",
-          color: "#888",
-          whiteSpace: "pre-wrap",
-          marginTop: "1rem",
-        }}
-      >
-        {error.stack}
-      </pre>
-      <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem" }}>
-        <button
-          onClick={reset}
-          style={{
-            padding: "0.75rem 1.5rem",
-            background: "#3b82f6",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-          }}
-        >
-          Try again
-        </button>
-        <a
-          href="/"
-          style={{
-            padding: "0.75rem 1.5rem",
-            background: "#374151",
-            color: "white",
-            borderRadius: "8px",
-            textDecoration: "none",
-          }}
-        >
-          Back to home
-        </a>
+    <div className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
+      <div className="max-w-sm text-center">
+        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-danger-soft/10">
+          <span className="text-[20px] text-danger-soft">!</span>
+        </div>
+        <h1 className="mt-4 text-[20px] font-extrabold text-white">
+          Something went wrong
+        </h1>
+        <p className="mt-2 text-[14px] leading-5 text-copy-muted">
+          {error.message || "An unexpected error occurred."}
+        </p>
+        {error.digest ? (
+          <p className="mt-1 text-[11px] text-copy-soft">{error.digest}</p>
+        ) : null}
+        <div className="mt-5 flex items-center justify-center gap-3">
+          <button
+            onClick={reset}
+            className="inline-flex items-center gap-2 rounded-full bg-accent-secondary px-5 py-2.5 text-[14px] font-bold text-white transition hover:brightness-110"
+          >
+            <RefreshCw className="size-3.5" />
+            Try again
+          </button>
+          <a
+            href="/"
+            className="rounded-full border border-white/[0.08] px-5 py-2.5 text-[14px] font-bold text-white transition hover:bg-white/[0.06]"
+          >
+            Back to home
+          </a>
+        </div>
       </div>
     </div>
   );

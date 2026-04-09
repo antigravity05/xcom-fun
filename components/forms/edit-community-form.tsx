@@ -28,13 +28,18 @@ export const EditCommunityForm = ({
 
   const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setBannerPreview(ev.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setServerMessage("Banner must be under 5 MB.");
+      e.target.value = "";
+      return;
     }
+    setServerMessage(null);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setBannerPreview(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
