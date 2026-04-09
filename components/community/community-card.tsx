@@ -23,13 +23,19 @@ export const CommunityCard = ({
       ) : null}
 
       <div
-        className="flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-        style={{
-          background: `linear-gradient(135deg, ${community.coverFrom}, ${community.accentColor})`,
-        }}
-      >
-        {community.avatar}
-      </div>
+        className="size-10 shrink-0 rounded-lg overflow-hidden"
+        style={
+          community.bannerUrl
+            ? {
+                backgroundImage: `url(${community.bannerUrl})`,
+                backgroundPosition: "center",
+                backgroundSize: "cover",
+              }
+            : {
+                background: `linear-gradient(135deg, ${community.coverFrom}, ${community.accentColor})`,
+              }
+        }
+      />
 
       <div className="min-w-0 flex-1">
         <div className="truncate text-[15px] font-bold text-white">

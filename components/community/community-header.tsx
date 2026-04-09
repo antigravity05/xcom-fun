@@ -70,19 +70,9 @@ export const CommunityHeader = ({
       />
 
       {/* Profile section */}
-      <div className="relative border-b border-white/[0.08] px-4 pb-0 sm:px-6">
-        {/* Avatar */}
-        <div
-          className="absolute -top-10 flex size-20 items-center justify-center rounded-full border-[3px] border-background text-lg font-bold text-white sm:-top-12 sm:size-24 sm:text-xl"
-          style={{
-            background: `linear-gradient(135deg, ${community.coverTo}, ${community.accentColor})`,
-          }}
-        >
-          {community.avatar}
-        </div>
-
+      <div className="border-b border-white/[0.08] px-4 pb-0 sm:px-6">
         {/* Join/Leave button */}
-        <div className="flex justify-end py-2">
+        <div className="flex justify-end pt-3 pb-1">
           {viewerMembershipStatus === "active" ? (
             canLeaveCommunity ? (
               <form action={leaveCommunityAction}>

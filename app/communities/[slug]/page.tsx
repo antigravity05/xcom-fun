@@ -385,13 +385,19 @@ export default async function CommunityPage({
                       className="flex items-center gap-3 px-4 py-2.5 transition hover:bg-white/[0.04]"
                     >
                       <div
-                        className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                        style={{
-                          background: `linear-gradient(135deg, ${entry.coverFrom}, ${entry.accentColor})`,
-                        }}
-                      >
-                        {entry.avatar}
-                      </div>
+                        className="size-9 shrink-0 rounded-lg overflow-hidden"
+                        style={
+                          entry.bannerUrl
+                            ? {
+                                backgroundImage: `url(${entry.bannerUrl})`,
+                                backgroundPosition: "center",
+                                backgroundSize: "cover",
+                              }
+                            : {
+                                background: `linear-gradient(135deg, ${entry.coverFrom}, ${entry.accentColor})`,
+                              }
+                        }
+                      />
                       <div className="min-w-0">
                         <div className="truncate text-[14px] font-bold text-white">
                           {entry.name}
