@@ -97,15 +97,15 @@ export default async function Home({ searchParams }: HomePageProps) {
             <section className="border-b border-white/[0.08] px-4 py-10 sm:px-6 sm:py-12">
               <div className="mx-auto max-w-md text-center">
                 <h1 className="text-[32px] font-extrabold leading-[1.15] tracking-tight text-white sm:text-[40px]">
-                  Crypto communities,{" "}
-                  <span className="text-accent-secondary">united.</span>
+                  X communities{" "}
+                  <span className="text-accent-secondary">are back.</span>
                 </h1>
                 <p className="mt-3 text-[15px] leading-6 text-copy-muted">
                   One place for every project. Post here, it syncs to X.
                 </p>
                 <a
                   href="/connect-x"
-                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-[15px] font-bold text-black transition hover:bg-white/90"
+                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-accent-secondary px-6 py-3 text-[15px] font-bold text-white transition hover:brightness-110"
                 >
                   Get started
                 </a>

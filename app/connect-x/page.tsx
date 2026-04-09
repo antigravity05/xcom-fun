@@ -91,7 +91,7 @@ export default async function ConnectXPage({
                 </p>
                 <a
                   href="/api/auth/x"
-                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-[15px] font-bold text-black transition hover:bg-white/90"
+                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-accent-secondary px-6 py-3 text-[15px] font-bold text-white transition hover:brightness-110"
                 >
                   <span className="text-[18px] font-black">𝕏</span>
                   Connect with X
@@ -133,7 +133,7 @@ export default async function ConnectXPage({
                   </div>
                   <button
                     type="submit"
-                    className="shrink-0 rounded-full bg-white px-4 py-1.5 text-[14px] font-bold text-black transition hover:bg-white/90"
+                    className="shrink-0 rounded-full bg-accent-secondary px-4 py-1.5 text-[14px] font-bold text-white transition hover:brightness-110"
                   >
                     Connect
                   </button>

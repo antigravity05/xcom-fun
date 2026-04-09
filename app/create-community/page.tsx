@@ -60,7 +60,7 @@ export default async function CreateCommunityPage() {
               </p>
               <Link
                 href="/connect-x?redirectTo=/create-community"
-                className="mt-4 inline-flex rounded-full bg-white px-5 py-2.5 text-[14px] font-bold text-black transition hover:bg-white/90"
+                className="mt-4 inline-flex rounded-full bg-accent-secondary px-5 py-2.5 text-[14px] font-bold text-white transition hover:brightness-110"
               >
                 Connect X
               </Link>

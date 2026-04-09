@@ -111,7 +111,7 @@ export const CommunityHeader = ({
               <input type="hidden" name="redirectTo" value={`/communities/${community.slug}`} />
               <button
                 type="submit"
-                className="rounded-full bg-white px-5 py-1.5 text-[14px] font-bold text-black transition hover:bg-white/90"
+                className="rounded-full bg-accent-secondary px-5 py-1.5 text-[14px] font-bold text-white transition hover:brightness-110"
               >
                 Join
               </button>
@@ -119,7 +119,7 @@ export const CommunityHeader = ({
           ) : (
             <Link
               href={`/connect-x?redirectTo=${encodeURIComponent(`/communities/${community.slug}`)}`}
-              className="rounded-full bg-white px-5 py-1.5 text-[14px] font-bold text-black transition hover:bg-white/90"
+              className="rounded-full bg-accent-secondary px-5 py-1.5 text-[14px] font-bold text-white transition hover:brightness-110"
             >
               Connect to Join
             </Link>

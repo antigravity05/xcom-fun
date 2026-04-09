@@ -102,7 +102,7 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
               ) : (
                 <Link
                   href="/connect-x"
-                  className="flex size-[50px] items-center justify-center rounded-full bg-white text-black transition hover:bg-white/90 xl:size-auto xl:px-6 xl:py-3"
+                  className="flex size-[50px] items-center justify-center rounded-full bg-accent-secondary text-white transition hover:brightness-110 xl:size-auto xl:px-6 xl:py-3"
                 >
                   <Zap className="size-5 xl:hidden" />
                   <span className="hidden text-[15px] font-bold xl:block">
@@ -131,7 +131,7 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
               ) : (
                 <Link
                   href="/connect-x"
-                  className="rounded-full bg-white px-3.5 py-1.5 text-[13px] font-bold text-black"
+                  className="rounded-full bg-accent-secondary px-3.5 py-1.5 text-[13px] font-bold text-white"
                 >
                   Connect
                 </Link>
