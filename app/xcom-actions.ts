@@ -128,11 +128,18 @@ const syncLikeToX = async (userId: string, postId: string, isLiking: boolean) =>
 const syncRetweetToX = async (userId: string, postId: string, isRetweeting: boolean) => {
   try {
     const accountId = await getZernioAccountId(userId);
-    if (!accountId) return;
+    if (!accountId) {
+      console.warn("[x-sync] syncRetweetToX: no accountId for user", userId);
+      return;
+    }
 
     const tweetId = await getExternalTweetId(postId);
-    if (!tweetId) return;
+    if (!tweetId) {
+      console.warn("[x-sync] syncRetweetToX: no external tweetId for post", postId);
+      return;
+    }
 
+    console.log(`[x-sync] syncRetweetToX: accountId=${accountId}, tweetId=${tweetId}, isRetweeting=${isRetweeting}`);
     const { retweetPost, undoRetweet } = await import("@/lib/zernio/client");
     if (isRetweeting) {
       await retweetPost(accountId, tweetId);
@@ -149,11 +156,18 @@ const syncRetweetToX = async (userId: string, postId: string, isRetweeting: bool
 const syncReplyToX = async (userId: string, postId: string, body: string) => {
   try {
     const accountId = await getZernioAccountId(userId);
-    if (!accountId) return;
+    if (!accountId) {
+      console.warn("[x-sync] syncReplyToX: no accountId for user", userId);
+      return;
+    }
 
     const tweetId = await getExternalTweetId(postId);
-    if (!tweetId) return;
+    if (!tweetId) {
+      console.warn("[x-sync] syncReplyToX: no external tweetId for post", postId);
+      return;
+    }
 
+    console.log(`[x-sync] syncReplyToX: accountId=${accountId}, tweetId=${tweetId}, body="${body.slice(0, 50)}"`);
     const { replyToTweet } = await import("@/lib/zernio/client");
     const result = await replyToTweet(accountId, tweetId, body);
     console.log(`[x-sync] Replied to tweet ${tweetId}: ${result.id}`);

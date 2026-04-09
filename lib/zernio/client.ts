@@ -42,7 +42,10 @@ const zernioFetch = async (
   path: string,
   options: RequestInit = {},
 ): Promise<unknown> => {
-  const response = await fetch(`${ZERNIO_API_BASE}${path}`, {
+  const url = `${ZERNIO_API_BASE}${path}`;
+  console.log(`[zernio] ${options.method ?? "GET"} ${path}`);
+
+  const response = await fetch(url, {
     ...options,
     headers: {
       Authorization: `Bearer ${getApiKey()}`,
@@ -58,6 +61,7 @@ const zernioFetch = async (
     } catch {
       details = await response.text();
     }
+    console.error(`[zernio] ${options.method ?? "GET"} ${path} → ${response.status}`, details);
     throw new ZernioAPIError(
       response.status,
       `Zernio API error: ${response.statusText}`,
@@ -65,7 +69,9 @@ const zernioFetch = async (
     );
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log(`[zernio] ${options.method ?? "GET"} ${path} → ${response.status} OK`);
+  return data;
 };
 
 /* ── Environment check ── */
@@ -282,12 +288,23 @@ export const replyToTweet = async (
   tweetId: string,
   content: string,
 ): Promise<ZernioPostResult> => {
-  const data = (await zernioFetch("/twitter/reply", {
+  // Zernio uses the /posts endpoint with replyToTweetId in platform data
+  const data = (await zernioFetch("/posts", {
     method: "POST",
-    body: JSON.stringify({ accountId, tweetId, content }),
-  })) as { post?: ZernioPostResult; reply?: ZernioPostResult };
+    body: JSON.stringify({
+      content,
+      platforms: [
+        {
+          platform: "twitter",
+          accountId,
+          replyToTweetId: tweetId,
+        },
+      ],
+      publishNow: true,
+    }),
+  })) as { post?: ZernioPostResult };
 
-  return data.post ?? data.reply ?? { id: "", status: "published" };
+  return data.post ?? { id: "", status: "published" };
 };
 
 export const bookmarkTweet = async (
