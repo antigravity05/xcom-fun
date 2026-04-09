@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createCommunityAction } from "@/app/xcom-actions";
+import { createCommunityAction } from "@/app/create-community/actions";
 
 export const CreateCommunityForm = () => {
   const router = useRouter();

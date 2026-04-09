@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateCommunityAction } from "@/app/xcom-actions";
+import { updateCommunityAction } from "@/app/communities/actions";
 
 type EditCommunityFormProps = {
   communitySlug: string;

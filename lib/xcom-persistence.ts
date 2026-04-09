@@ -30,8 +30,8 @@ const getDbPersistence = async () => {
 };
 
 /** Filesystem helpers — only loaded when DATABASE_URL is NOT set (local dev). */
-const getFileStorePaths = () => {
-  const path = require("node:path") as typeof import("node:path");
+const getFileStorePaths = async () => {
+  const path = await import("node:path");
   const dataDirectory = path.join(process.cwd(), "data");
   const storeFilePath = path.join(dataDirectory, "xcom-store.json");
   return { dataDirectory, storeFilePath };
@@ -286,7 +286,7 @@ export const initialStoreSnapshot: XcomStoreSnapshot = {
 
 const ensureStoreFile = async () => {
   const { mkdir, readFile, writeFile } = await import("node:fs/promises");
-  const { dataDirectory, storeFilePath } = getFileStorePaths();
+  const { dataDirectory, storeFilePath } = await getFileStorePaths();
   await mkdir(dataDirectory, { recursive: true });
 
   try {
@@ -312,14 +312,14 @@ export const readXcomStore = async (): Promise<XcomStoreSnapshot> => {
 
   await ensureStoreFile();
   const { readFile } = await import("node:fs/promises");
-  const { storeFilePath } = getFileStorePaths();
+  const { storeFilePath } = await getFileStorePaths();
   const content = await readFile(storeFilePath, "utf8");
   return JSON.parse(content) as XcomStoreSnapshot;
 };
 
 const writeXcomStore = async (snapshot: XcomStoreSnapshot) => {
   const { writeFile } = await import("node:fs/promises");
-  const { storeFilePath } = getFileStorePaths();
+  const { storeFilePath } = await getFileStorePaths();
   await ensureStoreFile();
   await writeFile(storeFilePath, JSON.stringify(snapshot, null, 2), "utf8");
 };
