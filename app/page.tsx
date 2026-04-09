@@ -25,8 +25,27 @@ const matchesCommunity = (query: string, candidate: string) => {
 
 export default async function Home({ searchParams }: HomePageProps) {
   const { q = "" } = await searchParams;
-  const viewer = await getViewer();
-  const communities = await listCommunityCards();
+
+  let viewer;
+  let communities;
+  try {
+    viewer = await getViewer();
+    communities = await listCommunityCards();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : "";
+    return (
+      <div style={{ padding: "2rem", color: "white", background: "#0a0a0a", minHeight: "100vh", fontFamily: "monospace" }}>
+        <h1 style={{ color: "#ef4444" }}>Startup Error</h1>
+        <p style={{ color: "#fbbf24" }}>{message}</p>
+        <pre style={{ fontSize: "12px", color: "#888", whiteSpace: "pre-wrap", marginTop: "1rem" }}>{stack}</pre>
+        <p style={{ marginTop: "1rem", color: "#888" }}>
+          Check <a href="/api/health" style={{ color: "#60a5fa" }}>/api/health</a> for diagnostics.
+        </p>
+      </div>
+    );
+  }
+
   const query = q.trim().toLowerCase();
 
   const filteredCommunities = query
