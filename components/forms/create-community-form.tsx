@@ -21,7 +21,17 @@ export const CreateCommunityForm = () => {
         body: formData,
       });
 
-      const result = await response.json();
+      const text = await response.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch {
+        // Server returned non-JSON (probably an error page)
+        setServerMessage(
+          `Server returned ${response.status}: ${text.slice(0, 300)}`,
+        );
+        return;
+      }
 
       if (!result.ok) {
         setServerMessage(result.error);
