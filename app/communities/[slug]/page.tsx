@@ -233,13 +233,13 @@ export default async function CommunityPage({
             </section>
           ) : (
             <>
-              <section className="border-b border-white/10 bg-background/60 px-4 py-2.5 text-[13px] leading-4 text-copy-muted backdrop-blur sm:px-6">
-                {viewerMembershipStatus === "active"
-                  ? "You're in this community. Posts appear here first, then sync to X."
-                  : viewer
+              {viewerMembershipStatus !== "active" ? (
+                <section className="border-b border-white/10 bg-background/60 px-4 py-2.5 text-[13px] leading-4 text-copy-muted backdrop-blur sm:px-6">
+                  {viewer
                     ? "Join this community to post."
                     : "Connect X to join and post."}
-              </section>
+                </section>
+              ) : null}
 
               {viewerMembershipStatus === "active" ? (
                 <form
@@ -377,7 +377,7 @@ export default async function CommunityPage({
                         {entry.name}
                       </div>
                       <div className="text-[13px] text-copy-muted">
-                        {formatCompactNumber(entry.memberCount)} members
+                        {formatCompactNumber(entry.memberCount)} {entry.memberCount === 1 ? "member" : "members"}
                       </div>
                     </div>
                   </Link>

@@ -47,7 +47,7 @@ export const CommunityCard = ({
           {community.tagline}
         </div>
         <div className="mt-1.5 flex items-center gap-3 text-[13px] text-copy-soft">
-          <span>{formatCompactNumber(community.memberCount)} members</span>
+          <span>{formatCompactNumber(community.memberCount)} {community.memberCount === 1 ? "member" : "members"}</span>
           {community.activeNow > 0 ? (
             <>
               <span>·</span>

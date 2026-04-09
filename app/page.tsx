@@ -216,7 +216,7 @@ export default async function Home({ searchParams }: HomePageProps) {
                         {entry.name}
                       </div>
                       <div className="text-[13px] text-copy-muted">
-                        {formatCompactNumber(entry.memberCount)} members
+                        {formatCompactNumber(entry.memberCount)} {entry.memberCount === 1 ? "member" : "members"}
                       </div>
                     </div>
                   </Link>

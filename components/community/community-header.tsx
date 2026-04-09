@@ -47,7 +47,7 @@ export const CommunityHeader = ({
             ) : null}
           </div>
           <div className="truncate text-[13px] text-copy-muted">
-            {formatCompactNumber(community.memberCount)} members
+            {formatCompactNumber(community.memberCount)} {community.memberCount === 1 ? "member" : "members"}
           </div>
         </div>
       </div>

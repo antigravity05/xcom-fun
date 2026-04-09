@@ -96,7 +96,7 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
               {viewer ? (
                 <Link
                   href="/create-community"
-                  className="mt-4 flex items-center justify-center rounded-full bg-white px-6 py-3.5 text-[17px] font-bold text-black transition hover:bg-white/90"
+                  className="mt-4 flex items-center justify-center rounded-full bg-accent-secondary px-6 py-3.5 text-[17px] font-bold text-white transition hover:brightness-110"
                 >
                   + New Community
                 </Link>
