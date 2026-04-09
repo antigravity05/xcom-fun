@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
@@ -81,62 +82,68 @@ export async function GET(request: Request) {
     redirect(`/?auth_error=profile_failed&detail=${msg}`);
   }
 
-  const snapshot = await readXcomStore();
-  let user = snapshot.users.find(
-    (u) => u.xUserId === userProfile.id || u.xHandle === `@${userProfile.username}`,
-  );
+  try {
+    const snapshot = await readXcomStore();
+    let user = snapshot.users.find(
+      (u) => u.xUserId === userProfile.id || u.xHandle === `@${userProfile.username}`,
+    );
 
-  if (!user) {
-    const newUser: XcomStoreUser = {
-      id: `user-${userProfile.id}`,
-      xUserId: userProfile.id,
-      xHandle: `@${userProfile.username}`,
-      displayName: userProfile.name,
-      avatar: userProfile.name
-        .split(" ")
-        .slice(0, 2)
-        .map((part) => part.slice(0, 1).toUpperCase())
-        .join(""),
-    };
+    if (!user) {
+      const newUser: XcomStoreUser = {
+        id: randomUUID(),
+        xUserId: userProfile.id,
+        xHandle: `@${userProfile.username}`,
+        displayName: userProfile.name,
+        avatar: userProfile.name
+          .split(" ")
+          .slice(0, 2)
+          .map((part) => part.slice(0, 1).toUpperCase())
+          .join(""),
+      };
 
-    await upsertUserInDb(newUser);
-    if (!process.env.DATABASE_URL) {
-      await updateXcomStore((snap) => ({
-        ...snap,
-        users: [...snap.users, newUser],
-      }));
+      await upsertUserInDb(newUser);
+      if (!process.env.DATABASE_URL) {
+        await updateXcomStore((snap) => ({
+          ...snap,
+          users: [...snap.users, newUser],
+        }));
+      }
+
+      user = newUser;
     }
 
-    user = newUser;
+    // Store encrypted tokens (DB or filesystem depending on env)
+    const encryptedAccessToken = encryptToken(tokenResponse.access_token);
+    const encryptedRefreshToken = tokenResponse.refresh_token
+      ? encryptToken(tokenResponse.refresh_token)
+      : null;
+
+    await saveUserTokens({
+      userId: user.id,
+      accessToken: encryptedAccessToken,
+      refreshToken: encryptedRefreshToken,
+      expiresAt: new Date(
+        Date.now() + tokenResponse.expires_in * 1000,
+      ).toISOString(),
+    });
+
+    // Set session cookie
+    cookieStore.set(SESSION_COOKIE_NAME, user.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    // Clear PKCE cookies
+    cookieStore.delete("x_oauth_code_verifier");
+    cookieStore.delete("x_oauth_state");
+  } catch (err) {
+    console.error("OAuth callback error (post-auth):", err);
+    const msg = encodeURIComponent(err instanceof Error ? err.message : String(err));
+    redirect(`/?auth_error=setup_failed&detail=${msg}`);
   }
-
-  // Store encrypted tokens (DB or filesystem depending on env)
-  const encryptedAccessToken = encryptToken(tokenResponse.access_token);
-  const encryptedRefreshToken = tokenResponse.refresh_token
-    ? encryptToken(tokenResponse.refresh_token)
-    : null;
-
-  await saveUserTokens({
-    userId: user.id,
-    accessToken: encryptedAccessToken,
-    refreshToken: encryptedRefreshToken,
-    expiresAt: new Date(
-      Date.now() + tokenResponse.expires_in * 1000,
-    ).toISOString(),
-  });
-
-  // Set session cookie
-  cookieStore.set(SESSION_COOKIE_NAME, user.id, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
-
-  // Clear PKCE cookies
-  cookieStore.delete("x_oauth_code_verifier");
-  cookieStore.delete("x_oauth_state");
 
   redirect("/");
 }
