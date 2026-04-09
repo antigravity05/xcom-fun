@@ -1,7 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AtSign, BadgeCheck, Globe2, Hash, Users } from "lucide-react";
+import {
+  AtSign,
+  BadgeCheck,
+  Globe2,
+  Hash,
+  Image as ImageIcon,
+  ListOrdered,
+  MapPin,
+  Smile,
+  Users,
+} from "lucide-react";
 import {
   createPostAction,
   deleteCommunityAction,
@@ -244,7 +254,7 @@ export default async function CommunityPage({
               {viewerMembershipStatus === "active" ? (
                 <form
                   action={createPostAction}
-                  className="border-b border-white/10 px-4 py-4 sm:px-6"
+                  className="border-b border-white/[0.08] px-4 pb-3 pt-4 sm:px-6"
                 >
                   <input type="hidden" name="communitySlug" value={community.slug} />
                   <input
@@ -265,13 +275,24 @@ export default async function CommunityPage({
                       <textarea
                         name="body"
                         rows={2}
-                        className="signal-focus min-h-[56px] w-full resize-none border-0 bg-transparent px-0 py-2 text-[17px] leading-6 text-white placeholder:text-copy-soft focus:outline-none"
+                        className="signal-focus min-h-[52px] w-full resize-none border-0 bg-transparent px-0 py-2 text-[20px] leading-7 text-white placeholder:text-copy-soft focus:outline-none"
                         placeholder="What's happening?"
                       />
-                      <div className="mt-2 flex items-center justify-between border-t border-white/10 pt-3">
-                        <span className="text-[12px] text-copy-soft">
-                          Share with the community
-                        </span>
+                      <div className="mt-1 flex items-center justify-between border-t border-white/[0.08] pt-3">
+                        <div className="flex items-center gap-0.5">
+                          <span className="flex size-[34px] items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10">
+                            <ImageIcon className="size-[18px]" />
+                          </span>
+                          <span className="flex size-[34px] items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10">
+                            <ListOrdered className="size-[18px]" />
+                          </span>
+                          <span className="flex size-[34px] items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10">
+                            <Smile className="size-[18px]" />
+                          </span>
+                          <span className="flex size-[34px] items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10">
+                            <MapPin className="size-[18px]" />
+                          </span>
+                        </div>
                         <button
                           type="submit"
                           className="rounded-full bg-accent-secondary px-5 py-2 text-[15px] font-bold text-white transition hover:brightness-110"

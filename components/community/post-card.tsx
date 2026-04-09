@@ -2,12 +2,17 @@ import Link from "next/link";
 import {
   BadgeCheck,
   BarChart3,
+  Bookmark,
   Heart,
   MessageCircle,
   MoreHorizontal,
+  Pencil,
   Pin,
+  PinOff,
   Repeat2,
   Share,
+  Trash2,
+  Upload,
 } from "lucide-react";
 import {
   createReplyAction,
@@ -41,55 +46,112 @@ type PostCardProps = {
 };
 
 export const PostCard = ({ post, interaction }: PostCardProps) => {
-
   return (
-    <article className="signal-divider px-4 py-3 transition-colors hover:bg-white/[0.015] last:border-b-0 sm:px-6">
+    <article className="group/post border-b border-white/[0.08] px-4 py-3 transition-colors hover:bg-white/[0.02] sm:px-6">
+      {/* Pinned indicator */}
       {post.isPinned ? (
-        <div className="mb-2 flex items-center gap-2 pl-[52px] text-[13px] font-medium text-copy-muted">
-          <Pin className="size-3.5 rotate-45" />
+        <div className="mb-1.5 flex items-center gap-2 pl-[52px] text-[13px] font-bold text-copy-muted">
+          <Pin className="size-3 fill-current" />
           <span>Pinned</span>
         </div>
       ) : null}
 
       <div className="flex gap-3">
+        {/* Avatar */}
         <Link
           href={`/communities/${post.communitySlug}`}
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-sm font-bold text-white transition hover:brightness-110"
+          className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-sm font-bold text-white ring-0 ring-white/10 transition hover:ring-2"
         >
           {post.author.avatar}
         </Link>
 
         <div className="min-w-0 flex-1">
           {/* Author line */}
-          <div className="flex items-center justify-between">
-            <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[15px]">
-              <span className="font-bold text-white">{post.author.displayName}</span>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-1 text-[15px] leading-5">
+              <Link
+                href={`/communities/${post.communitySlug}`}
+                className="truncate font-bold text-white hover:underline"
+              >
+                {post.author.displayName}
+              </Link>
               {post.author.verified ? (
-                <BadgeCheck className="size-[18px] fill-accent-secondary text-background" />
+                <BadgeCheck className="size-[18px] shrink-0 fill-accent-secondary text-background" />
               ) : null}
-              <span className="text-copy-muted">{post.author.handle}</span>
-              <span className="text-copy-soft">·</span>
-              <span className="text-copy-muted">{formatRelativeTime(post.createdAt)}</span>
+              {post.author.role && post.author.role !== "member" ? (
+                <span className="ml-0.5 inline-flex shrink-0 items-center rounded bg-accent-secondary/15 px-1.5 py-px text-[11px] font-bold uppercase tracking-wide text-accent-secondary">
+                  {post.author.role}
+                </span>
+              ) : null}
+              <span className="shrink-0 text-copy-muted">{post.author.handle}</span>
+              <span className="shrink-0 text-copy-soft">·</span>
+              <time className="shrink-0 text-copy-muted hover:underline">
+                {formatRelativeTime(post.createdAt)}
+              </time>
             </div>
-            {interaction && (interaction.canEdit || interaction.canDelete || interaction.canPin) ? (
-              <div className="shrink-0">
-                <MoreHorizontal className="size-5 text-copy-soft transition hover:text-accent-secondary" />
-              </div>
+
+            {/* More menu */}
+            {interaction &&
+            (interaction.canEdit || interaction.canDelete || interaction.canPin) ? (
+              <details className="group/menu relative shrink-0">
+                <summary className="flex size-[34px] cursor-pointer list-none items-center justify-center rounded-full text-copy-soft transition hover:bg-accent-secondary/10 hover:text-accent-secondary">
+                  <MoreHorizontal className="size-[18px]" />
+                </summary>
+                <div className="absolute right-0 top-full z-30 mt-0.5 min-w-[200px] overflow-hidden rounded-xl border border-white/10 bg-black shadow-lg shadow-black/40">
+                  {interaction.canEdit && !interaction.isEditing ? (
+                    <Link
+                      href={interaction.editHref}
+                      className="flex items-center gap-3 px-4 py-3 text-[15px] text-white transition hover:bg-white/[0.04]"
+                    >
+                      <Pencil className="size-[18px] text-copy-muted" />
+                      Edit
+                    </Link>
+                  ) : null}
+                  {interaction.canPin ? (
+                    <form action={togglePinnedPostAction}>
+                      <input type="hidden" name="postId" value={post.id} />
+                      <input type="hidden" name="communitySlug" value={interaction.communitySlug} />
+                      <input type="hidden" name="redirectTo" value={interaction.redirectTo} />
+                      <button
+                        type="submit"
+                        className="flex w-full items-center gap-3 px-4 py-3 text-[15px] text-white transition hover:bg-white/[0.04]"
+                      >
+                        {post.isPinned ? (
+                          <>
+                            <PinOff className="size-[18px] text-copy-muted" />
+                            Unpin from community
+                          </>
+                        ) : (
+                          <>
+                            <Pin className="size-[18px] text-copy-muted" />
+                            Pin to community
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  ) : null}
+                  {interaction.canDelete ? (
+                    <form action={deletePostAction}>
+                      <input type="hidden" name="postId" value={post.id} />
+                      <input type="hidden" name="communitySlug" value={interaction.communitySlug} />
+                      <input type="hidden" name="redirectTo" value={interaction.redirectTo} />
+                      <button
+                        type="submit"
+                        className="flex w-full items-center gap-3 px-4 py-3 text-[15px] text-danger-soft transition hover:bg-danger-soft/10"
+                      >
+                        <Trash2 className="size-[18px]" />
+                        Delete
+                      </button>
+                    </form>
+                  ) : null}
+                </div>
+              </details>
             ) : null}
           </div>
 
-          {/* Role badge */}
-          {post.author.role && post.author.role !== "member" ? (
-            <div className="mt-0.5">
-              <span className="inline-flex items-center rounded-sm bg-white/[0.06] px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-copy-muted">
-                {post.author.role}
-              </span>
-            </div>
-          ) : null}
-
           {/* Post body */}
           {interaction?.isEditing ? (
-            <form action={updatePostAction} className="mt-2 grid gap-3">
+            <form action={updatePostAction} className="mt-3 grid gap-3">
               <input type="hidden" name="postId" value={post.id} />
               <input type="hidden" name="communitySlug" value={interaction.communitySlug} />
               <input type="hidden" name="redirectTo" value={interaction.redirectTo} />
@@ -97,86 +159,63 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
                 name="body"
                 rows={4}
                 defaultValue={post.body}
-                className="signal-focus w-full rounded-2xl border border-white/10 bg-transparent px-4 py-3 text-[15px] leading-6 text-white placeholder:text-copy-soft"
+                className="signal-focus w-full rounded-2xl border border-white/10 bg-surface-secondary/50 px-4 py-3 text-[15px] leading-6 text-white placeholder:text-copy-soft"
               />
               <div className="flex items-center justify-end gap-3">
                 <Link
                   href={interaction.redirectTo}
-                  className="rounded-full border border-white/10 bg-background px-4 py-2 text-sm font-bold text-white transition hover:bg-white/[0.06]"
+                  className="rounded-full border border-white/15 bg-transparent px-4 py-2 text-sm font-bold text-white transition hover:bg-white/[0.06]"
                 >
                   Cancel
                 </Link>
                 <button
                   type="submit"
-                  className="rounded-full bg-accent-secondary px-4 py-2 text-sm font-bold text-white transition hover:brightness-110"
+                  className="rounded-full bg-accent-secondary px-5 py-2 text-sm font-bold text-white transition hover:brightness-110"
                 >
                   Save
                 </button>
               </div>
             </form>
           ) : (
-            <div className="mt-1 whitespace-pre-line text-[15px] leading-[22px] text-white/95">
+            <div className="mt-0.5 whitespace-pre-line text-[15px] leading-[22px] text-white/[0.93]">
               {post.body}
             </div>
           )}
 
           {/* Media attachment */}
           {post.media ? (
-            <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-surface-secondary">
-              <div className="px-4 pt-4 text-[11px] font-bold uppercase tracking-[0.22em] text-accent-secondary">
-                {post.media.kind}
-              </div>
-              <div className="mt-1.5 px-4 text-[17px] font-extrabold leading-tight text-white">
-                {post.media.title}
-              </div>
-              <p className="mt-1.5 max-w-2xl px-4 text-[14px] leading-5 text-copy-muted">
-                {post.media.subtitle}
-              </p>
-              <div className="mt-3 border-t border-white/10 px-4 py-2.5 text-[12px] font-medium text-copy-soft">
-                {post.media.footer}
+            <div className="mt-3 overflow-hidden rounded-2xl border border-white/[0.08] transition hover:border-white/15">
+              <div className="bg-surface-secondary/60">
+                <div className="px-4 pt-3.5 text-[11px] font-bold uppercase tracking-[0.22em] text-accent-secondary">
+                  {post.media.kind}
+                </div>
+                <div className="mt-1 px-4 text-[17px] font-extrabold leading-tight text-white">
+                  {post.media.title}
+                </div>
+                <p className="mt-1 max-w-2xl px-4 text-[14px] leading-5 text-copy-muted">
+                  {post.media.subtitle}
+                </p>
+                <div className="mt-3 border-t border-white/[0.06] px-4 py-2.5 text-[12px] font-medium text-copy-soft">
+                  {post.media.footer}
+                </div>
               </div>
             </div>
           ) : null}
 
-          {/* Action buttons */}
-          {interaction &&
-          (interaction.canEdit || interaction.canDelete || interaction.canPin) ? (
-            <div className="mt-2 flex flex-wrap items-center gap-4 text-[11px] font-bold uppercase tracking-[0.16em] text-copy-muted">
-              {interaction.canEdit && !interaction.isEditing ? (
-                <Link href={interaction.editHref} className="transition hover:text-white">
-                  Edit
-                </Link>
-              ) : null}
-              {interaction.canPin ? (
-                <form action={togglePinnedPostAction}>
-                  <input type="hidden" name="postId" value={post.id} />
-                  <input type="hidden" name="communitySlug" value={interaction.communitySlug} />
-                  <input type="hidden" name="redirectTo" value={interaction.redirectTo} />
-                  <button type="submit" className="transition hover:text-white">
-                    {post.isPinned ? "Unpin" : "Pin"}
-                  </button>
-                </form>
-              ) : null}
-              {interaction.canDelete ? (
-                <form action={deletePostAction}>
-                  <input type="hidden" name="postId" value={post.id} />
-                  <input type="hidden" name="communitySlug" value={interaction.communitySlug} />
-                  <input type="hidden" name="redirectTo" value={interaction.redirectTo} />
-                  <button type="submit" className="transition hover:text-red-400">
-                    Delete
-                  </button>
-                </form>
-              ) : null}
-            </div>
-          ) : null}
-
-          {/* Interaction bar */}
+          {/* Interaction bar — Twitter-style layout */}
           <div className="-ml-2 mt-1 flex max-w-[425px] items-center justify-between">
-            <div className="flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-2 text-[13px] text-copy-muted transition hover:bg-accent-secondary/10 hover:text-accent-secondary">
-              <MessageCircle className="size-[18px]" />
-              <span>{formatCompactNumber(post.metrics.replies)}</span>
-            </div>
+            {/* Reply */}
+            <button
+              type="button"
+              className="group/btn flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-1.5 text-[13px] text-copy-muted transition hover:text-accent-secondary"
+            >
+              <span className="flex size-[34px] items-center justify-center rounded-full transition group-hover/btn:bg-accent-secondary/10">
+                <MessageCircle className="size-[18px]" />
+              </span>
+              <span className="-ml-1">{formatCompactNumber(post.metrics.replies)}</span>
+            </button>
 
+            {/* Repost */}
             {interaction?.canInteract ? (
               <form action={toggleRepostAction}>
                 <input type="hidden" name="postId" value={post.id} />
@@ -184,23 +223,28 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
                 <input type="hidden" name="redirectTo" value={interaction.redirectTo} />
                 <button
                   type="submit"
-                  className={`flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-2 text-[13px] transition ${
+                  className={`group/btn flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-1.5 text-[13px] transition ${
                     post.viewerHasReposted
                       ? "text-accent-tertiary"
-                      : "text-copy-muted hover:bg-accent-tertiary/10 hover:text-accent-tertiary"
+                      : "text-copy-muted hover:text-accent-tertiary"
                   }`}
                 >
-                  <Repeat2 className="size-[18px]" />
-                  <span>{formatCompactNumber(post.metrics.reposts)}</span>
+                  <span className="flex size-[34px] items-center justify-center rounded-full transition group-hover/btn:bg-accent-tertiary/10">
+                    <Repeat2 className="size-[18px]" />
+                  </span>
+                  <span className="-ml-1">{formatCompactNumber(post.metrics.reposts)}</span>
                 </button>
               </form>
             ) : (
-              <div className="flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-2 text-[13px] text-copy-muted">
-                <Repeat2 className="size-[18px]" />
-                <span>{formatCompactNumber(post.metrics.reposts)}</span>
+              <div className="flex min-w-[52px] items-center gap-1.5 px-2 py-1.5 text-[13px] text-copy-muted">
+                <span className="flex size-[34px] items-center justify-center">
+                  <Repeat2 className="size-[18px]" />
+                </span>
+                <span className="-ml-1">{formatCompactNumber(post.metrics.reposts)}</span>
               </div>
             )}
 
+            {/* Like */}
             {interaction?.canInteract ? (
               <form action={toggleLikeAction}>
                 <input type="hidden" name="postId" value={post.id} />
@@ -208,37 +252,64 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
                 <input type="hidden" name="redirectTo" value={interaction.redirectTo} />
                 <button
                   type="submit"
-                  className={`flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-2 text-[13px] transition ${
+                  className={`group/btn flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-1.5 text-[13px] transition ${
                     post.viewerHasLiked
                       ? "text-accent-primary"
-                      : "text-copy-muted hover:bg-accent-primary/10 hover:text-accent-primary"
+                      : "text-copy-muted hover:text-accent-primary"
                   }`}
                 >
-                  <Heart className={`size-[18px] ${post.viewerHasLiked ? "fill-current" : ""}`} />
-                  <span>{formatCompactNumber(post.metrics.likes)}</span>
+                  <span className="flex size-[34px] items-center justify-center rounded-full transition group-hover/btn:bg-accent-primary/10">
+                    <Heart
+                      className={`size-[18px] transition-transform ${
+                        post.viewerHasLiked ? "scale-110 fill-current" : "group-hover/btn:scale-110"
+                      }`}
+                    />
+                  </span>
+                  <span className="-ml-1">{formatCompactNumber(post.metrics.likes)}</span>
                 </button>
               </form>
             ) : (
-              <div className="flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-2 text-[13px] text-copy-muted">
-                <Heart className="size-[18px]" />
-                <span>{formatCompactNumber(post.metrics.likes)}</span>
+              <div className="flex min-w-[52px] items-center gap-1.5 px-2 py-1.5 text-[13px] text-copy-muted">
+                <span className="flex size-[34px] items-center justify-center">
+                  <Heart className="size-[18px]" />
+                </span>
+                <span className="-ml-1">{formatCompactNumber(post.metrics.likes)}</span>
               </div>
             )}
 
-            <div className="flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-2 text-[13px] text-copy-muted transition hover:bg-accent-secondary/10 hover:text-accent-secondary">
-              <BarChart3 className="size-[18px]" />
-              <span>{formatCompactNumber(post.metrics.views)}</span>
+            {/* Views */}
+            <div className="group/btn flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-1.5 text-[13px] text-copy-muted transition hover:text-accent-secondary">
+              <span className="flex size-[34px] items-center justify-center rounded-full transition group-hover/btn:bg-accent-secondary/10">
+                <BarChart3 className="size-[18px]" />
+              </span>
+              <span className="-ml-1">{formatCompactNumber(post.metrics.views)}</span>
             </div>
 
-            <div className="flex items-center rounded-full px-2 py-2 text-copy-muted transition hover:bg-accent-secondary/10 hover:text-accent-secondary">
-              <Share className="size-[18px]" />
+            {/* Share & Bookmark */}
+            <div className="flex items-center gap-0">
+              <button
+                type="button"
+                className="group/btn flex items-center rounded-full p-1.5 text-copy-muted transition hover:text-accent-secondary"
+              >
+                <span className="flex size-[34px] items-center justify-center rounded-full transition group-hover/btn:bg-accent-secondary/10">
+                  <Bookmark className="size-[18px]" />
+                </span>
+              </button>
+              <button
+                type="button"
+                className="group/btn flex items-center rounded-full p-1.5 text-copy-muted transition hover:text-accent-secondary"
+              >
+                <span className="flex size-[34px] items-center justify-center rounded-full transition group-hover/btn:bg-accent-secondary/10">
+                  <Upload className="size-[18px]" />
+                </span>
+              </button>
             </div>
           </div>
 
           {/* Replies thread */}
           {post.replies.length ? (
-            <div className="mt-2 border-t border-white/[0.06] pt-3">
-              <div className="ml-2 border-l-2 border-white/[0.06] pl-4">
+            <div className="mt-1 border-t border-white/[0.06] pt-3">
+              <div className="ml-2 border-l-2 border-white/[0.08] pl-4">
                 <div className="space-y-3">
                   {post.replies.map((reply) => (
                     <div key={reply.id} className="flex gap-2.5">
@@ -275,22 +346,22 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
           {interaction?.canInteract && !interaction.isEditing ? (
             <form
               action={createReplyAction}
-              className="mt-3 flex items-start gap-2.5 border-t border-white/[0.06] pt-3"
+              className="mt-2 flex items-center gap-2.5 border-t border-white/[0.06] pt-3"
             >
               <input type="hidden" name="postId" value={post.id} />
               <input type="hidden" name="communitySlug" value={interaction.communitySlug} />
               <input type="hidden" name="redirectTo" value={interaction.redirectTo} />
               <div className="min-w-0 flex-1">
-                <textarea
+                <input
+                  type="text"
                   name="body"
-                  rows={1}
-                  className="signal-focus w-full resize-none rounded-2xl border border-white/10 bg-transparent px-4 py-2.5 text-[14px] leading-5 text-white placeholder:text-copy-soft"
+                  className="signal-focus w-full rounded-full border border-white/[0.08] bg-surface-secondary/50 px-4 py-2 text-[14px] text-white placeholder:text-copy-soft"
                   placeholder="Post your reply"
                 />
               </div>
               <button
                 type="submit"
-                className="shrink-0 rounded-full bg-accent-secondary px-4 py-2 text-[13px] font-bold text-white transition hover:brightness-110"
+                className="shrink-0 rounded-full bg-accent-secondary px-4 py-2 text-[13px] font-bold text-white transition hover:brightness-110 disabled:opacity-50"
               >
                 Reply
               </button>
