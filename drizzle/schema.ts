@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -202,3 +203,68 @@ export const postPublications = pgTable(
     ),
   }),
 );
+
+// ── Relations (required for Drizzle relational query API) ──
+
+export const usersRelations = relations(users, ({ many }) => ({
+  xAccounts: many(xAccounts),
+  createdCommunities: many(communities, { relationName: "communityCreator" }),
+  memberships: many(communityMemberships, { relationName: "memberUser" }),
+  invitedMemberships: many(communityMemberships, { relationName: "memberInviter" }),
+  posts: many(posts),
+  replies: many(postReplies),
+  reactions: many(postReactions),
+}));
+
+export const xAccountsRelations = relations(xAccounts, ({ one }) => ({
+  user: one(users, { fields: [xAccounts.userId], references: [users.id] }),
+}));
+
+export const communitiesRelations = relations(communities, ({ one, many }) => ({
+  createdBy: one(users, {
+    fields: [communities.createdByUserId],
+    references: [users.id],
+    relationName: "communityCreator",
+  }),
+  memberships: many(communityMemberships),
+  posts: many(posts),
+}));
+
+export const communityMembershipsRelations = relations(communityMemberships, ({ one }) => ({
+  community: one(communities, {
+    fields: [communityMemberships.communityId],
+    references: [communities.id],
+  }),
+  user: one(users, {
+    fields: [communityMemberships.userId],
+    references: [users.id],
+    relationName: "memberUser",
+  }),
+  invitedBy: one(users, {
+    fields: [communityMemberships.invitedByUserId],
+    references: [users.id],
+    relationName: "memberInviter",
+  }),
+}));
+
+export const postsRelations = relations(posts, ({ one, many }) => ({
+  community: one(communities, { fields: [posts.communityId], references: [communities.id] }),
+  author: one(users, { fields: [posts.authorUserId], references: [users.id] }),
+  replies: many(postReplies),
+  reactions: many(postReactions),
+  publications: many(postPublications),
+}));
+
+export const postRepliesRelations = relations(postReplies, ({ one }) => ({
+  post: one(posts, { fields: [postReplies.postId], references: [posts.id] }),
+  author: one(users, { fields: [postReplies.authorUserId], references: [users.id] }),
+}));
+
+export const postReactionsRelations = relations(postReactions, ({ one }) => ({
+  post: one(posts, { fields: [postReactions.postId], references: [posts.id] }),
+  user: one(users, { fields: [postReactions.userId], references: [users.id] }),
+}));
+
+export const postPublicationsRelations = relations(postPublications, ({ one }) => ({
+  post: one(posts, { fields: [postPublications.postId], references: [posts.id] }),
+}));

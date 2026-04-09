@@ -33,7 +33,7 @@ import {
 
 type CommunityPageProps = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ tab?: string; editing?: string }>;
+  searchParams: Promise<{ tab?: string; editing?: string; post_error?: string }>;
 };
 
 const resolveTab = (value?: string): CommunityTab => {
@@ -72,7 +72,7 @@ export default async function CommunityPage({
   searchParams,
 }: CommunityPageProps) {
   const { slug } = await params;
-  const { tab, editing } = await searchParams;
+  const { tab, editing, post_error } = await searchParams;
   const view = await getCommunityTimelineView(slug);
 
   if (!view) {
@@ -249,6 +249,12 @@ export default async function CommunityPage({
                     ? "Join this community to post."
                     : "Connect X to join and post."}
                 </section>
+              ) : null}
+
+              {post_error ? (
+                <div className="border-b border-red-400/20 bg-red-500/10 px-4 py-3 text-[14px] text-red-200 sm:px-6">
+                  {post_error}
+                </div>
               ) : null}
 
               {viewerMembershipStatus === "active" ? (

@@ -40,13 +40,19 @@ export const readXcomStore = async (): Promise<XcomStoreSnapshot> => {
   const db = getDb();
 
   // Fetch all data from database
-  const allUsers = await db.query.users.findMany();
-  const allCommunities = await db.query.communities.findMany();
-  const allMemberships = await db.query.communityMemberships.findMany();
-  const allPosts = await db.query.posts.findMany();
-  const allReplies = await db.query.postReplies.findMany();
-  const allReactions = await db.query.postReactions.findMany();
-  const allPublications = await db.query.postPublications.findMany();
+  let allUsers, allCommunities, allMemberships, allPosts, allReplies, allReactions, allPublications;
+  try {
+    allUsers = await db.query.users.findMany();
+    allCommunities = await db.query.communities.findMany();
+    allMemberships = await db.query.communityMemberships.findMany();
+    allPosts = await db.query.posts.findMany();
+    allReplies = await db.query.postReplies.findMany();
+    allReactions = await db.query.postReactions.findMany();
+    allPublications = await db.query.postPublications.findMany();
+  } catch (err) {
+    console.error("[db-persistence] readXcomStore query failed:", err);
+    throw err;
+  }
 
   // Transform database records to store snapshot format
   const storeUsers = allUsers.map((user) => ({

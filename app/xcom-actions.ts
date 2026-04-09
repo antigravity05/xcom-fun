@@ -431,14 +431,31 @@ export const createPostAction = async (formData: FormData) => {
   if (!viewerUserId) {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
-  const body = bodySchema.parse(String(formData.get("body") ?? ""));
 
-  const previousSnapshot = await readXcomStore();
-  const nextSnapshot = await applyCreatePost({
-    actorUserId: viewerUserId,
-    communitySlug,
-    body,
-  });
+  // Validate body — Zod throws on invalid input, so we catch it
+  let body: string;
+  try {
+    body = bodySchema.parse(String(formData.get("body") ?? ""));
+  } catch {
+    // Body too short or too long — redirect back with error
+    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Post must be between 2 and 1000 characters.")}`;
+    redirect(errorUrl);
+    return; // unreachable, but keeps TS happy
+  }
+
+  try {
+    await applyCreatePost({
+      actorUserId: viewerUserId,
+      communitySlug,
+      body,
+    });
+  } catch (err) {
+    console.error("[createPostAction] Failed to create post:", err);
+    const message = err instanceof Error ? err.message : "Failed to create post.";
+    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent(message)}`;
+    redirect(errorUrl);
+    return;
+  }
 
   // ── X/Twitter sync: DISABLED until X API Basic plan ($100/mo) is activated ──
   // Uncomment the block below once you have a paid X API plan.
@@ -475,13 +492,29 @@ export const createReplyAction = async (formData: FormData) => {
   if (!viewerUserId) {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
-  const body = bodySchema.parse(String(formData.get("body") ?? ""));
 
-  await applyCreateReply({
-    actorUserId: viewerUserId,
-    postId,
-    body,
-  });
+  let body: string;
+  try {
+    body = bodySchema.parse(String(formData.get("body") ?? ""));
+  } catch {
+    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Reply must be between 2 and 1000 characters.")}`;
+    redirect(errorUrl);
+    return;
+  }
+
+  try {
+    await applyCreateReply({
+      actorUserId: viewerUserId,
+      postId,
+      body,
+    });
+  } catch (err) {
+    console.error("[createReplyAction] Failed to create reply:", err);
+    const message = err instanceof Error ? err.message : "Failed to create reply.";
+    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent(message)}`;
+    redirect(errorUrl);
+    return;
+  }
 
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
@@ -498,13 +531,29 @@ export const updatePostAction = async (formData: FormData) => {
   if (!viewerUserId) {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
-  const body = bodySchema.parse(String(formData.get("body") ?? ""));
 
-  await applyUpdatePost({
-    actorUserId: viewerUserId,
-    postId,
-    body,
-  });
+  let body: string;
+  try {
+    body = bodySchema.parse(String(formData.get("body") ?? ""));
+  } catch {
+    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Post must be between 2 and 1000 characters.")}`;
+    redirect(errorUrl);
+    return;
+  }
+
+  try {
+    await applyUpdatePost({
+      actorUserId: viewerUserId,
+      postId,
+      body,
+    });
+  } catch (err) {
+    console.error("[updatePostAction] Failed to update post:", err);
+    const message = err instanceof Error ? err.message : "Failed to update post.";
+    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent(message)}`;
+    redirect(errorUrl);
+    return;
+  }
 
   revalidatePath("/");
   revalidatePath(`/communities/${communitySlug}`);
@@ -523,10 +572,18 @@ export const deletePostAction = async (formData: FormData) => {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 
-  await applyDeletePost({
-    actorUserId: viewerUserId,
-    postId,
-  });
+  try {
+    await applyDeletePost({
+      actorUserId: viewerUserId,
+      postId,
+    });
+  } catch (err) {
+    console.error("[deletePostAction] Failed to delete post:", err);
+    const message = err instanceof Error ? err.message : "Failed to delete post.";
+    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent(message)}`;
+    redirect(errorUrl);
+    return;
+  }
 
   revalidatePath("/");
   revalidatePath(`/communities/${communitySlug}`);
@@ -545,10 +602,16 @@ export const togglePinnedPostAction = async (formData: FormData) => {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 
-  await applyTogglePinnedPost({
-    actorUserId: viewerUserId,
-    postId,
-  });
+  try {
+    await applyTogglePinnedPost({
+      actorUserId: viewerUserId,
+      postId,
+    });
+  } catch (err) {
+    console.error("[togglePinnedPostAction] Failed:", err);
+    redirect(redirectTo);
+    return;
+  }
 
   revalidatePath("/");
   revalidatePath(`/communities/${communitySlug}`);
@@ -567,10 +630,16 @@ export const toggleRepostAction = async (formData: FormData) => {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 
-  await applyToggleRepost({
-    actorUserId: viewerUserId,
-    postId,
-  });
+  try {
+    await applyToggleRepost({
+      actorUserId: viewerUserId,
+      postId,
+    });
+  } catch (err) {
+    console.error("[toggleRepostAction] Failed:", err);
+    redirect(redirectTo);
+    return;
+  }
 
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
@@ -617,10 +686,16 @@ export const toggleLikeAction = async (formData: FormData) => {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 
-  await applyToggleLike({
-    actorUserId: viewerUserId,
-    postId,
-  });
+  try {
+    await applyToggleLike({
+      actorUserId: viewerUserId,
+      postId,
+    });
+  } catch (err) {
+    console.error("[toggleLikeAction] Failed:", err);
+    redirect(redirectTo);
+    return;
+  }
 
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
