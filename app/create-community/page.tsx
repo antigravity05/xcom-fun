@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CreateCommunityForm } from "@/components/forms/create-community-form";
 import { CenterColumnHeader } from "@/components/layout/center-column-header";
 import { XcomChrome } from "@/components/layout/xcom-chrome";
 import { getViewer } from "@/lib/xcom-read-models";
@@ -38,26 +39,21 @@ export default async function CreateCommunityPage() {
             description="Create a room, become the first admin, and start posting once members join."
           />
 
-          <section className="border-b border-white/10 px-4 py-6 sm:px-6">
-            <p className="text-[15px] leading-6 text-white">
-              Step 1 debug: XcomChrome + CenterColumnHeader (no form)
-            </p>
-            <p className="text-sm text-copy-muted mt-2">
-              Viewer: {viewer ? `${viewer.displayName} (${viewer.xHandle})` : "not logged in"}
-            </p>
-            {!viewer ? (
+          {viewer ? (
+            <CreateCommunityForm />
+          ) : (
+            <section className="border-b border-white/10 px-4 py-6 sm:px-6">
+              <p className="text-sm leading-6 text-copy-muted">
+                Connect X before creating a community.
+              </p>
               <Link
                 href="/connect-x?redirectTo=/create-community"
                 className="mt-4 inline-flex rounded-full bg-accent-secondary px-4 py-2 text-sm font-bold text-white transition hover:brightness-110"
               >
                 Go to Connect X
               </Link>
-            ) : (
-              <p className="text-sm text-green-400 mt-2">
-                Ready to create — form will be added once this page renders correctly.
-              </p>
-            )}
-          </section>
+            </section>
+          )}
         </div>
 
         <aside className="hidden xl:block" />
