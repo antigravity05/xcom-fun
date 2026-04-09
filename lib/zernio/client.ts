@@ -77,58 +77,85 @@ export const hasZernioEnvironment = (): boolean => {
 /* ── OAuth Connect ── */
 
 /**
- * Returns the Zernio OAuth connect URL for Twitter/X.
- * Redirect the user here — Zernio handles the full OAuth dance
- * and redirects back to our callback URL.
- */
-/**
  * Calls the Zernio API server-side to get the OAuth connect URL.
  * The API authenticates via Bearer token and returns an authUrl
  * that we then redirect the user to.
+ *
+ * Tries the profile ID as-is first. If that fails with "Invalid profile ID
+ * format" and the ID starts with "prof_", retries with just the raw hex ID.
  */
 export const getTwitterConnectUrl = async (
   redirectUrl: string,
 ): Promise<string> => {
   const profileId = getProfileId();
-  const params = new URLSearchParams({
-    profileId,
-    redirect_url: redirectUrl,
-  });
+  const apiKey = getApiKey();
 
-  const response = await fetch(
-    `${ZERNIO_API_BASE}/connect/twitter?${params.toString()}`,
-    {
-      headers: {
-        Authorization: `Bearer ${getApiKey()}`,
-        "Content-Type": "application/json",
+  const tryConnect = async (id: string): Promise<{ ok: boolean; authUrl?: string; error?: string; status: number; raw?: unknown }> => {
+    const params = new URLSearchParams({
+      profileId: id,
+      redirect_url: redirectUrl,
+    });
+
+    const response = await fetch(
+      `${ZERNIO_API_BASE}/connect/twitter?${params.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
       },
-    },
-  );
+    );
 
-  if (!response.ok) {
-    let details: unknown;
-    try {
-      details = await response.json();
-    } catch {
-      details = await response.text();
+    if (!response.ok) {
+      let details: unknown;
+      try {
+        details = await response.json();
+      } catch {
+        details = await response.text();
+      }
+      const errorMsg = typeof details === "object" && details !== null && "error" in details
+        ? String((details as Record<string, unknown>).error)
+        : String(details);
+      return { ok: false, error: errorMsg, status: response.status, raw: details };
     }
+
+    const data = (await response.json()) as { authUrl?: string; url?: string };
+    const authUrl = data.authUrl ?? data.url;
+    return { ok: true, authUrl: authUrl ?? undefined, status: response.status, raw: data };
+  };
+
+  // Attempt 1: use profileId as-is
+  let result = await tryConnect(profileId);
+
+  // Attempt 2: if failed and has prof_ prefix, retry without it
+  if (!result.ok && profileId.startsWith("prof_")) {
+    const rawId = profileId.slice(5);
+    console.log(`[zernio] Retrying connect without prof_ prefix: ${rawId}`);
+    result = await tryConnect(rawId);
+  }
+
+  // Attempt 3: if failed and does NOT have prof_ prefix, retry with it
+  if (!result.ok && !profileId.startsWith("prof_")) {
+    const prefixedId = `prof_${profileId}`;
+    console.log(`[zernio] Retrying connect with prof_ prefix: ${prefixedId}`);
+    result = await tryConnect(prefixedId);
+  }
+
+  if (!result.ok) {
     throw new ZernioAPIError(
-      response.status,
-      `Zernio connect error: ${response.statusText}`,
-      details,
+      result.status,
+      `Zernio connect error: ${result.error}`,
+      result.raw,
     );
   }
 
-  const data = (await response.json()) as { authUrl?: string; url?: string };
-  const authUrl = data.authUrl ?? data.url;
-
-  if (!authUrl) {
+  if (!result.authUrl) {
     throw new Error(
-      "Zernio connect response missing authUrl: " + JSON.stringify(data),
+      "Zernio connect response missing authUrl: " + JSON.stringify(result.raw),
     );
   }
 
-  return authUrl;
+  return result.authUrl;
 };
 
 /* ── Accounts ── */
