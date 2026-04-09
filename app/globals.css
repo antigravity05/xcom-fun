@@ -8,7 +8,7 @@
   --surface-elevated: #1d1f23;
   --surface-muted: #202327;
   --line-strong: rgba(231, 233, 234, 0.2);
-  --line-soft: #2f3336;
+  --line-soft: rgba(255, 255, 255, 0.08);
   --copy-muted: #71767b;
   --copy-soft: #536471;
   --accent-primary: #f91880;
@@ -35,19 +35,11 @@
   --color-danger-soft: var(--danger-soft);
   --color-focus-ring: var(--focus-ring);
   --font-sans:
-    "Segoe UI",
-    system-ui,
     -apple-system,
     BlinkMacSystemFont,
-    "Helvetica Neue",
-    Arial,
-    sans-serif;
-  --font-display:
     "Segoe UI",
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Helvetica Neue",
+    Roboto,
+    Helvetica,
     Arial,
     sans-serif;
 }
@@ -63,14 +55,6 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family:
-    "Segoe UI",
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Helvetica Neue",
-    Arial,
-    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -89,7 +73,6 @@ a {
     color 150ms ease,
     border-color 150ms ease,
     box-shadow 150ms ease,
-    outline-color 150ms ease,
     opacity 150ms ease;
 }
 
@@ -108,23 +91,13 @@ a {
   opacity: 1;
 }
 
-/* ─── Shared utilities ─── */
-
-.panel-shell {
-  background: rgba(22, 24, 28, 0.94);
-  border: 1px solid var(--line-soft);
-}
-
-.signal-divider {
-  border-bottom: 1px solid var(--line-soft);
-}
+/* ── Focus states ── */
 
 .signal-focus {
   outline: none;
   transition:
     border-color 150ms ease,
-    box-shadow 150ms ease,
-    background-color 150ms ease;
+    box-shadow 150ms ease;
 }
 
 .signal-focus:focus-visible {
@@ -134,55 +107,106 @@ a {
 
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid rgba(29, 155, 240, 0.58);
+  outline: 2px solid rgba(29, 155, 240, 0.5);
   outline-offset: 2px;
 }
 
-/* ─── Subtle grid background (for banners / hero sections) ─── */
+/* ── Divider ── */
 
-.signal-grid {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
-  background-position: center center;
-  background-size: 24px 24px;
+.signal-divider {
+  border-bottom: 1px solid var(--line-soft);
 }
 
-/* ─── Scrollbar styling ─── */
+/* ── Panel shell ── */
+
+.panel-shell {
+  background: rgba(22, 24, 28, 0.92);
+  border: 1px solid var(--line-soft);
+}
+
+/* ── Scrollbar ── */
 
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: rgba(113, 118, 123, 0.5) transparent;
+  scrollbar-color: rgba(113, 118, 123, 0.4) transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(113, 118, 123, 0.5);
+  background: rgba(113, 118, 123, 0.4);
   border-radius: 999px;
 }
 
-.text-balance {
-  text-wrap: balance;
-}
-
-/* ─── Compose box growing textarea ─── */
+/* ── Textarea auto-grow ── */
 
 textarea {
   field-sizing: content;
 }
 
-/* ─── Skeleton / shimmer placeholder ─── */
+/* ── Animations ── */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.25s ease-out both;
+}
+
+@keyframes heart-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+  100% { transform: scale(1.1); }
+}
+
+.animate-heart-pop {
+  animation: heart-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes menu-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+details[open] > div {
+  animation: menu-appear 0.12s ease-out both;
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ── Skeleton shimmer ── */
 
 @keyframes shimmer {
-  0% {
-    background-position: -400px 0;
-  }
-  100% {
-    background-position: 400px 0;
-  }
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
 }
 
 .skeleton {
@@ -197,113 +221,22 @@ textarea {
   border-radius: 8px;
 }
 
-/* ─── Fade-in for cards ─── */
-
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in-up 0.3s ease-out both;
-}
-
-/* ─── Pulse glow for live indicators ─── */
-
-@keyframes pulse-glow {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* ─── Like heart pop animation ─── */
-
-@keyframes heart-pop {
-  0% {
-    transform: scale(1);
-  }
-  25% {
-    transform: scale(1.3);
-  }
-  50% {
-    transform: scale(0.95);
-  }
-  100% {
-    transform: scale(1.1);
-  }
-}
-
-.animate-heart-pop {
-  animation: heart-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
-}
-
-/* ─── Dropdown menu appear ─── */
-
-@keyframes menu-appear {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-details[open] > div {
-  animation: menu-appear 0.15s ease-out both;
-}
-
-/* ─── Post hover thread line ─── */
-
-.group\/post:hover .border-l-2 {
-  border-color: rgba(29, 155, 240, 0.25);
-}
-
-/* ─── File input refinements ─── */
-
-input[type="file"]::file-selector-button {
-  cursor: pointer;
-}
-
-/* ─── Tooltip arrow helper ─── */
-
-.tooltip-arrow::after {
-  content: "";
-  position: absolute;
-  bottom: -4px;
-  left: 50%;
-  transform: translateX(-50%) rotate(45deg);
-  width: 8px;
-  height: 8px;
-  background: var(--surface-elevated);
-  border-right: 1px solid var(--line-soft);
-  border-bottom: 1px solid var(--line-soft);
-}
-
-/* ─── Smooth page transitions ─── */
+/* ── View transitions ── */
 
 @view-transition {
   navigation: auto;
 }
 
-/* ─── Mobile safe area ─── */
+/* ── Mobile safe area ── */
 
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .mobile-safe-bottom {
     padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
   }
+}
+
+/* ── File inputs ── */
+
+input[type="file"]::file-selector-button {
+  cursor: pointer;
 }

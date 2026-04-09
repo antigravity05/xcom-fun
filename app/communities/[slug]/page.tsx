@@ -104,7 +104,7 @@ export default async function CommunityPage({
       }
     >
       <div className="grid w-full max-w-[1012px] xl:grid-cols-[minmax(0,1fr)_348px]">
-        <div className="min-w-0 border-x border-white/10">
+        <div className="min-w-0 border-x border-white/[0.08]">
           <CommunityHeader
             community={community}
             activeTab={activeTab}
@@ -114,7 +114,7 @@ export default async function CommunityPage({
           />
 
           {activeTab === "about" ? (
-            <section className="border-b border-white/10">
+            <section className="border-b border-white/[0.08]">
               <div className="px-4 py-5 sm:px-6">
                 <div className="text-[20px] font-extrabold text-white">
                   Community info
@@ -171,13 +171,13 @@ export default async function CommunityPage({
                 </div>
               </div>
 
-              <div className="border-t border-white/10 px-4 py-5 sm:px-6">
+              <div className="border-t border-white/[0.08] px-4 py-5 sm:px-6">
                 <div className="text-[20px] font-extrabold text-white">Rules</div>
                 <div className="mt-4">
                   {community.rules.map((rule, index) => (
                     <div
                       key={rule}
-                      className={`py-4 ${index > 0 ? "border-t border-white/10" : ""}`}
+                      className={`py-4 ${index > 0 ? "border-t border-white/[0.08]" : ""}`}
                     >
                       <div className="text-[15px] leading-6 text-white">{rule}</div>
                     </div>
@@ -186,7 +186,7 @@ export default async function CommunityPage({
               </div>
 
               {viewerRole === "admin" ? (
-                <div className="border-t border-white/10 px-4 py-5 sm:px-6">
+                <div className="border-t border-white/[0.08] px-4 py-5 sm:px-6">
                   <div className="text-sm font-bold uppercase tracking-[0.16em] text-copy-muted">
                     Admin controls
                   </div>
@@ -219,7 +219,7 @@ export default async function CommunityPage({
               ) : null}
             </section>
           ) : activeTab === "members" ? (
-            <section className="border-b border-white/10">
+            <section className="border-b border-white/[0.08]">
               <div className="signal-divider px-4 py-4 sm:px-6">
                 <div>
                   <div className="text-[20px] font-extrabold text-white">Members</div>
@@ -244,7 +244,7 @@ export default async function CommunityPage({
           ) : (
             <>
               {viewerMembershipStatus !== "active" ? (
-                <section className="border-b border-white/10 bg-background/60 px-4 py-2.5 text-[13px] leading-4 text-copy-muted backdrop-blur sm:px-6">
+                <section className="border-b border-white/[0.08] bg-background/60 px-4 py-2.5 text-[13px] leading-4 text-copy-muted backdrop-blur sm:px-6">
                   {viewer
                     ? "Join this community to post."
                     : "Connect X to join and post."}
@@ -342,69 +342,70 @@ export default async function CommunityPage({
           )}
         </div>
 
-        <aside className="hidden xl:block px-8 py-2">
-          <div className="sticky top-0 space-y-4">
-            <section className="panel-shell rounded-2xl p-5">
-              <div className="text-xl font-extrabold text-white">About</div>
-              <p className="mt-4 text-[15px] leading-6 text-copy-muted">
+        <aside className="hidden xl:block">
+          <div className="sticky top-0 space-y-3 px-5 pt-3">
+            {/* About */}
+            <section className="rounded-2xl bg-surface-secondary/60 py-3">
+              <h2 className="px-4 text-[15px] font-bold text-white">About</h2>
+              <p className="mt-2 px-4 text-[13px] leading-5 text-copy-muted">
                 {community.description}
               </p>
-
-              <div className="mt-5 space-y-3 text-[15px] text-copy-muted">
-                <div className="flex items-center justify-between gap-4">
-                  <span>Members</span>
-                  <span className="font-bold text-white">
+              <div className="mt-3 grid grid-cols-2 gap-px border-t border-white/[0.06] pt-3 px-4 text-[13px]">
+                <div>
+                  <div className="font-bold text-white">
                     {formatCompactNumber(community.memberCount)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span>Created by</span>
-                  <span className="font-bold text-white">
-                    {community.createdBy.handle}
-                  </span>
-                </div>
-                {community.contractAddress ? (
-                  <div className="flex items-center justify-between gap-4">
-                    <span>CA</span>
-                    <span className="font-bold text-white">
-                      {shortenContractAddress(community.contractAddress)}
-                    </span>
                   </div>
-                ) : null}
+                  <div className="text-copy-soft">Members</div>
+                </div>
+                <div>
+                  <div className="font-bold text-white">
+                    {community.createdBy.handle}
+                  </div>
+                  <div className="text-copy-soft">Created by</div>
+                </div>
               </div>
+              {community.contractAddress ? (
+                <div className="mt-2 px-4 text-[12px] text-copy-soft">
+                  CA: {shortenContractAddress(community.contractAddress)}
+                </div>
+              ) : null}
             </section>
 
-            <section className="panel-shell rounded-2xl p-5">
-              <div className="text-xl font-extrabold text-white">
-                Trending communities
-              </div>
-              <div className="mt-4 space-y-1">
-                {relatedCommunities.map((entry) => (
-                  <Link
-                    key={entry.id}
-                    href={`/communities/${entry.slug}`}
-                    className="flex items-center gap-3 rounded-2xl px-3 py-3 transition hover:bg-white/[0.04]"
-                  >
-                    <div
-                      className="flex size-10 items-center justify-center rounded-full text-xs font-bold text-white"
-                      style={{
-                        background: `linear-gradient(135deg, ${entry.coverFrom}, ${entry.accentColor})`,
-                      }}
+            {/* Related */}
+            {relatedCommunities.length > 0 ? (
+              <section className="rounded-2xl bg-surface-secondary/60 py-3">
+                <h2 className="px-4 text-[15px] font-bold text-white">
+                  You might like
+                </h2>
+                <div className="mt-1">
+                  {relatedCommunities.map((entry) => (
+                    <Link
+                      key={entry.id}
+                      href={`/communities/${entry.slug}`}
+                      className="flex items-center gap-3 px-4 py-2.5 transition hover:bg-white/[0.04]"
                     >
-                      {entry.avatar}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="truncate text-[15px] font-bold text-white">
-                        {entry.name}
+                      <div
+                        className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                        style={{
+                          background: `linear-gradient(135deg, ${entry.coverFrom}, ${entry.accentColor})`,
+                        }}
+                      >
+                        {entry.avatar}
                       </div>
-                      <div className="text-[13px] text-copy-muted">
-                        {formatCompactNumber(entry.memberCount)} {entry.memberCount === 1 ? "member" : "members"}
+                      <div className="min-w-0">
+                        <div className="truncate text-[14px] font-bold text-white">
+                          {entry.name}
+                        </div>
+                        <div className="text-[12px] text-copy-muted">
+                          {formatCompactNumber(entry.memberCount)}{" "}
+                          {entry.memberCount === 1 ? "member" : "members"}
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </div>
         </aside>
       </div>
@@ -446,7 +447,7 @@ const MemberRow = ({
               <BadgeCheck className="size-4 fill-accent-secondary text-accent-secondary" />
             ) : null}
             {member.isViewer ? (
-              <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.16em] text-copy-muted">
+              <span className="rounded-full border border-white/[0.08] px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.16em] text-copy-muted">
                 You
               </span>
             ) : null}
@@ -475,7 +476,7 @@ const MemberRow = ({
             />
             <button
               type="submit"
-              className="rounded-full border border-white/10 bg-background px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-copy-muted transition hover:bg-white/[0.06] hover:text-white sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
+              className="rounded-full border border-white/[0.08] bg-background px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-copy-muted transition hover:bg-white/[0.06] hover:text-white sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
             >
               {roleActionLabel}
             </button>

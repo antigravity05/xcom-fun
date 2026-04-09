@@ -28,9 +28,9 @@ export const CommunityHeader = ({
   canLeaveCommunity,
 }: CommunityHeaderProps) => {
   return (
-    <section className="border-b border-white/10">
+    <section>
       {/* Sticky top bar */}
-      <div className="sticky top-0 z-20 flex min-h-[53px] items-center gap-4 border-b border-white/10 bg-background/80 px-4 py-2.5 backdrop-blur sm:px-6">
+      <div className="sticky top-0 z-20 flex min-h-[53px] items-center gap-3 border-b border-white/[0.08] bg-background/80 px-4 backdrop-blur sm:px-6">
         <Link
           href="/"
           className="inline-flex size-9 items-center justify-center rounded-full text-white transition hover:bg-white/[0.06]"
@@ -38,7 +38,7 @@ export const CommunityHeader = ({
           <ArrowLeft className="size-5" />
         </Link>
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <span className="truncate text-[17px] font-extrabold text-white">
               {community.name}
             </span>
@@ -46,19 +46,20 @@ export const CommunityHeader = ({
               <BadgeCheck className="size-[18px] shrink-0 fill-accent-secondary text-background" />
             ) : null}
           </div>
-          <div className="truncate text-[13px] text-copy-muted">
-            {formatCompactNumber(community.memberCount)} {community.memberCount === 1 ? "member" : "members"}
+          <div className="text-[13px] text-copy-muted">
+            {formatCompactNumber(community.memberCount)}{" "}
+            {community.memberCount === 1 ? "member" : "members"}
           </div>
         </div>
       </div>
 
       {/* Banner */}
       <div
-        className="relative h-44 sm:h-[200px]"
+        className="relative h-36 sm:h-[180px]"
         style={
           community.bannerUrl
             ? {
-                backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.25)), url(${community.bannerUrl})`,
+                backgroundImage: `url(${community.bannerUrl})`,
                 backgroundPosition: "center",
                 backgroundSize: "cover",
               }
@@ -66,15 +67,13 @@ export const CommunityHeader = ({
                 background: `linear-gradient(135deg, ${community.coverFrom}, ${community.coverTo})`,
               }
         }
-      >
-        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-      </div>
+      />
 
       {/* Profile section */}
-      <div className="relative px-4 pb-0 sm:px-6">
+      <div className="relative border-b border-white/[0.08] px-4 pb-0 sm:px-6">
         {/* Avatar */}
         <div
-          className="absolute -top-14 flex size-[88px] items-center justify-center rounded-full border-[4px] border-background text-xl font-bold text-white shadow-lg sm:-top-16 sm:size-[120px] sm:text-2xl"
+          className="absolute -top-10 flex size-20 items-center justify-center rounded-full border-[3px] border-background text-lg font-bold text-white sm:-top-12 sm:size-24 sm:text-xl"
           style={{
             background: `linear-gradient(135deg, ${community.coverTo}, ${community.accentColor})`,
           }}
@@ -83,7 +82,7 @@ export const CommunityHeader = ({
         </div>
 
         {/* Join/Leave button */}
-        <div className="flex justify-end pt-3">
+        <div className="flex justify-end py-2">
           {viewerMembershipStatus === "active" ? (
             canLeaveCommunity ? (
               <form action={leaveCommunityAction}>
@@ -91,28 +90,28 @@ export const CommunityHeader = ({
                 <input type="hidden" name="redirectTo" value={`/communities/${community.slug}`} />
                 <button
                   type="submit"
-                  className="group relative rounded-full border border-white/20 bg-transparent px-5 py-2 text-[14px] font-bold text-white transition hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
+                  className="group rounded-full border border-white/20 px-5 py-1.5 text-[14px] font-bold text-white transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
                 >
                   <span className="group-hover:hidden">Joined</span>
                   <span className="hidden group-hover:inline">Leave</span>
                 </button>
               </form>
             ) : (
-              <div className="rounded-full border border-white/20 bg-transparent px-5 py-2 text-[14px] font-bold text-white">
+              <span className="rounded-full border border-white/20 px-5 py-1.5 text-[14px] font-bold text-white">
                 Joined
-              </div>
+              </span>
             )
           ) : viewerMembershipStatus === "pending" ? (
-            <div className="rounded-full border border-white/20 px-5 py-2 text-[14px] font-bold text-copy-muted">
+            <span className="rounded-full border border-white/20 px-5 py-1.5 text-[14px] font-bold text-copy-muted">
               Pending
-            </div>
+            </span>
           ) : hasViewer ? (
             <form action={joinCommunityAction}>
               <input type="hidden" name="communitySlug" value={community.slug} />
               <input type="hidden" name="redirectTo" value={`/communities/${community.slug}`} />
               <button
                 type="submit"
-                className="rounded-full bg-white px-5 py-2 text-[14px] font-bold text-black transition hover:bg-white/90"
+                className="rounded-full bg-white px-5 py-1.5 text-[14px] font-bold text-black transition hover:bg-white/90"
               >
                 Join
               </button>
@@ -120,70 +119,63 @@ export const CommunityHeader = ({
           ) : (
             <Link
               href={`/connect-x?redirectTo=${encodeURIComponent(`/communities/${community.slug}`)}`}
-              className="rounded-full bg-white px-5 py-2 text-[14px] font-bold text-black transition hover:bg-white/90"
+              className="rounded-full bg-white px-5 py-1.5 text-[14px] font-bold text-black transition hover:bg-white/90"
             >
-              Connect X to Join
+              Connect to Join
             </Link>
           )}
         </div>
 
         {/* Community info */}
-        <div className="mt-5 sm:mt-6">
-          <h1 className="text-[23px] font-extrabold leading-7 text-white sm:text-[28px]">
+        <div className="mt-2 sm:mt-3">
+          <h1 className="text-[22px] font-extrabold leading-7 text-white">
             {community.name}
           </h1>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-[15px]">
-            <span className="rounded-md bg-white/[0.06] px-2 py-0.5 text-[13px] font-bold text-copy-muted">
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <span className="rounded bg-white/[0.06] px-1.5 py-px text-[12px] font-bold text-copy-muted">
               {community.ticker}
             </span>
             {community.contractAddress ? (
-              <span className="text-[13px] text-copy-soft">
-                CA: {shortenContractAddress(community.contractAddress)}
+              <span className="text-[12px] text-copy-soft">
+                {shortenContractAddress(community.contractAddress)}
               </span>
             ) : null}
           </div>
-          <p className="mt-2 max-w-lg text-[15px] leading-5 text-copy-muted">
+          <p className="mt-1.5 max-w-lg text-[15px] leading-5 text-copy-muted">
             {community.tagline}
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-4 text-[15px]">
-            <span className="text-copy-muted">
+          <div className="mt-2 flex items-center gap-4 text-[14px] text-copy-muted">
+            <span>
               <span className="font-bold text-white">
                 {formatCompactNumber(community.memberCount)}
               </span>{" "}
               members
             </span>
-            <span className="text-copy-muted">
-              Created by{" "}
-              <span className="font-bold text-white">
-                {community.createdBy.handle}
-              </span>
-            </span>
           </div>
         </div>
 
         {/* Tab navigation */}
-        <div className="sticky top-[53px] z-10 mt-4 flex border-t border-white/10 bg-background/92 backdrop-blur">
+        <nav className="mt-3 flex">
           {communityTabs.map((tab) => {
             const isActive = tab.id === activeTab;
-
             return (
               <Link
                 key={tab.id}
                 href={`/communities/${community.slug}?tab=${tab.id}`}
-                className={`relative flex flex-1 items-center justify-center px-2 py-[14px] text-[15px] font-medium transition ${
+                className={`relative flex flex-1 items-center justify-center py-3 text-[14px] font-medium transition ${
                   isActive
                     ? "text-white"
                     : "text-copy-muted hover:bg-white/[0.03] hover:text-white"
                 }`}
               >
-                <span>{tab.label}</span>
+                {tab.label}
                 {isActive ? (
-                  <span className="absolute bottom-0 h-1 w-14 rounded-full bg-accent-secondary" />
+                  <span className="absolute bottom-0 h-[3px] w-12 rounded-full bg-accent-secondary" />
                 ) : null}
               </Link>
             );
           })}
-        </div>
+        </nav>
       </div>
     </section>
   );
