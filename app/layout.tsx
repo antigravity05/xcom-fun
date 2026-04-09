@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://x-com.fun"),
   title: {
     default: "X-COM — Crypto Communities",
     template: "%s | X-COM",
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
     title: "X-COM — Crypto Communities",
     description: "The home for crypto communities. Post here, it goes to X.",
     siteName: "X-COM",
+    url: "https://x-com.fun",
     type: "website",
   },
   twitter: {
