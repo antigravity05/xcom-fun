@@ -117,7 +117,7 @@ export default async function CommunityPage({
                     <Users className="mt-0.5 size-5 shrink-0 text-copy-muted" />
                     <div>
                       <div className="font-bold text-white">
-                        {formatCompactNumber(community.memberCount)} members
+                        {formatCompactNumber(community.memberCount)} {community.memberCount === 1 ? "member" : "members"}
                       </div>
                       <div className="mt-1 text-copy-muted">
                         Members can join and participate in the community.

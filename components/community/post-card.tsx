@@ -40,15 +40,7 @@ type PostCardProps = {
   };
 };
 
-const syncStatusConfig = {
-  draft: { label: "Draft", className: "text-copy-soft" },
-  pending: { label: "Syncing to X", className: "text-amber-400/70" },
-  published: { label: "Published on X", className: "text-accent-tertiary/70" },
-  failed: { label: "X sync failed", className: "text-red-400/70" },
-} as const;
-
 export const PostCard = ({ post, interaction }: PostCardProps) => {
-  const syncConfig = syncStatusConfig[post.xSyncStatus];
 
   return (
     <article className="signal-divider px-4 py-3 transition-colors hover:bg-white/[0.015] last:border-b-0 sm:px-6">
@@ -145,12 +137,6 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
               </div>
             </div>
           ) : null}
-
-          {/* X sync status */}
-          {/* X sync status label — hidden until X API plan is activated */}
-          {/* <div className={`mt-2 text-[12px] ${syncConfig.className}`}>
-            {syncConfig.label}
-          </div> */}
 
           {/* Action buttons */}
           {interaction &&

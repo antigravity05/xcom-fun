@@ -1,28 +1,49 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { ImagePlus, Loader2 } from "lucide-react";
 import { updateCommunityAction } from "@/app/communities/actions";
 
 type EditCommunityFormProps = {
   communitySlug: string;
   initialName: string;
   initialDescription: string;
+  currentBannerUrl?: string | null;
 };
 
 export const EditCommunityForm = ({
   communitySlug,
   initialName,
   initialDescription,
+  currentBannerUrl,
 }: EditCommunityFormProps) => {
   const router = useRouter();
   const [serverMessage, setServerMessage] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(
+    currentBannerUrl ?? null,
+  );
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setBannerPreview(ev.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setServerMessage(null);
+    setIsPending(true);
 
-    startTransition(async () => {
+    try {
+      const formData = new FormData(e.currentTarget);
       const result = await updateCommunityAction(formData);
 
       if (!result.ok) {
@@ -32,11 +53,17 @@ export const EditCommunityForm = ({
 
       router.push(`/communities/${result.slug}?tab=about`);
       router.refresh();
-    });
+    } catch (err) {
+      setServerMessage(
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
-    <form action={handleSubmit} className="border-b border-white/10">
+    <form onSubmit={handleSubmit} className="border-b border-white/10">
       <input type="hidden" name="communitySlug" value={communitySlug} />
 
       <div className="px-4 py-5 sm:px-6">
@@ -76,18 +103,51 @@ export const EditCommunityForm = ({
         </div>
 
         <div className="signal-divider px-4 py-4 sm:px-6">
-          <Field
-            label="Replace banner"
-            hint="Optional. PNG, JPG, WEBP or GIF, max 5 MB"
-            input={
-              <input
-                type="file"
-                name="banner"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-                className="block w-full rounded-2xl border border-white/10 bg-surface-secondary/50 px-4 py-3 text-[14px] text-copy-muted file:mr-4 file:rounded-full file:border-0 file:bg-accent-secondary file:px-4 file:py-2 file:text-[13px] file:font-bold file:text-white hover:file:brightness-110"
-              />
-            }
-          />
+          <div className="grid gap-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-[13px] font-bold uppercase tracking-[0.16em] text-copy-muted">
+                Banner
+              </span>
+              <span className="text-[12px] text-copy-soft">
+                PNG, JPG, WEBP or GIF, max 5 MB
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="signal-focus group relative flex h-36 w-full items-center justify-center overflow-hidden rounded-2xl border border-dashed border-white/15 bg-surface-secondary/50 transition hover:border-accent-secondary/50 hover:bg-surface-secondary/80"
+            >
+              {bannerPreview ? (
+                <>
+                  <img
+                    src={bannerPreview}
+                    alt="Banner preview"
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 transition group-hover:opacity-100" />
+                  <span className="relative z-10 rounded-full bg-black/60 px-4 py-2 text-[13px] font-bold text-white opacity-0 transition group-hover:opacity-100">
+                    Change image
+                  </span>
+                </>
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-copy-soft transition group-hover:text-accent-secondary">
+                  <ImagePlus className="size-8 stroke-[1.5]" />
+                  <span className="text-[13px] font-medium">
+                    Click to upload a new banner
+                  </span>
+                </div>
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              name="banner"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              onChange={handleBannerChange}
+              className="hidden"
+            />
+          </div>
         </div>
       </div>
 
@@ -96,9 +156,16 @@ export const EditCommunityForm = ({
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-full bg-accent-secondary px-6 py-2.5 text-[15px] font-bold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-full bg-accent-secondary px-6 py-2.5 text-[15px] font-bold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isPending ? "Saving..." : "Save changes"}
+            {isPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save changes"
+            )}
           </button>
           {serverMessage ? (
             <p className="text-[14px] leading-5 text-danger-soft">

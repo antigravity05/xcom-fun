@@ -16,9 +16,18 @@ export default async function CreateCommunityPage() {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return (
-      <div style={{ padding: "2rem", color: "white", background: "#0a0a0a", minHeight: "100vh", fontFamily: "monospace" }}>
-        <h1 style={{ color: "#ef4444" }}>Create Community Error</h1>
-        <p style={{ color: "#fbbf24" }}>{message}</p>
+      <div className="flex min-h-screen items-center justify-center bg-background px-6">
+        <div className="panel-shell max-w-lg rounded-[32px] p-8 text-center sm:p-12">
+          <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-danger-soft/10">
+            <span className="text-[28px] text-danger-soft">!</span>
+          </div>
+          <h1 className="mt-6 text-[24px] font-extrabold text-white">
+            Unable to load page
+          </h1>
+          <p className="mt-3 text-[15px] leading-6 text-copy-muted">
+            {message}
+          </p>
+        </div>
       </div>
     );
   }
