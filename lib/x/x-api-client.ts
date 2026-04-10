@@ -1,4 +1,5 @@
 const X_API_BASE = "https://api.x.com/2";
+const X_UPLOAD_BASE = "https://upload.twitter.com/1.1";
 
 export interface XTweetResponse {
   data: {
@@ -34,17 +35,62 @@ const handleXAPIResponse = async (response: Response) => {
   return response.json();
 };
 
+/**
+ * Upload media (image) to X via v1.1 media upload endpoint.
+ * Returns the media_id_string to attach to a tweet.
+ */
+export const uploadMedia = async (
+  accessToken: string,
+  imageBase64: string,
+  mimeType: string,
+): Promise<string> => {
+  // Strip data URL prefix if present
+  const base64Data = imageBase64.replace(/^data:[^;]+;base64,/, "");
+
+  const formData = new FormData();
+  formData.append("media_data", base64Data);
+  formData.append("media_category", "tweet_image");
+
+  const response = await fetch(`${X_UPLOAD_BASE}/media/upload.json`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    let errorDetails: unknown;
+    try {
+      errorDetails = await response.json();
+    } catch {
+      errorDetails = await response.text();
+    }
+    throw new XAPIError(response.status, `X Media Upload error: ${response.statusText}`, errorDetails);
+  }
+
+  const data = await response.json();
+  console.log("[x-api] uploadMedia response:", JSON.stringify(data));
+  return data.media_id_string;
+};
+
 export const postTweet = async (
   accessToken: string,
-  text: string
+  text: string,
+  mediaIds?: string[],
 ): Promise<{ id: string; text: string }> => {
+  const payload: Record<string, unknown> = { text };
+  if (mediaIds && mediaIds.length > 0) {
+    payload.media = { media_ids: mediaIds };
+  }
+
   const response = await fetch(`${X_API_BASE}/tweets`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify(payload),
   });
 
   const data = (await handleXAPIResponse(response)) as XTweetResponse;

@@ -27,6 +27,7 @@ const publishToX = async (
   userId: string,
   postId: string,
   body: string,
+  imageBase64Urls?: string[],
 ) => {
   try {
     const { queueXPublication } = await import(
@@ -39,6 +40,7 @@ const publishToX = async (
       localPostId: postId,
       xAccountUserId: userId,
       body,
+      imageBase64Urls,
     });
 
     // Validate: Twitter tweet IDs are purely numeric.
@@ -741,7 +743,8 @@ export const createPostAction = async (formData: FormData) => {
     if (newPost) {
       console.log(`[x-sync] Publishing post ${newPost.id} (body: "${body.slice(0, 30)}") to X`);
       try {
-        await publishToX(viewerUserId, newPost.id, body);
+        const imageUrls = media?.kind === "images" ? media.urls : undefined;
+        await publishToX(viewerUserId, newPost.id, body, imageUrls);
       } catch (err) {
         console.error("[x-sync] Publication failed:", err);
       }

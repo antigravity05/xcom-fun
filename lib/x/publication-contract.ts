@@ -3,7 +3,7 @@ import "server-only";
 import type { PublicationStatus } from "@/lib/xcom-domain";
 import { isZernioMode } from "@/lib/x/oauth-contract";
 import { postTweet as zernioPostTweet } from "@/lib/zernio/client";
-import { postTweet as xPostTweet, XAPIError } from "@/lib/x/x-api-client";
+import { postTweet as xPostTweet, uploadMedia, XAPIError } from "@/lib/x/x-api-client";
 import { refreshAccessToken } from "@/lib/x/oauth-client";
 import { decryptToken, encryptToken } from "@/lib/x/token-encryption";
 import { getUserTokens, saveUserTokens } from "@/lib/x/token-store";
@@ -12,6 +12,7 @@ export type XPublicationIntent = {
   localPostId: string;
   xAccountUserId: string;
   body: string;
+  imageBase64Urls?: string[];
 };
 
 export type XPublicationResult = {
@@ -141,7 +142,25 @@ const publishViaDirectXApi = async (
       }
     }
 
-    const result = await xPostTweet(accessToken, intent.body);
+    // Upload images if present
+    let mediaIds: string[] | undefined;
+    if (intent.imageBase64Urls && intent.imageBase64Urls.length > 0) {
+      mediaIds = [];
+      for (const imageUrl of intent.imageBase64Urls.slice(0, 4)) {
+        try {
+          const mimeMatch = imageUrl.match(/^data:([^;]+);base64,/);
+          const mimeType = mimeMatch?.[1] ?? "image/jpeg";
+          const mediaId = await uploadMedia(accessToken, imageUrl, mimeType);
+          mediaIds.push(mediaId);
+          console.log(`[x-sync] Uploaded media, got media_id: ${mediaId}`);
+        } catch (uploadErr) {
+          console.error("[x-sync] Media upload failed:", uploadErr);
+        }
+      }
+      if (mediaIds.length === 0) mediaIds = undefined;
+    }
+
+    const result = await xPostTweet(accessToken, intent.body, mediaIds);
 
     return {
       status: "published",
