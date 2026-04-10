@@ -346,11 +346,12 @@ export const getCommunityTimelineView = async (slug: string) => {
       (post): post is NonNullable<ReturnType<typeof toPostRecord>> => post !== null,
     )
     .sort((left, right) => {
-      const leftScore = Number(left.isPinned) * 100000 + left.metrics.likes + left.metrics.views;
-      const rightScore =
-        Number(right.isPinned) * 100000 + right.metrics.likes + right.metrics.views;
-
-      return rightScore - leftScore;
+      // Pinned posts always first
+      if (left.isPinned !== right.isPinned) {
+        return left.isPinned ? -1 : 1;
+      }
+      // Then most recent first
+      return Date.parse(right.createdAt) - Date.parse(left.createdAt);
     });
 
   return {
