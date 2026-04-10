@@ -3,7 +3,6 @@ import {
   BadgeCheck,
   BarChart3,
   Heart,
-  MessageCircle,
   MoreHorizontal,
   Pencil,
   Pin,
@@ -24,13 +23,14 @@ import {
   formatRelativeTime,
 } from "@/lib/xcom-formatters";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
-import { ReplyForm } from "@/components/community/reply-form";
+import { ReplyButton } from "@/components/community/reply-button";
 
 type PostCardProps = {
   post: CommunityPostRecord & {
     viewerHasLiked?: boolean;
     viewerHasReposted?: boolean;
   };
+  viewer?: { displayName: string; avatar?: string } | null;
   interaction?: {
     communitySlug: string;
     redirectTo: string;
@@ -43,7 +43,7 @@ type PostCardProps = {
   };
 };
 
-export const PostCard = ({ post, interaction }: PostCardProps) => {
+export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
   return (
     <article className="group/post border-b border-white/[0.08] px-4 py-3 transition-colors hover:bg-white/[0.02] sm:px-6">
       {/* Pinned indicator */}
@@ -233,13 +233,22 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
 
           {/* Interaction bar — Twitter-style layout */}
           <div className="-ml-2 mt-1 flex items-center justify-between sm:max-w-[425px]">
-            {/* Reply count (scrolls to reply form area) */}
-            <div className="flex min-w-[52px] items-center gap-1.5 px-2 py-1.5 text-[13px] text-copy-muted">
-              <span className="flex size-[34px] items-center justify-center">
-                <MessageCircle className="size-[18px]" />
-              </span>
-              <span className="-ml-1">{formatCompactNumber(post.metrics.replies)}</span>
-            </div>
+            {/* Reply — opens modal like X */}
+            <ReplyButton
+              postId={post.id}
+              communitySlug={interaction?.communitySlug ?? ""}
+              redirectTo={interaction?.redirectTo ?? "/"}
+              replyCount={post.metrics.replies}
+              canInteract={interaction?.canInteract ?? false}
+              originalPost={{
+                authorName: post.author.displayName,
+                authorHandle: post.author.handle ?? "",
+                authorAvatar: post.author.avatar,
+                body: post.body,
+                createdAt: post.createdAt,
+              }}
+              viewer={viewer}
+            />
 
             {/* Repost */}
             {interaction?.canInteract ? (
@@ -352,14 +361,7 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
             </div>
           ) : null}
 
-          {/* Reply form */}
-          {interaction?.canInteract && !interaction.isEditing ? (
-            <ReplyForm
-              postId={post.id}
-              communitySlug={interaction.communitySlug}
-              redirectTo={interaction.redirectTo}
-            />
-          ) : null}
+          {/* Reply form removed — replies now go through the modal */}
         </div>
       </div>
     </article>

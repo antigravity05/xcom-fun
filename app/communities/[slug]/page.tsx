@@ -278,6 +278,7 @@ export default async function CommunityPage({
                   viewerHandle={viewer?.xHandle ?? null}
                   viewerRole={viewerRole}
                   editingPostId={editing ?? null}
+                  viewer={viewer ? { displayName: viewer.displayName, avatar: viewer.avatar } : null}
                 />
               </section>
             </>

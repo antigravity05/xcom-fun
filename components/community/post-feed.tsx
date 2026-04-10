@@ -20,6 +20,7 @@ type PostFeedProps = {
   viewerHandle: string | null;
   viewerRole: string | null;
   editingPostId: string | null;
+  viewer?: { displayName: string; avatar?: string } | null;
 };
 
 export function PostFeed({
@@ -30,6 +31,7 @@ export function PostFeed({
   viewerHandle,
   viewerRole,
   editingPostId,
+  viewer,
 }: PostFeedProps) {
   const [visibleCount, setVisibleCount] = useState(POSTS_PER_PAGE);
   const [searchQuery, setSearchQuery] = useState("");
@@ -94,6 +96,7 @@ export function PostFeed({
         <PostCard
           key={post.id}
           post={post}
+          viewer={viewer}
           interaction={{
             communitySlug,
             redirectTo: `/communities/${communitySlug}?tab=${activeTab}`,
