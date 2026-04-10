@@ -41,18 +41,35 @@ const publishToX = async (
       body,
     });
 
-    // Record the publication attempt in the DB
+    // Record the publication attempt in the DB (upsert to avoid duplicates)
     try {
       const db = getDb();
-      await db.insert(postPublications).values({
-        postId,
-        provider: "x",
-        status: result.status === "published" ? "published" : "failed",
-        externalPostId: result.externalPostId ?? null,
-        lastError: result.errorMessage ?? null,
-        attemptCount: 1,
-        lastAttemptAt: new Date(),
+      const { eq, and } = await import("drizzle-orm");
+      // Check if a publication row already exists
+      const existing = await db.query.postPublications.findFirst({
+        where: (table, ops) =>
+          ops.and(ops.eq(table.postId, postId), ops.eq(table.provider, "x")),
       });
+      if (existing) {
+        // Update existing row
+        await db.update(postPublications).set({
+          status: result.status === "published" ? "published" : "failed",
+          externalPostId: result.externalPostId ?? existing.externalPostId,
+          lastError: result.errorMessage ?? null,
+          attemptCount: (existing.attemptCount ?? 0) + 1,
+          lastAttemptAt: new Date(),
+        }).where(and(eq(postPublications.postId, postId), eq(postPublications.provider, "x")));
+      } else {
+        await db.insert(postPublications).values({
+          postId,
+          provider: "x",
+          status: result.status === "published" ? "published" : "failed",
+          externalPostId: result.externalPostId ?? null,
+          lastError: result.errorMessage ?? null,
+          attemptCount: 1,
+          lastAttemptAt: new Date(),
+        });
+      }
     } catch (dbErr) {
       console.error("[x-sync] Failed to record publication:", dbErr);
     }
@@ -567,17 +584,22 @@ export const createPostAction = async (formData: FormData) => {
   // On Vercel serverless, fire-and-forget promises get killed when redirect() sends the response.
   const community = nextSnapshot.communities.find((c) => c.slug === communitySlug);
   if (community) {
-    const newPost = nextSnapshot.posts.find(
+    // Find the NEWEST post by this user (last in array = most recently created)
+    const userPostsInCommunity = nextSnapshot.posts.filter(
       (p) =>
         p.communityId === community.id &&
         p.authorUserId === viewerUserId,
     );
+    const newPost = userPostsInCommunity[userPostsInCommunity.length - 1];
     if (newPost) {
+      console.log(`[x-sync] Publishing post ${newPost.id} (body: "${body.slice(0, 30)}") to X`);
       try {
         await publishToX(viewerUserId, newPost.id, body);
       } catch (err) {
         console.error("[x-sync] Publication failed:", err);
       }
+    } else {
+      console.warn("[x-sync] Could not find new post to publish");
     }
   }
 
