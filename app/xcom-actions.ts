@@ -41,20 +41,43 @@ const publishToX = async (
       body,
     });
 
-    // Record the publication attempt in the DB (upsert to avoid duplicates)
+    // Validate: Twitter tweet IDs are purely numeric. Zernio internal IDs
+    // (hex like "67f3a2b1c4d5") are NOT tweet IDs and must not be stored.
+    let tweetId = result.externalPostId ?? null;
+    if (tweetId && !/^\d+$/.test(tweetId)) {
+      console.warn(`[x-sync] Discarding non-numeric externalPostId "${tweetId}" (Zernio internal ID)`);
+      tweetId = null;
+    }
+
+    // If Zernio didn't return the tweet ID yet (async publishing), fetch it
+    if (!tweetId && result.status === "published") {
+      try {
+        await new Promise((r) => setTimeout(r, 2000));
+        const { listRecentPosts } = await import("@/lib/zernio/client");
+        const recent = await listRecentPosts();
+        const needle = body.trim().toLowerCase();
+        const match = recent.find((p) => p.content.trim().toLowerCase() === needle);
+        if (match?.platformPostId && /^\d+$/.test(match.platformPostId)) {
+          tweetId = match.platformPostId;
+          console.log(`[x-sync] Recovered tweet ID from Zernio: ${tweetId}`);
+        }
+      } catch (e) {
+        console.warn("[x-sync] Tweet ID recovery failed:", e);
+      }
+    }
+
+    // Record the publication attempt in the DB
     try {
       const db = getDb();
       const { eq, and } = await import("drizzle-orm");
-      // Check if a publication row already exists
       const existing = await db.query.postPublications.findFirst({
         where: (table, ops) =>
           ops.and(ops.eq(table.postId, postId), ops.eq(table.provider, "x")),
       });
       if (existing) {
-        // Update existing row
         await db.update(postPublications).set({
           status: result.status === "published" ? "published" : "failed",
-          externalPostId: result.externalPostId ?? existing.externalPostId,
+          externalPostId: tweetId ?? existing.externalPostId,
           lastError: result.errorMessage ?? null,
           attemptCount: (existing.attemptCount ?? 0) + 1,
           lastAttemptAt: new Date(),
@@ -64,7 +87,7 @@ const publishToX = async (
           postId,
           provider: "x",
           status: result.status === "published" ? "published" : "failed",
-          externalPostId: result.externalPostId ?? null,
+          externalPostId: tweetId,
           lastError: result.errorMessage ?? null,
           attemptCount: 1,
           lastAttemptAt: new Date(),

@@ -121,7 +121,7 @@ export async function GET(request: Request) {
         },
         body: JSON.stringify({
           content: `Test from x-com.fun debug [${Date.now()}]`,
-          platforms: [{ platform: "twitter", accountId }],
+          platforms: [{ platform: "twitter", accountId, platformSpecificData: {} }],
           publishNow: true,
         }),
       });
@@ -130,6 +130,14 @@ export async function GET(request: Request) {
       testResult.rawResponse = body;
       try {
         testResult.parsed = JSON.parse(body);
+        // Extract the tweet ID explicitly
+        const parsed = testResult.parsed as Record<string, unknown>;
+        const post = (parsed.post ?? parsed.data ?? parsed) as Record<string, unknown>;
+        const platforms = post.platforms as Array<Record<string, unknown>> | undefined;
+        const twitter = platforms?.find((p) => p.platform === "twitter");
+        testResult.extractedTweetId = twitter?.platformPostId ?? "NOT IN RESPONSE";
+        testResult.extractedTweetUrl = twitter?.platformPostUrl ?? "NOT IN RESPONSE";
+        testResult.zernioInternalId = post._id ?? post.id ?? "NOT IN RESPONSE";
       } catch { /* ok */ }
       return NextResponse.json({ ...baseInfo, test: testResult });
     }
@@ -335,7 +343,7 @@ export async function GET(request: Request) {
               platforms: [{
                 platform: "twitter",
                 accountId: resolvedAccountId,
-                replyToTweetId: resolvedTweetId,
+                platformSpecificData: { replyToTweetId: resolvedTweetId },
               }],
               publishNow: true,
             }),
@@ -412,7 +420,7 @@ export async function GET(request: Request) {
           platforms: [{
             platform: "twitter",
             accountId,
-            replyToTweetId: tweetId,
+            platformSpecificData: { replyToTweetId: tweetId },
           }],
           publishNow: true,
         }),
