@@ -77,8 +77,9 @@ const publishToX = async (
           lastAttemptAt: new Date(),
         });
       }
+      console.log(`[x-sync] DB save OK: postId=${postId}, externalPostId=${tweetId}, existing=${!!existing}`);
     } catch (dbErr) {
-      console.error("[x-sync] Failed to record publication:", dbErr);
+      console.error("[x-sync] CRITICAL: Failed to record publication to DB:", dbErr);
     }
 
     if (result.status === "published") {
@@ -282,30 +283,21 @@ const syncReplyToX = async (userId: string, postId: string, body: string) => {
     const tweetId = await getExternalTweetId(postId);
     console.log(`[x-sync] syncReplyToX: getExternalTweetId returned: ${tweetId}`);
 
+    if (!tweetId || !/^\d+$/.test(tweetId)) {
+      // No parent tweet ID — skip X sync entirely (don't pollute timeline with standalone tweets)
+      console.warn(`[x-sync] syncReplyToX: no valid parent tweet ID (got: ${tweetId}) for postId=${postId} — skipping X sync (reply stays local only)`);
+      return;
+    }
+
     if (creds.mode === "direct") {
-      if (tweetId && /^\d+$/.test(tweetId)) {
-        const { replyToTweet } = await import("@/lib/x/x-api-client");
-        const result = await replyToTweet(creds.accessToken, tweetId, body);
-        console.log(`[x-sync] Replied to tweet ${tweetId} via direct X API:`, JSON.stringify(result));
-      } else {
-        // No parent tweet ID — post as standalone tweet
-        console.warn(`[x-sync] syncReplyToX: no valid parent tweet ID (got: ${tweetId}) — posting standalone`);
-        const { postTweet } = await import("@/lib/x/x-api-client");
-        const result = await postTweet(creds.accessToken, body);
-        console.log(`[x-sync] Posted reply as standalone via direct X API:`, JSON.stringify(result));
-      }
+      const { replyToTweet } = await import("@/lib/x/x-api-client");
+      const result = await replyToTweet(creds.accessToken, tweetId, body);
+      console.log(`[x-sync] Replied to tweet ${tweetId} via direct X API:`, JSON.stringify(result));
     } else {
       // Zernio mode
-      if (tweetId && /^\d+$/.test(tweetId)) {
-        const { replyToTweet } = await import("@/lib/zernio/client");
-        const result = await replyToTweet(creds.accountId, tweetId, body);
-        console.log(`[x-sync] Replied to tweet ${tweetId} via Zernio:`, JSON.stringify(result));
-      } else {
-        console.warn(`[x-sync] syncReplyToX: no valid parent tweet ID (got: ${tweetId}) — posting standalone via Zernio`);
-        const { postTweet } = await import("@/lib/zernio/client");
-        const result = await postTweet(creds.accountId, body);
-        console.log(`[x-sync] Posted reply as standalone via Zernio:`, JSON.stringify(result));
-      }
+      const { replyToTweet } = await import("@/lib/zernio/client");
+      const result = await replyToTweet(creds.accountId, tweetId, body);
+      console.log(`[x-sync] Replied to tweet ${tweetId} via Zernio:`, JSON.stringify(result));
     }
   } catch (err) {
     console.error("[x-sync] syncReplyToX error:", err);
