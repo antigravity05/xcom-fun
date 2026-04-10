@@ -389,6 +389,35 @@ export const replyToTweet = async (
   return data.post ?? { id: "", status: "published" };
 };
 
+/**
+ * List recent Zernio posts (used to find tweet IDs for older posts).
+ */
+export const listRecentPosts = async (): Promise<Array<{
+  content: string;
+  platformPostId: string | null;
+  platformPostUrl: string | null;
+  zernioId: string;
+}>> => {
+  try {
+    const raw = (await zernioFetch("/posts", { method: "GET" })) as Record<string, unknown>;
+    const posts = (raw.posts ?? raw.data ?? (Array.isArray(raw) ? raw : [])) as Array<Record<string, unknown>>;
+    return posts.map((p) => {
+      const twitterPlatform = (p.platforms as Array<Record<string, unknown>> | undefined)?.find(
+        (pl) => pl.platform === "twitter",
+      );
+      return {
+        content: String(p.content ?? ""),
+        platformPostId: (twitterPlatform?.platformPostId as string) ?? null,
+        platformPostUrl: (twitterPlatform?.platformPostUrl as string) ?? null,
+        zernioId: String(p._id ?? p.id ?? ""),
+      };
+    });
+  } catch (err) {
+    console.error("[zernio] listRecentPosts failed:", err);
+    return [];
+  }
+};
+
 export const bookmarkTweet = async (
   accountId: string,
   tweetId: string,

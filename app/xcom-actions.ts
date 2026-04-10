@@ -108,26 +108,78 @@ const getZernioAccountId = async (userId: string): Promise<string | null> => {
   }
 };
 
-/** Get the external tweet ID for a local post (from postPublications). */
+/** Get the external tweet ID for a local post.
+ *  Strategy 1: Look in postPublications DB table
+ *  Strategy 2: If not in DB, fetch from Zernio by matching post content
+ *  If found via Zernio, also saves it to the DB for next time. */
 const getExternalTweetId = async (postId: string): Promise<string | null> => {
   try {
     const { getDb } = await import("@/lib/database/client");
     const db = getDb();
     console.log(`[x-sync] getExternalTweetId: looking up postId=${postId}`);
 
-    // First check if ANY publication row exists for this post
-    const anyRow = await db.query.postPublications.findFirst({
-      where: (table, { eq }) => eq(table.postId, postId),
-    });
-    console.log(`[x-sync] getExternalTweetId: anyRow=${JSON.stringify(anyRow ? { postId: anyRow.postId, provider: anyRow.provider, status: anyRow.status, externalPostId: anyRow.externalPostId } : null)}`);
-
-    // Now query with full filter
+    // Strategy 1: check DB
     const row = await db.query.postPublications.findFirst({
       where: (table, { and, eq }) =>
-        and(eq(table.postId, postId), eq(table.provider, "x"), eq(table.status, "published")),
+        and(eq(table.postId, postId), eq(table.provider, "x")),
     });
-    console.log(`[x-sync] getExternalTweetId: publishedRow externalPostId=${row?.externalPostId ?? "NULL"}`);
-    return row?.externalPostId ?? null;
+    console.log(`[x-sync] getExternalTweetId: DB row status=${row?.status ?? "NONE"}, externalPostId=${row?.externalPostId ?? "NULL"}`);
+
+    if (row?.externalPostId) {
+      return row.externalPostId;
+    }
+
+    // Strategy 2: search Zernio for this post's content
+    console.log(`[x-sync] getExternalTweetId: externalPostId missing, trying Zernio lookup`);
+    const { posts: postsTable, postPublications } = await import("@/drizzle/schema");
+    const localPost = await db.query.posts.findFirst({
+      where: (table, { eq }) => eq(table.id, postId),
+    });
+    if (!localPost) {
+      console.warn(`[x-sync] getExternalTweetId: local post ${postId} not found in DB`);
+      return null;
+    }
+
+    const { listRecentPosts } = await import("@/lib/zernio/client");
+    const zernioPosts = await listRecentPosts();
+    const normalizedBody = localPost.body.trim().toLowerCase();
+
+    // Try exact match then contains match
+    const match =
+      zernioPosts.find((zp) => zp.content.trim().toLowerCase() === normalizedBody) ??
+      zernioPosts.find((zp) => zp.content.trim().toLowerCase().includes(normalizedBody) || normalizedBody.includes(zp.content.trim().toLowerCase()));
+
+    if (match?.platformPostId) {
+      console.log(`[x-sync] getExternalTweetId: FOUND via Zernio! tweetId=${match.platformPostId}`);
+
+      // Save to DB for next time
+      try {
+        const { eq, and } = await import("drizzle-orm");
+        if (row) {
+          await db.update(postPublications).set({
+            externalPostId: match.platformPostId,
+            status: "published",
+          }).where(and(eq(postPublications.postId, postId), eq(postPublications.provider, "x")));
+        } else {
+          await db.insert(postPublications).values({
+            postId,
+            provider: "x",
+            status: "published",
+            externalPostId: match.platformPostId,
+            attemptCount: 1,
+            lastAttemptAt: new Date(),
+          });
+        }
+        console.log(`[x-sync] getExternalTweetId: saved tweetId to DB`);
+      } catch (dbErr) {
+        console.error("[x-sync] getExternalTweetId: failed to save to DB:", dbErr);
+      }
+
+      return match.platformPostId;
+    }
+
+    console.warn(`[x-sync] getExternalTweetId: no match found on Zernio for "${localPost.body.slice(0, 50)}"`);
+    return null;
   } catch (err) {
     console.error("[x-sync] getExternalTweetId ERROR:", err);
     return null;
