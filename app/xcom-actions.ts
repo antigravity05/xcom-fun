@@ -563,7 +563,8 @@ export const createPostAction = async (formData: FormData) => {
     return;
   }
 
-  // ── X/Twitter sync via Zernio (fire-and-forget, doesn't block the redirect) ──
+  // ── X/Twitter sync via Zernio — must await before redirect ──
+  // On Vercel serverless, fire-and-forget promises get killed when redirect() sends the response.
   const community = nextSnapshot.communities.find((c) => c.slug === communitySlug);
   if (community) {
     const newPost = nextSnapshot.posts.find(
@@ -572,11 +573,11 @@ export const createPostAction = async (formData: FormData) => {
         p.authorUserId === viewerUserId,
     );
     if (newPost) {
-      // Don't await — let the tweet publish in the background so the
-      // user isn't blocked waiting for Zernio's response
-      publishToX(viewerUserId, newPost.id, body).catch((err) => {
+      try {
+        await publishToX(viewerUserId, newPost.id, body);
+      } catch (err) {
         console.error("[x-sync] Publication failed:", err);
-      });
+      }
     }
   }
 
@@ -620,8 +621,12 @@ export const createReplyAction = async (formData: FormData) => {
     return;
   }
 
-  // Sync reply to X in background (fire-and-forget)
-  syncReplyToX(viewerUserId, postId, body).catch(() => {});
+  // Sync reply to X — must await before redirect (serverless kills fire-and-forget)
+  try {
+    await syncReplyToX(viewerUserId, postId, body);
+  } catch (err) {
+    console.error("[x-sync] Reply sync failed:", err);
+  }
 
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
@@ -757,8 +762,12 @@ export const toggleRepostAction = async (formData: FormData) => {
     return;
   }
 
-  // Sync to X in background (fire-and-forget)
-  syncRetweetToX(viewerUserId, postId, !wasReposted).catch(() => {});
+  // Sync to X — must await before redirect (serverless kills fire-and-forget)
+  try {
+    await syncRetweetToX(viewerUserId, postId, !wasReposted);
+  } catch (err) {
+    console.error("[x-sync] Retweet sync failed:", err);
+  }
 
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
@@ -825,8 +834,12 @@ export const toggleLikeAction = async (formData: FormData) => {
     return;
   }
 
-  // Sync to X in background (fire-and-forget)
-  syncLikeToX(viewerUserId, postId, !wasLiked).catch(() => {});
+  // Sync to X — must await before redirect (serverless kills fire-and-forget)
+  try {
+    await syncLikeToX(viewerUserId, postId, !wasLiked);
+  } catch (err) {
+    console.error("[x-sync] Like sync failed:", err);
+  }
 
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
