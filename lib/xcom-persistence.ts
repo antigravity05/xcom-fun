@@ -1,6 +1,5 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
 import type {
   CommunityPostMedia,
   CommunityRole,
@@ -319,17 +318,12 @@ export const readXcomStore = async (): Promise<XcomStoreSnapshot> => {
 };
 
 /**
- * Cached version of readXcomStore for READ operations (page rendering).
- * Caches the full snapshot for 60 seconds, invalidated via revalidateTag('xcom-store').
- * This prevents every page visit from hitting the DB — massively reduces Neon transfer.
+ * Alias for readXcomStore used by read-model layer.
+ * React's cache() in db-persistence.ts already deduplicates within a single request.
+ * unstable_cache was removed because updateTag() in Next.js 16 does not reliably
+ * invalidate unstable_cache entries, causing stale data after mutations.
  */
-export const cachedReadXcomStore = unstable_cache(
-  async (): Promise<XcomStoreSnapshot> => {
-    return readXcomStore();
-  },
-  ["xcom-store"],
-  { tags: ["xcom-store"], revalidate: 60 },
-);
+export const cachedReadXcomStore = readXcomStore;
 
 const writeXcomStore = async (snapshot: XcomStoreSnapshot) => {
   const { writeFile } = await import("node:fs/promises");
