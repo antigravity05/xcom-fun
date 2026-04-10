@@ -52,6 +52,7 @@ const publishViaZernio = async (
     const zernioAccountId = storedTokens.accessToken;
     const result = await zernioPostTweet(zernioAccountId, intent.body);
 
+    // Log the full Zernio response so we can see the exact shape
     console.log("[x-sync] Zernio postTweet full response:", JSON.stringify(result));
 
     const twitterResult = result.platforms?.find(
@@ -69,6 +70,8 @@ const publishViaZernio = async (
     const externalId =
       twitterResult?.platformPostId ??
       twitterResult?.postId ??
+      result._id ??
+      result.id ??
       null;
 
     console.log("[x-sync] Resolved externalPostId:", externalId, "| platformPostId:", twitterResult?.platformPostId, "| platformPostUrl:", twitterResult?.platformPostUrl);
@@ -79,20 +82,9 @@ const publishViaZernio = async (
     };
   } catch (error) {
     console.error("Zernio publication error:", error);
-    const msg = error instanceof Error ? error.message : "Unknown error";
-
-    // Handle Zernio Conflict (duplicate content) — the tweet may have already been posted
-    if (msg.includes("Conflict")) {
-      console.warn("[x-sync] Conflict error — content may already be posted on X");
-      return {
-        status: "failed",
-        errorMessage: "Duplicate content — this tweet may already exist on X",
-      };
-    }
-
     return {
       status: "failed",
-      errorMessage: msg,
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
     };
   }
 };

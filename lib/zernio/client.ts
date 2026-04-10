@@ -248,9 +248,10 @@ export const postTweet = async (
     }),
   })) as Record<string, unknown>;
 
+  // Log full response to understand the shape
   console.log("[zernio] postTweet raw response:", JSON.stringify(raw));
 
-  // Zernio nests the result under "post", "data", or returns it at root
+  // Zernio may nest the result under "post", "data", or return it at root
   const post = (raw.post ?? raw.data ?? raw) as ZernioPostResult;
   return post;
 };
