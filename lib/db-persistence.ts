@@ -113,7 +113,7 @@ export const readXcomStore = cache(async (): Promise<XcomStoreSnapshot> => {
       isPinned: post.isPinned || false,
       replyCount: allReplies.filter((r) => r.postId === post.id).length,
       likeCount: allReactions.filter((r) => r.postId === post.id && r.kind === "like").length,
-      repostCount: 0,
+      repostCount: allReactions.filter((r) => r.postId === post.id && r.kind === "repost").length,
       viewCount: 0,
       createdAt: post.createdAt.toISOString(),
       xSyncStatus,
