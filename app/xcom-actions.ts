@@ -41,30 +41,14 @@ const publishToX = async (
       body,
     });
 
-    // Validate: Twitter tweet IDs are purely numeric. Zernio internal IDs
-    // (hex like "67f3a2b1c4d5") are NOT tweet IDs and must not be stored.
+    // Validate: Twitter tweet IDs are purely numeric.
     let tweetId = result.externalPostId ?? null;
     if (tweetId && !/^\d+$/.test(tweetId)) {
-      console.warn(`[x-sync] Discarding non-numeric externalPostId "${tweetId}" (Zernio internal ID)`);
+      console.warn(`[x-sync] Discarding non-numeric externalPostId "${tweetId}"`);
       tweetId = null;
     }
 
-    // If Zernio didn't return the tweet ID yet (async publishing), fetch it
-    if (!tweetId && result.status === "published") {
-      try {
-        await new Promise((r) => setTimeout(r, 2000));
-        const { listRecentPosts } = await import("@/lib/zernio/client");
-        const recent = await listRecentPosts();
-        const needle = body.trim().toLowerCase();
-        const match = recent.find((p) => p.content.trim().toLowerCase() === needle);
-        if (match?.platformPostId && /^\d+$/.test(match.platformPostId)) {
-          tweetId = match.platformPostId;
-          console.log(`[x-sync] Recovered tweet ID from Zernio: ${tweetId}`);
-        }
-      } catch (e) {
-        console.warn("[x-sync] Tweet ID recovery failed:", e);
-      }
-    }
+    console.log(`[x-sync] publishToX result: status=${result.status}, tweetId=${tweetId}`);
 
     // Record the publication attempt in the DB
     try {
