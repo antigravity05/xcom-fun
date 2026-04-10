@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   BadgeCheck,
   BarChart3,
-  Bookmark,
   Heart,
   MessageCircle,
   MoreHorizontal,
@@ -11,7 +10,6 @@ import {
   PinOff,
   Repeat2,
   Trash2,
-  Upload,
 } from "lucide-react";
 import {
   createReplyAction,
@@ -311,19 +309,7 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
               <span className="-ml-1">{formatCompactNumber(post.metrics.views)}</span>
             </div>
 
-            {/* Bookmark & Share — disabled for now */}
-            <div className="flex items-center gap-0">
-              <span className="flex items-center rounded-full p-1.5 text-copy-muted/40">
-                <span className="flex size-[34px] items-center justify-center">
-                  <Bookmark className="size-[18px]" />
-                </span>
-              </span>
-              <span className="flex items-center rounded-full p-1.5 text-copy-muted/40">
-                <span className="flex size-[34px] items-center justify-center">
-                  <Upload className="size-[18px]" />
-                </span>
-              </span>
-            </div>
+            {/* Bookmark & Share — hidden until implemented */}
           </div>
 
           {/* Replies thread */}

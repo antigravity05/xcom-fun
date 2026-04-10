@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     }
 
     const cookieStore = await cookies();
-    const userId = cookieStore.get("xcom_user_id")?.value;
+    const userId = cookieStore.get("xcom_demo_user_id")?.value;
 
     if (!userId) {
       return Response.json(

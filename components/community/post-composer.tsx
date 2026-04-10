@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import {
   Image as ImageIcon,
@@ -30,6 +30,14 @@ export default function PostComposer({
   const [previews, setPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Cleanup blob URLs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      previews.forEach((p) => URL.revokeObjectURL(p));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -50,9 +58,21 @@ export default function PostComposer({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const handleSubmit = async (formData: FormData) => {
+    await action(formData);
+    // Clear previews and reset form after successful submit
+    previews.forEach((p) => URL.revokeObjectURL(p));
+    setPreviews([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (formRef.current) formRef.current.reset();
+  };
+
   return (
     <form
-      action={action}
+      ref={formRef}
+      action={handleSubmit}
       className="border-b border-white/[0.08] px-4 pb-3 pt-4 sm:px-6"
     >
       <input type="hidden" name="communitySlug" value={communitySlug} />
