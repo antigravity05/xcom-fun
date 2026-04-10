@@ -31,7 +31,7 @@ export const postSyncStatusEnum = pgEnum("post_sync_status", [
   "failed",
 ]);
 
-export const reactionKindEnum = pgEnum("reaction_kind", ["like"]);
+export const reactionKindEnum = pgEnum("reaction_kind", ["like", "repost"]);
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),

@@ -556,7 +556,7 @@ export const applyToggleRepost = async (
       id: newReaction.id,
       postId: newReaction.postId,
       userId: newReaction.userId,
-      kind: "like", // Use like as placeholder since repost kind not in schema
+      kind: "repost",
       createdAt: new Date(newReaction.createdAt),
     });
   } else if (existingReaction && !newReaction) {
