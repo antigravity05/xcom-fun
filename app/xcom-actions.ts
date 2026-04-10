@@ -946,6 +946,7 @@ export const toggleRepostAction = async (formData: FormData) => {
     console.error("[x-sync] Retweet sync failed:", err);
   }
 
+  updateTag("xcom-store");
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
 };

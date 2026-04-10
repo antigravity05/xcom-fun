@@ -185,7 +185,7 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
           )}
 
           {/* Media attachment */}
-          {post.media && post.media.kind === "images" ? (
+          {post.media?.kind === "images" ? (
             <div
               className={`mt-3 grid gap-0.5 overflow-hidden rounded-2xl border border-white/[0.08] ${
                 post.media.urls.length === 1
