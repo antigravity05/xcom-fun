@@ -199,20 +199,24 @@ const getExternalTweetId = async (postId: string): Promise<string | null> => {
 
 const syncLikeToX = async (userId: string, postId: string, isLiking: boolean) => {
   try {
+    console.log(`[x-sync] syncLikeToX: userId=${userId}, postId=${postId}, isLiking=${isLiking}`);
     const accountId = await getZernioAccountId(userId);
-    if (!accountId) return;
+    if (!accountId) {
+      console.warn("[x-sync] syncLikeToX: no accountId for user", userId);
+      return;
+    }
 
     const tweetId = await getExternalTweetId(postId);
-    if (!tweetId) return;
-
-    const { likeTweet, unlikeTweet } = await import("@/lib/zernio/client");
-    if (isLiking) {
-      await likeTweet(accountId, tweetId);
-      console.log(`[x-sync] Liked tweet ${tweetId}`);
-    } else {
-      await unlikeTweet(accountId, tweetId);
-      console.log(`[x-sync] Unliked tweet ${tweetId}`);
+    if (!tweetId) {
+      console.warn("[x-sync] syncLikeToX: no external tweetId for post", postId);
+      return;
     }
+    console.log(`[x-sync] syncLikeToX: accountId=${accountId}, tweetId=${tweetId}`);
+
+    // NOTE: Zernio API does NOT support /twitter/like endpoint.
+    // Supported engagement actions: retweet, bookmark, follow only.
+    // Likes are applied locally but cannot be synced to X via Zernio.
+    console.warn(`[x-sync] syncLikeToX: Zernio API does not support like/unlike — like applied locally only`);
   } catch (err) {
     console.error("[x-sync] syncLikeToX error:", err);
   }
@@ -248,25 +252,28 @@ const syncRetweetToX = async (userId: string, postId: string, isRetweeting: bool
 
 const syncReplyToX = async (userId: string, postId: string, body: string) => {
   try {
+    console.log(`[x-sync] syncReplyToX: userId=${userId}, postId=${postId}, body="${body.slice(0, 50)}..."`);
     const accountId = await getZernioAccountId(userId);
     if (!accountId) {
       console.warn("[x-sync] syncReplyToX: no accountId for user", userId);
       return;
     }
+    console.log(`[x-sync] syncReplyToX: got accountId=${accountId}`);
 
     const tweetId = await getExternalTweetId(postId);
+    console.log(`[x-sync] syncReplyToX: getExternalTweetId returned: ${tweetId}`);
 
     // If we have a valid numeric tweet ID, reply as thread; otherwise post standalone
     if (tweetId && /^\d+$/.test(tweetId)) {
-      console.log(`[x-sync] syncReplyToX: replying to tweet ${tweetId}`);
+      console.log(`[x-sync] syncReplyToX: replying to tweet ${tweetId} with accountId=${accountId}`);
       const { replyToTweet } = await import("@/lib/zernio/client");
       const result = await replyToTweet(accountId, tweetId, body);
-      console.log(`[x-sync] Replied to tweet ${tweetId}: ${result.id}`);
+      console.log(`[x-sync] Replied to tweet ${tweetId}:`, JSON.stringify(result));
     } else {
       console.warn(`[x-sync] syncReplyToX: no valid parent tweet ID (got: ${tweetId}) — posting as standalone`);
       const { postTweet } = await import("@/lib/zernio/client");
-      await postTweet(accountId, body);
-      console.log(`[x-sync] Posted reply as standalone tweet`);
+      const result = await postTweet(accountId, body);
+      console.log(`[x-sync] Posted reply as standalone tweet:`, JSON.stringify(result));
     }
   } catch (err) {
     console.error("[x-sync] syncReplyToX error:", err);
@@ -738,6 +745,7 @@ export const createReplyAction = async (formData: FormData) => {
     console.error("[x-sync] Reply sync failed:", err);
   }
 
+  updateTag("xcom-store");
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
 };
@@ -955,6 +963,7 @@ export const toggleLikeAction = async (formData: FormData) => {
     console.error("[x-sync] Like sync failed:", err);
   }
 
+  updateTag("xcom-store");
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
 };
