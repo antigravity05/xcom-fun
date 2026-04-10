@@ -94,12 +94,16 @@ const publishToX = async (
 const getZernioAccountId = async (userId: string): Promise<string | null> => {
   try {
     const { isZernioMode } = await import("@/lib/x/oauth-contract");
-    if (!isZernioMode()) return null;
+    const zernio = isZernioMode();
+    console.log(`[x-sync] getZernioAccountId: isZernioMode=${zernio}, userId=${userId}`);
+    if (!zernio) return null;
 
     const { getUserTokens } = await import("@/lib/x/token-store");
     const tokens = await getUserTokens(userId);
+    console.log(`[x-sync] getZernioAccountId: hasTokens=${Boolean(tokens)}, accessToken=${tokens?.accessToken ? tokens.accessToken.slice(0, 15) + "..." : "NULL"}`);
     return tokens?.accessToken ?? null;
-  } catch {
+  } catch (err) {
+    console.error("[x-sync] getZernioAccountId ERROR:", err);
     return null;
   }
 };
@@ -109,12 +113,23 @@ const getExternalTweetId = async (postId: string): Promise<string | null> => {
   try {
     const { getDb } = await import("@/lib/database/client");
     const db = getDb();
+    console.log(`[x-sync] getExternalTweetId: looking up postId=${postId}`);
+
+    // First check if ANY publication row exists for this post
+    const anyRow = await db.query.postPublications.findFirst({
+      where: (table, { eq }) => eq(table.postId, postId),
+    });
+    console.log(`[x-sync] getExternalTweetId: anyRow=${JSON.stringify(anyRow ? { postId: anyRow.postId, provider: anyRow.provider, status: anyRow.status, externalPostId: anyRow.externalPostId } : null)}`);
+
+    // Now query with full filter
     const row = await db.query.postPublications.findFirst({
       where: (table, { and, eq }) =>
         and(eq(table.postId, postId), eq(table.provider, "x"), eq(table.status, "published")),
     });
+    console.log(`[x-sync] getExternalTweetId: publishedRow externalPostId=${row?.externalPostId ?? "NULL"}`);
     return row?.externalPostId ?? null;
-  } catch {
+  } catch (err) {
+    console.error("[x-sync] getExternalTweetId ERROR:", err);
     return null;
   }
 };
@@ -143,53 +158,61 @@ const syncLikeToX = async (userId: string, postId: string, isLiking: boolean) =>
 };
 
 const syncRetweetToX = async (userId: string, postId: string, isRetweeting: boolean) => {
+  console.log(`[x-sync] ===== syncRetweetToX START =====`);
+  console.log(`[x-sync] syncRetweetToX called with userId=${userId}, postId=${postId}, isRetweeting=${isRetweeting}`);
   try {
     const accountId = await getZernioAccountId(userId);
     if (!accountId) {
-      console.warn("[x-sync] syncRetweetToX: no accountId for user", userId);
+      console.warn("[x-sync] syncRetweetToX: ABORT - no accountId for user", userId);
       return;
     }
 
     const tweetId = await getExternalTweetId(postId);
     if (!tweetId) {
-      console.warn("[x-sync] syncRetweetToX: no external tweetId for post", postId);
+      console.warn("[x-sync] syncRetweetToX: ABORT - no external tweetId for post", postId);
       return;
     }
 
-    console.log(`[x-sync] syncRetweetToX: accountId=${accountId}, tweetId=${tweetId}, isRetweeting=${isRetweeting}`);
+    console.log(`[x-sync] syncRetweetToX: CALLING Zernio. accountId=${accountId.slice(0, 15)}..., tweetId=${tweetId}, isRetweeting=${isRetweeting}`);
     const { retweetPost, undoRetweet } = await import("@/lib/zernio/client");
     if (isRetweeting) {
       await retweetPost(accountId, tweetId);
-      console.log(`[x-sync] Retweeted tweet ${tweetId}`);
+      console.log(`[x-sync] syncRetweetToX: SUCCESS - retweeted ${tweetId}`);
     } else {
       await undoRetweet(accountId, tweetId);
-      console.log(`[x-sync] Undid retweet of tweet ${tweetId}`);
+      console.log(`[x-sync] syncRetweetToX: SUCCESS - undid retweet ${tweetId}`);
     }
+    console.log(`[x-sync] ===== syncRetweetToX END (success) =====`);
   } catch (err) {
-    console.error("[x-sync] syncRetweetToX error:", err);
+    console.error("[x-sync] syncRetweetToX EXCEPTION:", err);
+    console.log(`[x-sync] ===== syncRetweetToX END (error) =====`);
   }
 };
 
 const syncReplyToX = async (userId: string, postId: string, body: string) => {
+  console.log(`[x-sync] ===== syncReplyToX START =====`);
+  console.log(`[x-sync] syncReplyToX called with userId=${userId}, postId=${postId}, body="${body.slice(0, 50)}"`);
   try {
     const accountId = await getZernioAccountId(userId);
     if (!accountId) {
-      console.warn("[x-sync] syncReplyToX: no accountId for user", userId);
+      console.warn("[x-sync] syncReplyToX: ABORT - no accountId for user", userId);
       return;
     }
 
     const tweetId = await getExternalTweetId(postId);
     if (!tweetId) {
-      console.warn("[x-sync] syncReplyToX: no external tweetId for post", postId);
+      console.warn("[x-sync] syncReplyToX: ABORT - no external tweetId for post", postId);
       return;
     }
 
-    console.log(`[x-sync] syncReplyToX: accountId=${accountId}, tweetId=${tweetId}, body="${body.slice(0, 50)}"`);
+    console.log(`[x-sync] syncReplyToX: CALLING replyToTweet(accountId=${accountId.slice(0, 15)}..., tweetId=${tweetId}, body="${body.slice(0, 50)}")`);
     const { replyToTweet } = await import("@/lib/zernio/client");
     const result = await replyToTweet(accountId, tweetId, body);
-    console.log(`[x-sync] Replied to tweet ${tweetId}: ${result.id}`);
+    console.log(`[x-sync] syncReplyToX: SUCCESS - replied to tweet ${tweetId}, result=${JSON.stringify(result)}`);
+    console.log(`[x-sync] ===== syncReplyToX END (success) =====`);
   } catch (err) {
-    console.error("[x-sync] syncReplyToX error:", err);
+    console.error("[x-sync] syncReplyToX EXCEPTION:", err);
+    console.log(`[x-sync] ===== syncReplyToX END (error) =====`);
   }
 };
 
@@ -644,10 +667,12 @@ export const createReplyAction = async (formData: FormData) => {
   }
 
   // Sync reply to X — must await before redirect (serverless kills fire-and-forget)
+  console.log(`[x-sync] createReplyAction: about to sync reply to X. viewerUserId=${viewerUserId}, parentPostId=${postId}, body="${body.slice(0, 30)}"`);
   try {
     await syncReplyToX(viewerUserId, postId, body);
+    console.log(`[x-sync] createReplyAction: syncReplyToX completed`);
   } catch (err) {
-    console.error("[x-sync] Reply sync failed:", err);
+    console.error("[x-sync] createReplyAction: Reply sync FAILED:", err);
   }
 
   revalidatePath(`/communities/${communitySlug}`);

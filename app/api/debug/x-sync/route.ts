@@ -69,8 +69,39 @@ export async function GET(request: Request) {
           "retweet": "/api/debug/x-sync?action=retweet&tweetId=TWITTER_TWEET_ID",
           "reply": "/api/debug/x-sync?action=reply&tweetId=TWITTER_TWEET_ID",
           "fix-publications": "/api/debug/x-sync?action=fix-publications — fetch recent tweets and backfill missing externalPostIds",
+          "simulate-reply": "/api/debug/x-sync?action=simulate-reply&postId=LOCAL_POST_ID — trace the exact app reply flow step by step",
+          "check-pub": "/api/debug/x-sync?action=check-pub&postId=LOCAL_POST_ID — check if a post has a valid publication row",
         },
         timestamp: new Date().toISOString(),
+      });
+    }
+
+    // ── Check publication: quick check if a post has a valid X publication ──
+    if (action === "check-pub") {
+      const postId = searchParams.get("postId");
+      if (!postId) {
+        return NextResponse.json({ ...baseInfo, error: "check-pub requires &postId=LOCAL_POST_ID" }, { status: 400 });
+      }
+
+      // Get ALL publication rows for this post (not just published ones)
+      const allPubRows = pubs.filter((p) => p.postId === postId);
+      const publishedRow = allPubRows.find((p) => p.provider === "x" && p.status === "published");
+
+      return NextResponse.json({
+        ...baseInfo,
+        check: {
+          postId,
+          totalPublicationRows: allPubRows.length,
+          rows: allPubRows.map((p) => ({
+            provider: p.provider,
+            status: p.status,
+            externalPostId: p.externalPostId,
+            lastError: p.lastError,
+          })),
+          hasPublishedXRow: Boolean(publishedRow),
+          externalTweetId: publishedRow?.externalPostId ?? "NULL",
+          wouldSyncReply: Boolean(publishedRow?.externalPostId),
+        },
       });
     }
 
