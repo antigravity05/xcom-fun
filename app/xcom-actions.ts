@@ -41,33 +41,6 @@ const publishToX = async (
       body,
     });
 
-    // Validate: only store real Twitter tweet IDs (numeric), not Zernio internal IDs
-    let tweetId = result.externalPostId ?? null;
-    if (tweetId && !/^\d+$/.test(tweetId)) {
-      console.warn(`[x-sync] externalPostId "${tweetId}" is not a numeric tweet ID — discarding`);
-      tweetId = null;
-    }
-
-    // If no tweet ID yet (Zernio async publishing), wait 2s and try to get it
-    if (!tweetId && result.status === "published") {
-      console.log(`[x-sync] No tweet ID in response. Waiting 2s then searching Zernio...`);
-      try {
-        await new Promise((r) => setTimeout(r, 2000));
-        const { listRecentPosts } = await import("@/lib/zernio/client");
-        const recentPosts = await listRecentPosts();
-        const normalizedBody = body.trim().toLowerCase();
-        const match =
-          recentPosts.find((p) => p.content.trim().toLowerCase() === normalizedBody) ??
-          recentPosts.find((p) => p.content.trim().toLowerCase().includes(normalizedBody));
-        if (match?.platformPostId && /^\d+$/.test(match.platformPostId)) {
-          tweetId = match.platformPostId;
-          console.log(`[x-sync] Got tweet ID from Zernio re-fetch: ${tweetId}`);
-        }
-      } catch (retryErr) {
-        console.error("[x-sync] Zernio re-fetch failed:", retryErr);
-      }
-    }
-
     // Record the publication attempt in the DB (upsert to avoid duplicates)
     try {
       const db = getDb();
@@ -81,7 +54,7 @@ const publishToX = async (
         // Update existing row
         await db.update(postPublications).set({
           status: result.status === "published" ? "published" : "failed",
-          externalPostId: tweetId ?? existing.externalPostId,
+          externalPostId: result.externalPostId ?? existing.externalPostId,
           lastError: result.errorMessage ?? null,
           attemptCount: (existing.attemptCount ?? 0) + 1,
           lastAttemptAt: new Date(),
@@ -91,7 +64,7 @@ const publishToX = async (
           postId,
           provider: "x",
           status: result.status === "published" ? "published" : "failed",
-          externalPostId: tweetId,
+          externalPostId: result.externalPostId ?? null,
           lastError: result.errorMessage ?? null,
           attemptCount: 1,
           lastAttemptAt: new Date(),
@@ -121,105 +94,27 @@ const publishToX = async (
 const getZernioAccountId = async (userId: string): Promise<string | null> => {
   try {
     const { isZernioMode } = await import("@/lib/x/oauth-contract");
-    const zernio = isZernioMode();
-    console.log(`[x-sync] getZernioAccountId: isZernioMode=${zernio}, userId=${userId}`);
-    if (!zernio) return null;
+    if (!isZernioMode()) return null;
 
     const { getUserTokens } = await import("@/lib/x/token-store");
     const tokens = await getUserTokens(userId);
-    console.log(`[x-sync] getZernioAccountId: hasTokens=${Boolean(tokens)}, accessToken=${tokens?.accessToken ? tokens.accessToken.slice(0, 15) + "..." : "NULL"}`);
     return tokens?.accessToken ?? null;
-  } catch (err) {
-    console.error("[x-sync] getZernioAccountId ERROR:", err);
+  } catch {
     return null;
   }
 };
 
-/** Get the external tweet ID for a local post.
- *  Strategy 1: Look in postPublications DB table
- *  Strategy 2: If not in DB, fetch from Zernio by matching post content
- *  If found via Zernio, also saves it to the DB for next time. */
+/** Get the external tweet ID for a local post (from postPublications). */
 const getExternalTweetId = async (postId: string): Promise<string | null> => {
   try {
     const { getDb } = await import("@/lib/database/client");
     const db = getDb();
-    console.log(`[x-sync] getExternalTweetId: looking up postId=${postId}`);
-
-    // Strategy 1: check DB
     const row = await db.query.postPublications.findFirst({
       where: (table, { and, eq }) =>
-        and(eq(table.postId, postId), eq(table.provider, "x")),
+        and(eq(table.postId, postId), eq(table.provider, "x"), eq(table.status, "published")),
     });
-    console.log(`[x-sync] getExternalTweetId: DB row status=${row?.status ?? "NONE"}, externalPostId=${row?.externalPostId ?? "NULL"}`);
-
-    // Twitter tweet IDs are purely numeric strings (e.g. "1234567890123456789").
-    // If the stored ID is NOT numeric, it's a Zernio internal ID that was
-    // mistakenly saved — treat it as null and fall through to Zernio search.
-    const isValidTweetId = (id: string | null | undefined): boolean => {
-      if (!id) return false;
-      return /^\d+$/.test(id);
-    };
-
-    if (row?.externalPostId && isValidTweetId(row.externalPostId)) {
-      return row.externalPostId;
-    }
-    if (row?.externalPostId && !isValidTweetId(row.externalPostId)) {
-      console.warn(`[x-sync] getExternalTweetId: stored ID "${row.externalPostId}" is not a valid tweet ID (Zernio internal ID?) — falling through to Zernio search`);
-    }
-
-    // Strategy 2: search Zernio for this post's content
-    console.log(`[x-sync] getExternalTweetId: externalPostId missing, trying Zernio lookup`);
-    const { posts: postsTable, postPublications } = await import("@/drizzle/schema");
-    const localPost = await db.query.posts.findFirst({
-      where: (table, { eq }) => eq(table.id, postId),
-    });
-    if (!localPost) {
-      console.warn(`[x-sync] getExternalTweetId: local post ${postId} not found in DB`);
-      return null;
-    }
-
-    const { listRecentPosts } = await import("@/lib/zernio/client");
-    const zernioPosts = await listRecentPosts();
-    const normalizedBody = localPost.body.trim().toLowerCase();
-
-    // Try exact match then contains match
-    const match =
-      zernioPosts.find((zp) => zp.content.trim().toLowerCase() === normalizedBody) ??
-      zernioPosts.find((zp) => zp.content.trim().toLowerCase().includes(normalizedBody) || normalizedBody.includes(zp.content.trim().toLowerCase()));
-
-    if (match?.platformPostId) {
-      console.log(`[x-sync] getExternalTweetId: FOUND via Zernio! tweetId=${match.platformPostId}`);
-
-      // Save to DB for next time
-      try {
-        const { eq, and } = await import("drizzle-orm");
-        if (row) {
-          await db.update(postPublications).set({
-            externalPostId: match.platformPostId,
-            status: "published",
-          }).where(and(eq(postPublications.postId, postId), eq(postPublications.provider, "x")));
-        } else {
-          await db.insert(postPublications).values({
-            postId,
-            provider: "x",
-            status: "published",
-            externalPostId: match.platformPostId,
-            attemptCount: 1,
-            lastAttemptAt: new Date(),
-          });
-        }
-        console.log(`[x-sync] getExternalTweetId: saved tweetId to DB`);
-      } catch (dbErr) {
-        console.error("[x-sync] getExternalTweetId: failed to save to DB:", dbErr);
-      }
-
-      return match.platformPostId;
-    }
-
-    console.warn(`[x-sync] getExternalTweetId: no match found on Zernio for "${localPost.body.slice(0, 50)}"`);
-    return null;
-  } catch (err) {
-    console.error("[x-sync] getExternalTweetId ERROR:", err);
+    return row?.externalPostId ?? null;
+  } catch {
     return null;
   }
 };
@@ -248,67 +143,57 @@ const syncLikeToX = async (userId: string, postId: string, isLiking: boolean) =>
 };
 
 const syncRetweetToX = async (userId: string, postId: string, isRetweeting: boolean) => {
-  console.log(`[x-sync] ===== syncRetweetToX START =====`);
-  console.log(`[x-sync] syncRetweetToX called with userId=${userId}, postId=${postId}, isRetweeting=${isRetweeting}`);
   try {
     const accountId = await getZernioAccountId(userId);
     if (!accountId) {
-      console.warn("[x-sync] syncRetweetToX: ABORT - no accountId for user", userId);
+      console.warn("[x-sync] syncRetweetToX: no accountId for user", userId);
       return;
     }
 
     const tweetId = await getExternalTweetId(postId);
     if (!tweetId) {
-      console.warn("[x-sync] syncRetweetToX: ABORT - no external tweetId for post", postId);
+      console.warn("[x-sync] syncRetweetToX: no external tweetId for post", postId);
       return;
     }
 
-    console.log(`[x-sync] syncRetweetToX: CALLING Zernio. accountId=${accountId.slice(0, 15)}..., tweetId=${tweetId}, isRetweeting=${isRetweeting}`);
+    console.log(`[x-sync] syncRetweetToX: accountId=${accountId}, tweetId=${tweetId}, isRetweeting=${isRetweeting}`);
     const { retweetPost, undoRetweet } = await import("@/lib/zernio/client");
     if (isRetweeting) {
       await retweetPost(accountId, tweetId);
-      console.log(`[x-sync] syncRetweetToX: SUCCESS - retweeted ${tweetId}`);
+      console.log(`[x-sync] Retweeted tweet ${tweetId}`);
     } else {
       await undoRetweet(accountId, tweetId);
-      console.log(`[x-sync] syncRetweetToX: SUCCESS - undid retweet ${tweetId}`);
+      console.log(`[x-sync] Undid retweet of tweet ${tweetId}`);
     }
-    console.log(`[x-sync] ===== syncRetweetToX END (success) =====`);
   } catch (err) {
-    console.error("[x-sync] syncRetweetToX EXCEPTION:", err);
-    console.log(`[x-sync] ===== syncRetweetToX END (error) =====`);
+    console.error("[x-sync] syncRetweetToX error:", err);
   }
 };
 
 const syncReplyToX = async (userId: string, postId: string, body: string) => {
-  console.log(`[x-sync] ===== syncReplyToX START =====`);
-  console.log(`[x-sync] syncReplyToX called with userId=${userId}, postId=${postId}, body="${body.slice(0, 50)}"`);
   try {
     const accountId = await getZernioAccountId(userId);
     if (!accountId) {
-      console.warn("[x-sync] syncReplyToX: ABORT - no accountId for user", userId);
+      console.warn("[x-sync] syncReplyToX: no accountId for user", userId);
       return;
     }
 
     const tweetId = await getExternalTweetId(postId);
 
-    if (tweetId) {
-      // Happy path: reply as a threaded reply on X
-      console.log(`[x-sync] syncReplyToX: CALLING replyToTweet(accountId=${accountId.slice(0, 15)}..., tweetId=${tweetId}, body="${body.slice(0, 50)}")`);
+    // If we have a valid numeric tweet ID, reply as thread; otherwise post standalone
+    if (tweetId && /^\d+$/.test(tweetId)) {
+      console.log(`[x-sync] syncReplyToX: replying to tweet ${tweetId}`);
       const { replyToTweet } = await import("@/lib/zernio/client");
       const result = await replyToTweet(accountId, tweetId, body);
-      console.log(`[x-sync] syncReplyToX: SUCCESS - replied to tweet ${tweetId}, result=${JSON.stringify(result)}`);
+      console.log(`[x-sync] Replied to tweet ${tweetId}: ${result.id}`);
     } else {
-      // Fallback: post as a standalone tweet so it at least appears on X
-      console.warn(`[x-sync] syncReplyToX: no parent tweet ID found — posting as standalone tweet`);
+      console.warn(`[x-sync] syncReplyToX: no valid parent tweet ID (got: ${tweetId}) — posting as standalone`);
       const { postTweet } = await import("@/lib/zernio/client");
-      const result = await postTweet(accountId, body);
-      console.log(`[x-sync] syncReplyToX: posted as standalone tweet, result=${JSON.stringify(result)}`);
+      await postTweet(accountId, body);
+      console.log(`[x-sync] Posted reply as standalone tweet`);
     }
-
-    console.log(`[x-sync] ===== syncReplyToX END (success) =====`);
   } catch (err) {
-    console.error("[x-sync] syncReplyToX EXCEPTION:", err);
-    console.log(`[x-sync] ===== syncReplyToX END (error) =====`);
+    console.error("[x-sync] syncReplyToX error:", err);
   }
 };
 
@@ -673,17 +558,17 @@ export const createPostAction = async (formData: FormData) => {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 
-  // Validate body
+  // Validate body — Zod throws on invalid input, so we catch it
   let body: string;
   try {
     body = bodySchema.parse(String(formData.get("body") ?? ""));
   } catch {
+    // Body too short or too long — redirect back with error
     const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Post must be between 2 and 1000 characters.")}`;
     redirect(errorUrl);
-    return;
+    return; // unreachable, but keeps TS happy
   }
 
-  // Create post in local DB
   let nextSnapshot;
   try {
     nextSnapshot = await applyCreatePost({
@@ -700,8 +585,10 @@ export const createPostAction = async (formData: FormData) => {
   }
 
   // ── X/Twitter sync via Zernio — must await before redirect ──
+  // On Vercel serverless, fire-and-forget promises get killed when redirect() sends the response.
   const community = nextSnapshot.communities.find((c) => c.slug === communitySlug);
   if (community) {
+    // Find the NEWEST post by this user (last in array = most recently created)
     const userPostsInCommunity = nextSnapshot.posts.filter(
       (p) =>
         p.communityId === community.id &&
@@ -715,6 +602,8 @@ export const createPostAction = async (formData: FormData) => {
       } catch (err) {
         console.error("[x-sync] Publication failed:", err);
       }
+    } else {
+      console.warn("[x-sync] Could not find new post to publish");
     }
   }
 
@@ -735,36 +624,34 @@ export const createReplyAction = async (formData: FormData) => {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 
-  const rawBody = String(formData.get("body") ?? "");
-  const parsedBody = bodySchema.safeParse(rawBody);
-  if (!parsedBody.success) {
+  let body: string;
+  try {
+    body = bodySchema.parse(String(formData.get("body") ?? ""));
+  } catch {
     const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Reply must be between 2 and 1000 characters.")}`;
     redirect(errorUrl);
+    return;
   }
-  const body = parsedBody.data;
 
-  // Create reply in local DB
-  let replyCreated = false;
   try {
     await applyCreateReply({
       actorUserId: viewerUserId,
       postId,
       body,
     });
-    replyCreated = true;
   } catch (err) {
     console.error("[createReplyAction] Failed to create reply:", err);
+    const message = err instanceof Error ? err.message : "Failed to create reply.";
+    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent(message)}`;
+    redirect(errorUrl);
+    return;
   }
 
-  // Sync reply to X — always attempt if reply was created locally
-  if (replyCreated) {
-    console.log(`[x-sync] createReplyAction: syncing reply to X. viewerUserId=${viewerUserId}, parentPostId=${postId}, body="${body.slice(0, 30)}"`);
-    try {
-      await syncReplyToX(viewerUserId, postId, body);
-      console.log(`[x-sync] createReplyAction: syncReplyToX completed`);
-    } catch (err) {
-      console.error("[x-sync] createReplyAction: Reply sync FAILED:", err);
-    }
+  // Sync reply to X — must await before redirect (serverless kills fire-and-forget)
+  try {
+    await syncReplyToX(viewerUserId, postId, body);
+  } catch (err) {
+    console.error("[x-sync] Reply sync failed:", err);
   }
 
   revalidatePath(`/communities/${communitySlug}`);
