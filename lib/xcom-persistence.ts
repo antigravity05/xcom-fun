@@ -1,5 +1,6 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
 import type {
   CommunityPostMedia,
   CommunityRole,
@@ -316,6 +317,19 @@ export const readXcomStore = async (): Promise<XcomStoreSnapshot> => {
   const content = await readFile(storeFilePath, "utf8");
   return JSON.parse(content) as XcomStoreSnapshot;
 };
+
+/**
+ * Cached version of readXcomStore for READ operations (page rendering).
+ * Caches the full snapshot for 60 seconds, invalidated via revalidateTag('xcom-store').
+ * This prevents every page visit from hitting the DB — massively reduces Neon transfer.
+ */
+export const cachedReadXcomStore = unstable_cache(
+  async (): Promise<XcomStoreSnapshot> => {
+    return readXcomStore();
+  },
+  ["xcom-store"],
+  { tags: ["xcom-store"], revalidate: 60 },
+);
 
 const writeXcomStore = async (snapshot: XcomStoreSnapshot) => {
   const { writeFile } = await import("node:fs/promises");

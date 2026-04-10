@@ -9,7 +9,7 @@ import type {
   MembershipStatus,
 } from "@/lib/xcom-domain";
 import { getViewerUserId } from "@/lib/xcom-session";
-import { readXcomStore } from "@/lib/xcom-persistence";
+import { cachedReadXcomStore as readXcomStore } from "@/lib/xcom-persistence";
 import type { XcomStoreSnapshot, XcomStoreUser } from "@/lib/xcom-store";
 
 type CommunityVisualProfile = {

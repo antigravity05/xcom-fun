@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { and, count, eq, sql } from "drizzle-orm";
 import {
   communityMemberships,
@@ -36,7 +37,10 @@ import type { XcomStoreSnapshot } from "@/lib/xcom-store";
 const createId = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
 
-export const readXcomStore = async (): Promise<XcomStoreSnapshot> => {
+// cache() deduplicates calls within a single React server request,
+// so multiple components/actions that call readXcomStore() in the same
+// request will share one DB round-trip instead of 2-3 separate ones.
+export const readXcomStore = cache(async (): Promise<XcomStoreSnapshot> => {
   const db = getDb();
 
   // Fetch all data from database
@@ -140,7 +144,7 @@ export const readXcomStore = async (): Promise<XcomStoreSnapshot> => {
     replies: storeReplies,
     reactions: storeReactions,
   };
-};
+});
 
 export const applyCreateCommunity = async (
   input: Parameters<typeof createCommunityOperation>[1],

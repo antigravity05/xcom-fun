@@ -1,7 +1,7 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import {
@@ -432,6 +432,7 @@ export const connectDemoAccountAction = async (formData: FormData) => {
   }
 
   await setViewerUserId(userId);
+  updateTag("xcom-store");
   revalidatePath("/");
   redirect(redirectTo);
 };
@@ -439,6 +440,7 @@ export const connectDemoAccountAction = async (formData: FormData) => {
 export const disconnectDemoAccountAction = async (formData: FormData) => {
   const redirectTo = String(formData.get("redirectTo") ?? "/");
   await clearViewerUserId();
+  updateTag("xcom-store");
   revalidatePath("/");
   redirect(redirectTo);
 };
@@ -498,6 +500,7 @@ export const createCommunityAction = async (formData: FormData) => {
     };
   }
 
+  updateTag("xcom-store");
   revalidatePath("/");
   revalidatePath("/create-community");
 
@@ -553,6 +556,7 @@ export const updateCommunityAction = async (formData: FormData) => {
     };
   }
 
+  updateTag("xcom-store");
   revalidatePath("/");
   revalidatePath(`/communities/${communitySlug}`);
 
@@ -575,6 +579,7 @@ export const deleteCommunityAction = async (formData: FormData) => {
     communitySlug,
   });
 
+  updateTag("xcom-store");
   revalidatePath("/");
   revalidatePath("/create-community");
   revalidatePath(`/communities/${communitySlug}`);
@@ -597,6 +602,7 @@ export const joinCommunityAction = async (formData: FormData) => {
     communitySlug,
   });
 
+  updateTag("xcom-store");
   revalidatePath("/");
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
@@ -618,6 +624,7 @@ export const leaveCommunityAction = async (formData: FormData) => {
     communitySlug,
   });
 
+  updateTag("xcom-store");
   revalidatePath("/");
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
@@ -683,6 +690,7 @@ export const createPostAction = async (formData: FormData) => {
     }
   }
 
+  updateTag("xcom-store");
   revalidatePath("/");
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
@@ -769,6 +777,7 @@ export const updatePostAction = async (formData: FormData) => {
     return;
   }
 
+  updateTag("xcom-store");
   revalidatePath("/");
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
@@ -799,6 +808,7 @@ export const deletePostAction = async (formData: FormData) => {
     return;
   }
 
+  updateTag("xcom-store");
   revalidatePath("/");
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
@@ -827,6 +837,7 @@ export const togglePinnedPostAction = async (formData: FormData) => {
     return;
   }
 
+  updateTag("xcom-store");
   revalidatePath("/");
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
@@ -899,6 +910,7 @@ export const setMemberRoleAction = async (formData: FormData) => {
     role: roleValue,
   });
 
+  updateTag("xcom-store");
   revalidatePath("/");
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
