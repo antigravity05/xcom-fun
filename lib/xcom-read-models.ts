@@ -19,26 +19,7 @@ type CommunityVisualProfile = {
   coverTo: string;
 };
 
-const communityVisualProfiles: Record<string, CommunityVisualProfile> = {
-  "claude-bug-bounty": {
-    avatar: "CB",
-    accentColor: "#52a9ff",
-    coverFrom: "#081324",
-    coverTo: "#133b73",
-  },
-  opus: {
-    avatar: "OP",
-    accentColor: "#ffd166",
-    coverFrom: "#30210a",
-    coverTo: "#805315",
-  },
-  "solstice-labs": {
-    avatar: "SL",
-    accentColor: "#53f1c4",
-    coverFrom: "#05261e",
-    coverTo: "#0d5c48",
-  },
-};
+const communityVisualProfiles: Record<string, CommunityVisualProfile> = {};
 
 const defaultVisualProfile = (name: string): CommunityVisualProfile => {
   return {
@@ -79,7 +60,7 @@ const toMemberIdentity = (
   };
 };
 
-const verifiedHandles = new Set(["@shuvonsec", "@rdbotato", "@ayaops"]);
+const verifiedHandles = new Set<string>();
 const membershipRoleOrder: Record<CommunityRole, number> = {
   admin: 0,
   moderator: 1,

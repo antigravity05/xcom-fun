@@ -12,7 +12,6 @@ import {
   Trash2,
 } from "lucide-react";
 import {
-  createReplyAction,
   deletePostAction,
   togglePinnedPostAction,
   toggleRepostAction,
@@ -25,6 +24,7 @@ import {
   formatRelativeTime,
 } from "@/lib/xcom-formatters";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
+import { ReplyForm } from "@/components/community/reply-form";
 
 type PostCardProps = {
   post: CommunityPostRecord & {
@@ -354,28 +354,11 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
 
           {/* Reply form */}
           {interaction?.canInteract && !interaction.isEditing ? (
-            <form
-              action={createReplyAction}
-              className="mt-2 flex items-center gap-2.5 border-t border-white/[0.06] pt-3"
-            >
-              <input type="hidden" name="postId" value={post.id} />
-              <input type="hidden" name="communitySlug" value={interaction.communitySlug} />
-              <input type="hidden" name="redirectTo" value={interaction.redirectTo} />
-              <div className="min-w-0 flex-1">
-                <input
-                  type="text"
-                  name="body"
-                  className="signal-focus w-full rounded-full border border-white/[0.08] bg-surface-secondary/50 px-4 py-2 text-[14px] text-white placeholder:text-copy-soft"
-                  placeholder="Post your reply"
-                />
-              </div>
-              <FormSubmitButton
-                className="shrink-0 rounded-full bg-accent-secondary px-4 py-2 text-[13px] font-bold text-white transition hover:brightness-110"
-                pendingChildren="..."
-              >
-                Reply
-              </FormSubmitButton>
-            </form>
+            <ReplyForm
+              postId={post.id}
+              communitySlug={interaction.communitySlug}
+              redirectTo={interaction.redirectTo}
+            />
           ) : null}
         </div>
       </div>

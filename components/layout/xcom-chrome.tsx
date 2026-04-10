@@ -131,13 +131,33 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
                 X<span className="text-accent-secondary">-COM</span>
               </Link>
               {viewer ? (
-                <div className="flex size-8 items-center justify-center rounded-full bg-accent-secondary/20 text-xs font-bold text-white overflow-hidden">
-                  {viewerAvatarUrl ? (
-                    <img src={viewerAvatarUrl} alt={viewer.displayName} className="size-full object-cover" />
-                  ) : (
-                    viewerAvatarInitial
-                  )}
-                </div>
+                <details className="relative">
+                  <summary className="list-none cursor-pointer">
+                    <div className="flex size-8 items-center justify-center rounded-full bg-accent-secondary/20 text-xs font-bold text-white overflow-hidden">
+                      {viewerAvatarUrl ? (
+                        <img src={viewerAvatarUrl} alt={viewer.displayName} className="size-full object-cover" />
+                      ) : (
+                        viewerAvatarInitial
+                      )}
+                    </div>
+                  </summary>
+                  <div className="absolute right-0 top-full mt-1 z-50 w-56 rounded-2xl border border-white/[0.08] bg-surface-secondary p-2 shadow-xl">
+                    <div className="px-3 py-2 border-b border-white/[0.08] mb-1">
+                      <div className="text-[14px] font-bold text-white truncate">{viewer.displayName}</div>
+                      <div className="text-[12px] text-copy-muted truncate">{viewer.xHandle}</div>
+                    </div>
+                    <form action={disconnectDemoAccountAction}>
+                      <input type="hidden" name="redirectTo" value="/" />
+                      <button
+                        type="submit"
+                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] text-red-400 transition hover:bg-white/[0.06]"
+                      >
+                        <LogOut className="size-4" />
+                        Log out
+                      </button>
+                    </form>
+                  </div>
+                </details>
               ) : (
                 <Link
                   href="/connect-x"
@@ -227,6 +247,7 @@ const MobileNavItem = ({
 }) => (
   <Link
     href={href}
+    aria-label={label}
     className={`flex flex-col items-center gap-0.5 px-6 py-1 ${
       isActive ? "text-white" : "text-copy-muted"
     }`}

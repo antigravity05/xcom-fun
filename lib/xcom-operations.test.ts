@@ -14,8 +14,9 @@ import {
   updateCommunity,
   updatePost,
 } from "./xcom-operations";
+import type { XcomStoreSnapshot } from "./xcom-store";
 
-const baseState = {
+const baseState: XcomStoreSnapshot = {
   users: [
     {
       id: "user-admin",
@@ -59,7 +60,7 @@ const baseState = {
   posts: [],
   replies: [],
   reactions: [],
-} as const;
+};
 
 describe("xcom operations", () => {
   it("creates a community and makes the creator an active admin member", () => {
