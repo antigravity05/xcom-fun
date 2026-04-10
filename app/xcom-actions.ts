@@ -577,53 +577,52 @@ export const createPostAction = async (formData: FormData) => {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 
-  // Validate body — Zod throws on invalid input, so we catch it
-  let body: string;
-  try {
-    body = bodySchema.parse(String(formData.get("body") ?? ""));
-  } catch {
-    // Body too short or too long — redirect back with error
+  // Validate body
+  const rawBody = String(formData.get("body") ?? "");
+  const parsedBody = bodySchema.safeParse(rawBody);
+  if (!parsedBody.success) {
     const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Post must be between 2 and 1000 characters.")}`;
     redirect(errorUrl);
-    return; // unreachable, but keeps TS happy
   }
+  const body = parsedBody.data;
 
-  let nextSnapshot;
+  // Create post in local DB
+  let newPostId: string | null = null;
   try {
-    nextSnapshot = await applyCreatePost({
+    const nextSnapshot = await applyCreatePost({
       actorUserId: viewerUserId,
       communitySlug,
       body,
     });
+
+    // Find the NEWEST post by this user (last in array = most recently created)
+    const community = nextSnapshot.communities.find((c) => c.slug === communitySlug);
+    if (community) {
+      const userPostsInCommunity = nextSnapshot.posts.filter(
+        (p) =>
+          p.communityId === community.id &&
+          p.authorUserId === viewerUserId,
+      );
+      const newPost = userPostsInCommunity[userPostsInCommunity.length - 1];
+      newPostId = newPost?.id ?? null;
+    }
   } catch (err) {
     console.error("[createPostAction] Failed to create post:", err);
     const message = err instanceof Error ? err.message : "Failed to create post.";
     const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent(message)}`;
     redirect(errorUrl);
-    return;
   }
 
   // ── X/Twitter sync via Zernio — must await before redirect ──
-  // On Vercel serverless, fire-and-forget promises get killed when redirect() sends the response.
-  const community = nextSnapshot.communities.find((c) => c.slug === communitySlug);
-  if (community) {
-    // Find the NEWEST post by this user (last in array = most recently created)
-    const userPostsInCommunity = nextSnapshot.posts.filter(
-      (p) =>
-        p.communityId === community.id &&
-        p.authorUserId === viewerUserId,
-    );
-    const newPost = userPostsInCommunity[userPostsInCommunity.length - 1];
-    if (newPost) {
-      console.log(`[x-sync] Publishing post ${newPost.id} (body: "${body.slice(0, 30)}") to X`);
-      try {
-        await publishToX(viewerUserId, newPost.id, body);
-      } catch (err) {
-        console.error("[x-sync] Publication failed:", err);
-      }
-    } else {
-      console.warn("[x-sync] Could not find new post to publish");
+  if (newPostId) {
+    console.log(`[x-sync] Publishing post ${newPostId} (body: "${body.slice(0, 30)}") to X`);
+    try {
+      await publishToX(viewerUserId, newPostId, body);
+    } catch (err) {
+      console.error("[x-sync] Publication failed:", err);
     }
+  } else {
+    console.warn("[x-sync] Could not find new post to publish");
   }
 
   revalidatePath("/");
@@ -643,36 +642,36 @@ export const createReplyAction = async (formData: FormData) => {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 
-  let body: string;
-  try {
-    body = bodySchema.parse(String(formData.get("body") ?? ""));
-  } catch {
+  const rawBody = String(formData.get("body") ?? "");
+  const parsedBody = bodySchema.safeParse(rawBody);
+  if (!parsedBody.success) {
     const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Reply must be between 2 and 1000 characters.")}`;
     redirect(errorUrl);
-    return;
   }
+  const body = parsedBody.data;
 
+  // Create reply in local DB
+  let replyCreated = false;
   try {
     await applyCreateReply({
       actorUserId: viewerUserId,
       postId,
       body,
     });
+    replyCreated = true;
   } catch (err) {
     console.error("[createReplyAction] Failed to create reply:", err);
-    const message = err instanceof Error ? err.message : "Failed to create reply.";
-    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent(message)}`;
-    redirect(errorUrl);
-    return;
   }
 
-  // Sync reply to X — must await before redirect (serverless kills fire-and-forget)
-  console.log(`[x-sync] createReplyAction: about to sync reply to X. viewerUserId=${viewerUserId}, parentPostId=${postId}, body="${body.slice(0, 30)}"`);
-  try {
-    await syncReplyToX(viewerUserId, postId, body);
-    console.log(`[x-sync] createReplyAction: syncReplyToX completed`);
-  } catch (err) {
-    console.error("[x-sync] createReplyAction: Reply sync FAILED:", err);
+  // Sync reply to X — always attempt if reply was created locally
+  if (replyCreated) {
+    console.log(`[x-sync] createReplyAction: syncing reply to X. viewerUserId=${viewerUserId}, parentPostId=${postId}, body="${body.slice(0, 30)}"`);
+    try {
+      await syncReplyToX(viewerUserId, postId, body);
+      console.log(`[x-sync] createReplyAction: syncReplyToX completed`);
+    } catch (err) {
+      console.error("[x-sync] createReplyAction: Reply sync FAILED:", err);
+    }
   }
 
   revalidatePath(`/communities/${communitySlug}`);

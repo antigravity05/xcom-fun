@@ -228,7 +228,34 @@ export type ZernioPostResult = {
 };
 
 /**
+ * Fetch a single Zernio post by its internal ID.
+ * Used to re-fetch a post when the initial response doesn't include platformPostId.
+ */
+const fetchZernioPost = async (zernioPostId: string): Promise<ZernioPostResult | null> => {
+  try {
+    const raw = (await zernioFetch(`/posts/${zernioPostId}`, {
+      method: "GET",
+    })) as Record<string, unknown>;
+    const post = (raw.post ?? raw.data ?? raw) as ZernioPostResult;
+    return post;
+  } catch (err) {
+    console.warn("[zernio] fetchZernioPost failed:", err);
+    return null;
+  }
+};
+
+/**
+ * Check if a ZernioPostResult has the Twitter platformPostId resolved.
+ */
+const getTwitterPlatformPostId = (post: ZernioPostResult): string | null => {
+  const twitterEntry = post.platforms?.find((p) => p.platform === "twitter");
+  return twitterEntry?.platformPostId ?? twitterEntry?.postId ?? null;
+};
+
+/**
  * Publish a tweet via Zernio on behalf of a connected account.
+ * If the initial response doesn't include platformPostId (tweet still publishing),
+ * retries by fetching the post after a short delay.
  */
 export const postTweet = async (
   accountId: string,
@@ -248,11 +275,30 @@ export const postTweet = async (
     }),
   })) as Record<string, unknown>;
 
-  // Log full response to understand the shape
   console.log("[zernio] postTweet raw response:", JSON.stringify(raw));
 
   // Zernio may nest the result under "post", "data", or return it at root
-  const post = (raw.post ?? raw.data ?? raw) as ZernioPostResult;
+  let post = (raw.post ?? raw.data ?? raw) as ZernioPostResult;
+
+  // Check if we got the Twitter platformPostId
+  if (!getTwitterPlatformPostId(post)) {
+    // platformPostId missing — tweet might still be publishing.
+    // Wait briefly and re-fetch the post to get the final tweet ID.
+    const zernioPostId = post._id ?? post.id;
+    if (zernioPostId) {
+      console.log(`[zernio] platformPostId missing, will retry fetch for ${zernioPostId} in 2s`);
+      await new Promise((r) => setTimeout(r, 2000));
+      const refetched = await fetchZernioPost(zernioPostId);
+      if (refetched) {
+        const retryTweetId = getTwitterPlatformPostId(refetched);
+        console.log(`[zernio] Retry fetch result: platformPostId=${retryTweetId ?? "STILL NULL"}`);
+        if (retryTweetId) {
+          post = refetched;
+        }
+      }
+    }
+  }
+
   return post;
 };
 

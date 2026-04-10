@@ -52,7 +52,6 @@ const publishViaZernio = async (
     const zernioAccountId = storedTokens.accessToken;
     const result = await zernioPostTweet(zernioAccountId, intent.body);
 
-    // Log the full Zernio response so we can see the exact shape
     console.log("[x-sync] Zernio postTweet full response:", JSON.stringify(result));
 
     const twitterResult = result.platforms?.find(
@@ -70,21 +69,41 @@ const publishViaZernio = async (
     const externalId =
       twitterResult?.platformPostId ??
       twitterResult?.postId ??
-      result._id ??
-      result.id ??
       null;
 
-    console.log("[x-sync] Resolved externalPostId:", externalId, "| platformPostId:", twitterResult?.platformPostId, "| platformPostUrl:", twitterResult?.platformPostUrl);
+    console.log("[x-sync] Resolved externalPostId:", externalId, "| twitterResult:", JSON.stringify(twitterResult));
+
+    if (!externalId) {
+      // Tweet might have been posted on X but we couldn't get the ID back.
+      // Mark as published but log a warning — replies won't work for this post.
+      console.warn("[x-sync] WARNING: Tweet posted but no platformPostId returned. Zernio _id:", result._id ?? result.id);
+      return {
+        status: "published",
+        externalPostId: undefined,
+        errorMessage: "Tweet posted but external ID not returned by Zernio",
+      };
+    }
 
     return {
       status: "published",
-      externalPostId: externalId ?? undefined,
+      externalPostId: externalId,
     };
   } catch (error) {
     console.error("Zernio publication error:", error);
+    const msg = error instanceof Error ? error.message : "Unknown error";
+
+    // Handle Zernio Conflict (duplicate content) — the tweet may have already been posted
+    if (msg.includes("Conflict")) {
+      console.warn("[x-sync] Conflict error — content may already be posted on X");
+      return {
+        status: "failed",
+        errorMessage: "Duplicate content — this tweet may already exist on X",
+      };
+    }
+
     return {
       status: "failed",
-      errorMessage: error instanceof Error ? error.message : "Unknown error",
+      errorMessage: msg,
     };
   }
 };
