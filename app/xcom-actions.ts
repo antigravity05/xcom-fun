@@ -41,6 +41,33 @@ const publishToX = async (
       body,
     });
 
+    // Validate: only store real Twitter tweet IDs (numeric), not Zernio internal IDs
+    let tweetId = result.externalPostId ?? null;
+    if (tweetId && !/^\d+$/.test(tweetId)) {
+      console.warn(`[x-sync] externalPostId "${tweetId}" is not a numeric tweet ID — discarding`);
+      tweetId = null;
+    }
+
+    // If no tweet ID yet (Zernio async publishing), wait 2s and try to get it
+    if (!tweetId && result.status === "published") {
+      console.log(`[x-sync] No tweet ID in response. Waiting 2s then searching Zernio...`);
+      try {
+        await new Promise((r) => setTimeout(r, 2000));
+        const { listRecentPosts } = await import("@/lib/zernio/client");
+        const recentPosts = await listRecentPosts();
+        const normalizedBody = body.trim().toLowerCase();
+        const match =
+          recentPosts.find((p) => p.content.trim().toLowerCase() === normalizedBody) ??
+          recentPosts.find((p) => p.content.trim().toLowerCase().includes(normalizedBody));
+        if (match?.platformPostId && /^\d+$/.test(match.platformPostId)) {
+          tweetId = match.platformPostId;
+          console.log(`[x-sync] Got tweet ID from Zernio re-fetch: ${tweetId}`);
+        }
+      } catch (retryErr) {
+        console.error("[x-sync] Zernio re-fetch failed:", retryErr);
+      }
+    }
+
     // Record the publication attempt in the DB (upsert to avoid duplicates)
     try {
       const db = getDb();
@@ -54,7 +81,7 @@ const publishToX = async (
         // Update existing row
         await db.update(postPublications).set({
           status: result.status === "published" ? "published" : "failed",
-          externalPostId: result.externalPostId ?? existing.externalPostId,
+          externalPostId: tweetId ?? existing.externalPostId,
           lastError: result.errorMessage ?? null,
           attemptCount: (existing.attemptCount ?? 0) + 1,
           lastAttemptAt: new Date(),
@@ -64,7 +91,7 @@ const publishToX = async (
           postId,
           provider: "x",
           status: result.status === "published" ? "published" : "failed",
-          externalPostId: result.externalPostId ?? null,
+          externalPostId: tweetId,
           lastError: result.errorMessage ?? null,
           attemptCount: 1,
           lastAttemptAt: new Date(),
