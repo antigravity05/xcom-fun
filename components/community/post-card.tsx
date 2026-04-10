@@ -14,7 +14,6 @@ import {
   deletePostAction,
   togglePinnedPostAction,
   toggleRepostAction,
-  toggleLikeAction,
   updatePostAction,
 } from "@/app/xcom-actions";
 import type { CommunityPostRecord } from "@/lib/xcom-domain";
@@ -24,6 +23,10 @@ import {
 } from "@/lib/xcom-formatters";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { ReplyButton } from "@/components/community/reply-button";
+import { PostBody } from "@/components/community/post-body";
+import { BookmarkButton, ShareButton } from "@/components/community/post-actions";
+import { LikeButton } from "@/components/community/like-button";
+import { ConnectCTAWrapper } from "@/components/community/connect-cta";
 
 type PostCardProps = {
   post: CommunityPostRecord & {
@@ -63,7 +66,7 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
           {post.author.avatar?.startsWith("http") ? (
             <img src={post.author.avatar} alt={post.author.displayName} className="size-full object-cover" />
           ) : (
-            post.author.avatar
+            post.author.displayName?.[0]?.toUpperCase() ?? "X"
           )}
         </Link>
 
@@ -90,6 +93,26 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
               <time className="shrink-0 text-copy-muted hover:underline">
                 {formatRelativeTime(post.createdAt)}
               </time>
+              {/* X sync status indicator */}
+              {post.xSyncStatus === "published" ? (
+                <span className="shrink-0 text-copy-soft" title="Synced to X">
+                  <svg className="size-3.5 inline-block" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                </span>
+              ) : post.xSyncStatus === "pending" ? (
+                <span className="shrink-0 text-yellow-500/60" title="Syncing to X...">
+                  <svg className="size-3.5 inline-block animate-pulse" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                </span>
+              ) : post.xSyncStatus === "failed" ? (
+                <span className="shrink-0 text-danger-soft/60" title="Failed to sync to X">
+                  <svg className="size-3.5 inline-block" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                </span>
+              ) : null}
             </div>
 
             {/* More menu */}
@@ -177,9 +200,10 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
               </div>
             </form>
           ) : (
-            <div className="mt-0.5 whitespace-pre-line text-[15px] leading-[22px] text-white/[0.93]">
-              {post.body}
-            </div>
+            <PostBody
+              body={post.body}
+              className="mt-0.5 text-[15px] leading-[22px] text-white/[0.93]"
+            />
           )}
 
           {/* Media attachment */}
@@ -270,44 +294,34 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
                 </FormSubmitButton>
               </form>
             ) : (
-              <div className="flex min-w-[52px] items-center gap-1.5 px-2 py-1.5 text-[13px] text-copy-muted">
-                <span className="flex size-[34px] items-center justify-center">
-                  <Repeat2 className="size-[18px]" />
-                </span>
-                <span className="-ml-1">{formatCompactNumber(post.metrics.reposts)}</span>
-              </div>
+              <ConnectCTAWrapper>
+                <div className="flex min-w-[52px] items-center gap-1.5 px-2 py-1.5 text-[13px] text-copy-muted hover:text-accent-tertiary transition">
+                  <span className="flex size-[34px] items-center justify-center">
+                    <Repeat2 className="size-[18px]" />
+                  </span>
+                  <span className="-ml-1">{formatCompactNumber(post.metrics.reposts)}</span>
+                </div>
+              </ConnectCTAWrapper>
             )}
 
             {/* Like */}
             {interaction?.canInteract ? (
-              <form action={toggleLikeAction}>
-                <input type="hidden" name="postId" value={post.id} />
-                <input type="hidden" name="communitySlug" value={interaction.communitySlug} />
-                <input type="hidden" name="redirectTo" value={interaction.redirectTo} />
-                <FormSubmitButton
-                  className={`group/btn flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-1.5 text-[13px] transition ${
-                    post.viewerHasLiked
-                      ? "text-accent-primary"
-                      : "text-copy-muted hover:text-accent-primary"
-                  }`}
-                >
-                  <span className="flex size-[34px] items-center justify-center rounded-full transition group-hover/btn:bg-accent-primary/10">
-                    <Heart
-                      className={`size-[18px] transition-transform ${
-                        post.viewerHasLiked ? "scale-110 fill-current" : "group-hover/btn:scale-110"
-                      }`}
-                    />
+              <LikeButton
+                postId={post.id}
+                communitySlug={interaction.communitySlug}
+                redirectTo={interaction.redirectTo}
+                likeCount={post.metrics.likes}
+                viewerHasLiked={post.viewerHasLiked ?? false}
+              />
+            ) : (
+              <ConnectCTAWrapper>
+                <div className="flex min-w-[52px] items-center gap-1.5 px-2 py-1.5 text-[13px] text-copy-muted hover:text-accent-primary transition">
+                  <span className="flex size-[34px] items-center justify-center">
+                    <Heart className="size-[18px]" />
                   </span>
                   <span className="-ml-1">{formatCompactNumber(post.metrics.likes)}</span>
-                </FormSubmitButton>
-              </form>
-            ) : (
-              <div className="flex min-w-[52px] items-center gap-1.5 px-2 py-1.5 text-[13px] text-copy-muted">
-                <span className="flex size-[34px] items-center justify-center">
-                  <Heart className="size-[18px]" />
-                </span>
-                <span className="-ml-1">{formatCompactNumber(post.metrics.likes)}</span>
-              </div>
+                </div>
+              </ConnectCTAWrapper>
             )}
 
             {/* Views */}
@@ -318,7 +332,14 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
               <span className="-ml-1">{formatCompactNumber(post.metrics.views)}</span>
             </div>
 
-            {/* Bookmark & Share — hidden until implemented */}
+            {/* Bookmark & Share */}
+            <div className="flex items-center gap-0.5">
+              <BookmarkButton />
+              <ShareButton
+                communitySlug={post.communitySlug ?? interaction?.communitySlug ?? ""}
+                postId={post.id}
+              />
+            </div>
           </div>
 
           {/* Replies thread */}
@@ -332,7 +353,7 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
                         {reply.author.avatar?.startsWith("http") ? (
                           <img src={reply.author.avatar} alt={reply.author.displayName} className="size-full object-cover" />
                         ) : (
-                          reply.author.avatar
+                          reply.author.displayName?.[0]?.toUpperCase() ?? "X"
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -350,9 +371,10 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
                             · {formatRelativeTime(reply.createdAt)}
                           </span>
                         </div>
-                        <div className="mt-0.5 whitespace-pre-line text-[14px] leading-5 text-white/90">
-                          {reply.body}
-                        </div>
+                        <PostBody
+                          body={reply.body}
+                          className="mt-0.5 text-[14px] leading-5 text-white/90"
+                        />
                       </div>
                     </div>
                   ))}

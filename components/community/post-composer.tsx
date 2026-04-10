@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useFormStatus } from "react-dom";
-import {
-  Image as ImageIcon,
-  X,
-} from "lucide-react";
+import { Image as ImageIcon, X } from "lucide-react";
+import { CharacterCounter } from "@/components/ui/character-counter";
 
 type PostComposerProps = {
   communitySlug: string;
@@ -19,6 +17,8 @@ type PostComposerProps = {
   action: (formData: FormData) => Promise<void>;
 };
 
+const CHAR_LIMIT = 280;
+
 export default function PostComposer({
   communitySlug,
   activeTab,
@@ -27,15 +27,26 @@ export default function PostComposer({
   coverTo,
   action,
 }: PostComposerProps) {
+  const [body, setBody] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
   const [previews, setPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  // Cleanup blob URLs on unmount to prevent memory leaks
+  // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
       previews.forEach((p) => URL.revokeObjectURL(p));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const autoGrow = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 300)}px`;
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,16 +69,21 @@ export default function PostComposer({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const formRef = useRef<HTMLFormElement>(null);
-
   const handleSubmit = async (formData: FormData) => {
     await action(formData);
-    // Clear previews and reset form after successful submit
     previews.forEach((p) => URL.revokeObjectURL(p));
     setPreviews([]);
+    setBody("");
+    setIsFocused(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (formRef.current) formRef.current.reset();
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
   };
+
+  const viewerAvatarUrl = viewer?.avatar?.startsWith("http") ? viewer.avatar : null;
+  const viewerInitial = viewer?.displayName?.[0]?.toUpperCase() ?? "X";
+  const isOverLimit = body.length > CHAR_LIMIT;
+  const canPost = body.trim().length > 0 && !isOverLimit;
 
   return (
     <form
@@ -82,30 +98,40 @@ export default function PostComposer({
         value={`/communities/${communitySlug}?tab=${activeTab}`}
       />
       <div className="flex gap-3">
+        {/* Viewer avatar */}
         <div
           className="flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white overflow-hidden"
           style={
-            viewer?.avatar?.startsWith("http")
+            viewerAvatarUrl
               ? undefined
               : {
                   background: `linear-gradient(135deg, ${coverTo}, ${accentColor})`,
                 }
           }
         >
-          {viewer?.avatar?.startsWith("http") ? (
+          {viewerAvatarUrl ? (
             <img
-              src={viewer.avatar}
+              src={viewerAvatarUrl}
               alt={viewer.displayName}
               className="size-full object-cover"
             />
           ) : (
-            viewer?.avatar ?? "?"
+            viewerInitial
           )}
         </div>
+
         <div className="min-w-0 flex-1">
           <textarea
+            ref={textareaRef}
             name="body"
-            rows={2}
+            rows={isFocused ? 3 : 1}
+            value={body}
+            onChange={(e) => {
+              setBody(e.target.value);
+              autoGrow();
+            }}
+            onFocus={() => setIsFocused(true)}
+            onInput={autoGrow}
             className="signal-focus min-h-[44px] w-full resize-none border-0 bg-transparent px-0 py-2 text-[17px] leading-6 text-white placeholder:text-copy-soft focus:outline-none sm:min-h-[52px] sm:text-[20px] sm:leading-7"
             placeholder="What's happening?"
           />
@@ -115,9 +141,7 @@ export default function PostComposer({
             <div className="relative mt-2">
               <div
                 className={`grid gap-0.5 overflow-hidden rounded-2xl ${
-                  previews.length === 1
-                    ? "grid-cols-1"
-                    : "grid-cols-2"
+                  previews.length === 1 ? "grid-cols-1" : "grid-cols-2"
                 }`}
               >
                 {previews.map((src, i) => (
@@ -126,7 +150,9 @@ export default function PostComposer({
                     src={src}
                     alt={`Preview ${i + 1}`}
                     className="w-full object-cover"
-                    style={{ maxHeight: previews.length === 1 ? "300px" : "150px" }}
+                    style={{
+                      maxHeight: previews.length === 1 ? "300px" : "150px",
+                    }}
                   />
                 ))}
               </div>
@@ -140,9 +166,9 @@ export default function PostComposer({
             </div>
           )}
 
+          {/* Toolbar */}
           <div className="mt-1 flex items-center justify-between border-t border-white/[0.08] pt-3">
             <div className="flex items-center gap-0.5">
-              {/* Hidden file input — name="images" so it's included in FormData */}
               <input
                 ref={fileInputRef}
                 id="post-image-upload"
@@ -153,7 +179,6 @@ export default function PostComposer({
                 className="hidden"
                 onChange={handleFileChange}
               />
-              {/* Label triggers file input via htmlFor — works without JS */}
               <label
                 htmlFor="post-image-upload"
                 className="flex size-[34px] cursor-pointer items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10"
@@ -161,7 +186,18 @@ export default function PostComposer({
                 <ImageIcon className="size-[18px]" />
               </label>
             </div>
-            <PostSubmitButton />
+
+            <div className="flex items-center gap-3">
+              {/* Character counter */}
+              {body.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <CharacterCounter current={body.length} limit={CHAR_LIMIT} />
+                  {/* Separator */}
+                  <div className="h-6 w-px bg-white/[0.12]" />
+                </div>
+              )}
+              <PostSubmitButton canPost={canPost} />
+            </div>
           </div>
         </div>
       </div>
@@ -169,14 +205,14 @@ export default function PostComposer({
   );
 }
 
-function PostSubmitButton() {
+function PostSubmitButton({ canPost }: { canPost: boolean }) {
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
-      disabled={pending}
+      disabled={pending || !canPost}
       className={`rounded-full bg-accent-secondary px-5 py-2 text-[15px] font-bold text-white transition hover:brightness-110 ${
-        pending ? "opacity-50 cursor-not-allowed" : ""
+        pending || !canPost ? "opacity-50 cursor-not-allowed" : ""
       }`}
     >
       {pending ? "Posting..." : "Post"}

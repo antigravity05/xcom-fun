@@ -4,6 +4,8 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { X } from "lucide-react";
 import { createReplyAction } from "@/app/xcom-actions";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
+import { CharacterCounter } from "@/components/ui/character-counter";
+import { useToast } from "@/components/ui/toast";
 
 type ReplyModalProps = {
   postId: string;
@@ -39,6 +41,7 @@ export const ReplyModal = ({
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   // Focus textarea when modal opens
   useEffect(() => {
@@ -82,6 +85,7 @@ export const ReplyModal = ({
     if (formRef.current) formRef.current.reset();
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     onClose();
+    toast("Your reply was sent");
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -203,45 +207,7 @@ export const ReplyModal = ({
           <div className="flex items-center justify-between border-t border-white/[0.08] px-4 py-3">
             <div className="flex items-center gap-3">
               {showCounter ? (
-                <div className="flex items-center gap-2">
-                  {/* Circular progress */}
-                  <svg className="size-5 -rotate-90" viewBox="0 0 20 20">
-                    <circle
-                      cx="10"
-                      cy="10"
-                      r="8"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="text-white/[0.08]"
-                    />
-                    <circle
-                      cx="10"
-                      cy="10"
-                      r="8"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeDasharray={`${Math.min(charCount / charLimit, 1) * 50.27} 50.27`}
-                      className={
-                        isOverLimit
-                          ? "text-danger-soft"
-                          : charCount > charLimit * 0.8
-                            ? "text-yellow-500"
-                            : "text-accent-secondary"
-                      }
-                    />
-                  </svg>
-                  {charCount > charLimit * 0.8 ? (
-                    <span
-                      className={`text-[13px] tabular-nums ${
-                        isOverLimit ? "text-danger-soft" : "text-copy-muted"
-                      }`}
-                    >
-                      {charLimit - charCount}
-                    </span>
-                  ) : null}
-                </div>
+                <CharacterCounter current={charCount} limit={charLimit} />
               ) : null}
             </div>
 
