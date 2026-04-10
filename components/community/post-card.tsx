@@ -187,21 +187,50 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
           )}
 
           {/* Media attachment */}
-          {post.media ? (
+          {post.media && post.media.kind === "images" ? (
+            <div
+              className={`mt-3 grid gap-0.5 overflow-hidden rounded-2xl border border-white/[0.08] ${
+                post.media.urls.length === 1
+                  ? "grid-cols-1"
+                  : "grid-cols-2"
+              }`}
+            >
+              {post.media.urls.map((url: string, i: number) => (
+                <img
+                  key={i}
+                  src={url}
+                  alt={`Image ${i + 1}`}
+                  className={`w-full object-cover ${
+                    post.media?.kind === "images" && post.media.urls.length === 1
+                      ? "max-h-[400px]"
+                      : post.media?.kind === "images" && post.media.urls.length === 3 && i === 0
+                        ? "row-span-2 h-full"
+                        : "max-h-[200px]"
+                  }`}
+                />
+              ))}
+            </div>
+          ) : post.media ? (
             <div className="mt-3 overflow-hidden rounded-2xl border border-white/[0.08] transition hover:border-white/15">
               <div className="bg-surface-secondary/60">
                 <div className="px-4 pt-3.5 text-[11px] font-bold uppercase tracking-[0.22em] text-accent-secondary">
                   {post.media.kind}
                 </div>
-                <div className="mt-1 px-4 text-[17px] font-extrabold leading-tight text-white">
-                  {post.media.title}
-                </div>
-                <p className="mt-1 max-w-2xl px-4 text-[14px] leading-5 text-copy-muted">
-                  {post.media.subtitle}
-                </p>
-                <div className="mt-3 border-t border-white/[0.06] px-4 py-2.5 text-[12px] font-medium text-copy-soft">
-                  {post.media.footer}
-                </div>
+                {"title" in post.media && (
+                  <div className="mt-1 px-4 text-[17px] font-extrabold leading-tight text-white">
+                    {post.media.title}
+                  </div>
+                )}
+                {"subtitle" in post.media && (
+                  <p className="mt-1 max-w-2xl px-4 text-[14px] leading-5 text-copy-muted">
+                    {post.media.subtitle}
+                  </p>
+                )}
+                {"footer" in post.media && (
+                  <div className="mt-3 border-t border-white/[0.06] px-4 py-2.5 text-[12px] font-medium text-copy-soft">
+                    {post.media.footer}
+                  </div>
+                )}
               </div>
             </div>
           ) : null}

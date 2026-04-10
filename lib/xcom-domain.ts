@@ -53,6 +53,10 @@ export type CommunityPostMedia =
       title: string;
       subtitle: string;
       footer: string;
+    }
+  | {
+      kind: "images";
+      urls: string[];
     };
 
 export type CommunityReplyRecord = {

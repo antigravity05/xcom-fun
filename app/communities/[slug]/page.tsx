@@ -6,18 +6,14 @@ import {
   BadgeCheck,
   Globe2,
   Hash,
-  Image as ImageIcon,
-  ListOrdered,
-  MapPin,
-  Smile,
   Users,
 } from "lucide-react";
 import {
-  createPostAction,
   deleteCommunityAction,
   setMemberRoleAction,
 } from "@/app/xcom-actions";
 import { CommunityHeader } from "@/components/community/community-header";
+import PostComposer from "@/components/community/post-composer";
 import { PostCard } from "@/components/community/post-card";
 import { XcomChrome } from "@/components/layout/xcom-chrome";
 import type { CommunityMemberRecord, CommunityTab } from "@/lib/xcom-domain";
@@ -257,66 +253,17 @@ export default async function CommunityPage({
                 </div>
               ) : null}
 
-              {viewerMembershipStatus === "active" ? (
-                <form
-                  action={createPostAction}
-                  className="border-b border-white/[0.08] px-4 pb-3 pt-4 sm:px-6"
-                >
-                  <input type="hidden" name="communitySlug" value={community.slug} />
-                  <input
-                    type="hidden"
-                    name="redirectTo"
-                    value={`/communities/${community.slug}?tab=${activeTab}`}
-                  />
-                  <div className="flex gap-3">
-                    <div
-                      className="flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white overflow-hidden"
-                      style={
-                        viewer?.avatar?.startsWith("http")
-                          ? undefined
-                          : {
-                              background: `linear-gradient(135deg, ${community.coverTo}, ${community.accentColor})`,
-                            }
-                      }
-                    >
-                      {viewer?.avatar?.startsWith("http") ? (
-                        <img src={viewer.avatar} alt={viewer.displayName} className="size-full object-cover" />
-                      ) : (
-                        viewer?.avatar ?? "?"
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <textarea
-                        name="body"
-                        rows={2}
-                        className="signal-focus min-h-[44px] w-full resize-none border-0 bg-transparent px-0 py-2 text-[17px] leading-6 text-white placeholder:text-copy-soft focus:outline-none sm:min-h-[52px] sm:text-[20px] sm:leading-7"
-                        placeholder="What's happening?"
-                      />
-                      <div className="mt-1 flex items-center justify-between border-t border-white/[0.08] pt-3">
-                        <div className="flex items-center gap-0.5">
-                          <span className="flex size-[34px] items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10">
-                            <ImageIcon className="size-[18px]" />
-                          </span>
-                          <span className="flex size-[34px] items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10">
-                            <ListOrdered className="size-[18px]" />
-                          </span>
-                          <span className="flex size-[34px] items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10">
-                            <Smile className="size-[18px]" />
-                          </span>
-                          <span className="flex size-[34px] items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10">
-                            <MapPin className="size-[18px]" />
-                          </span>
-                        </div>
-                        <button
-                          type="submit"
-                          className="rounded-full bg-accent-secondary px-5 py-2 text-[15px] font-bold text-white transition hover:brightness-110"
-                        >
-                          Post
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </form>
+              {viewerMembershipStatus === "active" && viewer ? (
+                <PostComposer
+                  communitySlug={community.slug}
+                  activeTab={activeTab}
+                  viewer={{
+                    avatar: viewer.avatar,
+                    displayName: viewer.displayName,
+                  }}
+                  accentColor={community.accentColor}
+                  coverTo={community.coverTo}
+                />
               ) : null}
 
               <section>

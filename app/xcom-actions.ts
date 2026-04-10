@@ -683,12 +683,30 @@ export const createPostAction = async (formData: FormData) => {
     return; // unreachable, but keeps TS happy
   }
 
+  // ── Handle image uploads — convert to base64 data URLs ──
+  const imageFiles = formData.getAll("images") as File[];
+  let media: import("@/lib/xcom-domain").CommunityPostMedia | undefined;
+
+  if (imageFiles.length > 0 && imageFiles[0]?.size > 0) {
+    const imageUrls: string[] = [];
+    for (const file of imageFiles.slice(0, 4)) {
+      if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) continue;
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const base64 = buffer.toString("base64");
+      imageUrls.push(`data:${file.type};base64,${base64}`);
+    }
+    if (imageUrls.length > 0) {
+      media = { kind: "images", urls: imageUrls };
+    }
+  }
+
   let nextSnapshot;
   try {
     nextSnapshot = await applyCreatePost({
       actorUserId: viewerUserId,
       communitySlug,
       body,
+      media,
     });
   } catch (err) {
     console.error("[createPostAction] Failed to create post:", err);

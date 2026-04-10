@@ -39,6 +39,7 @@ type CreatePostInput = {
   actorUserId: string;
   communitySlug: string;
   body: string;
+  media?: import("./xcom-domain").CommunityPostMedia;
 };
 
 type CreateReplyInput = {
@@ -445,6 +446,7 @@ export const createPost = (
     communityId: community.id,
     authorUserId: input.actorUserId,
     body: input.body,
+    media: input.media,
     replyCount: 0,
     likeCount: 0,
     repostCount: 0,
