@@ -148,45 +148,128 @@ export async function GET(request: Request) {
         testResult.zernioPostCount = zernioPosts.length;
 
         // Get all local posts from DB to match by content
-        const { posts: postsTable } = await import("@/drizzle/schema");
         const allPosts = await db.query.posts.findMany();
 
-        const updates: Array<{ postId: string; tweetId: string; tweetUrl: string; content: string }> = [];
+        const updates: Array<{ postId: string; tweetId: string; tweetUrl: string; matchedBy: string; content: string }> = [];
+        const unmatched: Array<{ zernioContent: string; tweetId: string; reason: string }> = [];
 
         for (const zPost of zernioPosts) {
           const twitterPlatform = zPost.platforms?.find((p: any) => p.platform === "twitter");
           const tweetId = twitterPlatform?.platformPostId;
-          const tweetUrl = twitterPlatform?.platformPostUrl;
-          if (!tweetId) continue;
+          const tweetUrl = twitterPlatform?.platformPostUrl ?? "";
+          if (!tweetId) {
+            unmatched.push({ zernioContent: String(zPost.content ?? "").slice(0, 50), tweetId: "NONE", reason: "No platformPostId in Zernio response" });
+            continue;
+          }
 
-          const content = zPost.content as string;
-          // Match by content to a local post
-          const localPost = allPosts.find((lp) => lp.body === content);
-          if (!localPost) continue;
+          const content = String(zPost.content ?? "");
+          const contentTrimmed = content.trim();
+
+          // Try multiple matching strategies
+          let localPost = allPosts.find((lp) => lp.body === content);
+          let matchedBy = "exact";
+
+          if (!localPost) {
+            localPost = allPosts.find((lp) => lp.body.trim() === contentTrimmed);
+            matchedBy = "trimmed";
+          }
+
+          if (!localPost) {
+            // Try matching by normalized content (lowercase, collapse whitespace)
+            const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+            const normalizedContent = normalize(content);
+            localPost = allPosts.find((lp) => normalize(lp.body) === normalizedContent);
+            matchedBy = "normalized";
+          }
+
+          if (!localPost) {
+            // Try contains match (Zernio content contains the local post body or vice versa)
+            localPost = allPosts.find(
+              (lp) => contentTrimmed.includes(lp.body.trim()) || lp.body.trim().includes(contentTrimmed),
+            );
+            matchedBy = "contains";
+          }
+
+          if (!localPost) {
+            unmatched.push({ zernioContent: content.slice(0, 80), tweetId, reason: "No matching local post by content" });
+            continue;
+          }
 
           // Check if this post has a publication row without externalPostId
           const pub = pubs.find(
-            (p) => p.postId === localPost.id && p.provider === "x" && !p.externalPostId,
+            (p) => p.postId === localPost!.id && p.provider === "x" && !p.externalPostId,
           );
-          if (!pub) continue;
+          if (!pub) {
+            // Check if it already has an externalPostId
+            const existingPub = pubs.find((p) => p.postId === localPost!.id && p.provider === "x");
+            if (existingPub?.externalPostId) {
+              unmatched.push({ zernioContent: content.slice(0, 50), tweetId, reason: `Already has externalPostId=${existingPub.externalPostId}` });
+            } else if (!existingPub) {
+              unmatched.push({ zernioContent: content.slice(0, 50), tweetId, reason: "No publication row for this post" });
+            }
+            continue;
+          }
 
           // Update the publication row
           await db
             .update(postPublications)
-            .set({ externalPostId: tweetId })
+            .set({ externalPostId: tweetId, status: "published" })
             .where(and(eq(postPublications.postId, localPost.id), eq(postPublications.provider, "x")));
 
-          updates.push({ postId: localPost.id, tweetId, tweetUrl, content: content.slice(0, 50) });
+          updates.push({ postId: localPost.id, tweetId, tweetUrl, matchedBy, content: content.slice(0, 50) });
         }
 
         testResult.backfilled = updates;
         testResult.backfilledCount = updates.length;
+        testResult.unmatched = unmatched;
+        testResult.unmatchedCount = unmatched.length;
+
+        // Also show local posts with null externalPostId for manual reference
+        const missingPubs = pubs.filter((p) => p.provider === "x" && p.status === "published" && !p.externalPostId);
+        testResult.postsStillMissingExternalId = missingPubs.map((p) => {
+          const localPost = allPosts.find((lp) => lp.id === p.postId);
+          return {
+            postId: p.postId,
+            body: localPost?.body?.slice(0, 80) ?? "UNKNOWN",
+          };
+        });
       } catch (err) {
         testResult.error = err instanceof Error ? err.message : String(err);
         testResult.listPostsRaw = body;
       }
 
       return NextResponse.json({ ...baseInfo, test: testResult });
+    }
+
+    // ── Manual backfill: set externalPostId for a specific post ──
+    if (action === "set-tweet-id") {
+      const postId = searchParams.get("postId");
+      const manualTweetId = searchParams.get("tweetId");
+      if (!postId || !manualTweetId) {
+        return NextResponse.json({ ...baseInfo, error: "set-tweet-id requires &postId=LOCAL_POST_ID&tweetId=TWITTER_TWEET_ID" }, { status: 400 });
+      }
+
+      const pub = pubs.find((p) => p.postId === postId && p.provider === "x");
+      if (!pub) {
+        return NextResponse.json({ ...baseInfo, error: `No publication row found for postId=${postId}` }, { status: 404 });
+      }
+
+      await db
+        .update(postPublications)
+        .set({ externalPostId: manualTweetId, status: "published" })
+        .where(and(eq(postPublications.postId, postId), eq(postPublications.provider, "x")));
+
+      return NextResponse.json({
+        ...baseInfo,
+        result: {
+          action: "set-tweet-id",
+          postId,
+          tweetId: manualTweetId,
+          previousExternalPostId: pub.externalPostId,
+          previousStatus: pub.status,
+          updated: true,
+        },
+      });
     }
 
     // ── Simulate reply: follows the exact same code path as the app ──
