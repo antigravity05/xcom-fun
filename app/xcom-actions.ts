@@ -125,8 +125,19 @@ const getExternalTweetId = async (postId: string): Promise<string | null> => {
     });
     console.log(`[x-sync] getExternalTweetId: DB row status=${row?.status ?? "NONE"}, externalPostId=${row?.externalPostId ?? "NULL"}`);
 
-    if (row?.externalPostId) {
+    // Twitter tweet IDs are purely numeric strings (e.g. "1234567890123456789").
+    // If the stored ID is NOT numeric, it's a Zernio internal ID that was
+    // mistakenly saved — treat it as null and fall through to Zernio search.
+    const isValidTweetId = (id: string | null | undefined): boolean => {
+      if (!id) return false;
+      return /^\d+$/.test(id);
+    };
+
+    if (row?.externalPostId && isValidTweetId(row.externalPostId)) {
       return row.externalPostId;
+    }
+    if (row?.externalPostId && !isValidTweetId(row.externalPostId)) {
+      console.warn(`[x-sync] getExternalTweetId: stored ID "${row.externalPostId}" is not a valid tweet ID (Zernio internal ID?) — falling through to Zernio search`);
     }
 
     // Strategy 2: search Zernio for this post's content
@@ -252,15 +263,21 @@ const syncReplyToX = async (userId: string, postId: string, body: string) => {
     }
 
     const tweetId = await getExternalTweetId(postId);
-    if (!tweetId) {
-      console.warn("[x-sync] syncReplyToX: ABORT - no external tweetId for post", postId);
-      return;
+
+    if (tweetId) {
+      // Happy path: reply as a threaded reply on X
+      console.log(`[x-sync] syncReplyToX: CALLING replyToTweet(accountId=${accountId.slice(0, 15)}..., tweetId=${tweetId}, body="${body.slice(0, 50)}")`);
+      const { replyToTweet } = await import("@/lib/zernio/client");
+      const result = await replyToTweet(accountId, tweetId, body);
+      console.log(`[x-sync] syncReplyToX: SUCCESS - replied to tweet ${tweetId}, result=${JSON.stringify(result)}`);
+    } else {
+      // Fallback: post as a standalone tweet so it at least appears on X
+      console.warn(`[x-sync] syncReplyToX: no parent tweet ID found — posting as standalone tweet`);
+      const { postTweet } = await import("@/lib/zernio/client");
+      const result = await postTweet(accountId, body);
+      console.log(`[x-sync] syncReplyToX: posted as standalone tweet, result=${JSON.stringify(result)}`);
     }
 
-    console.log(`[x-sync] syncReplyToX: CALLING replyToTweet(accountId=${accountId.slice(0, 15)}..., tweetId=${tweetId}, body="${body.slice(0, 50)}")`);
-    const { replyToTweet } = await import("@/lib/zernio/client");
-    const result = await replyToTweet(accountId, tweetId, body);
-    console.log(`[x-sync] syncReplyToX: SUCCESS - replied to tweet ${tweetId}, result=${JSON.stringify(result)}`);
     console.log(`[x-sync] ===== syncReplyToX END (success) =====`);
   } catch (err) {
     console.error("[x-sync] syncReplyToX EXCEPTION:", err);

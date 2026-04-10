@@ -67,14 +67,39 @@ const publishViaZernio = async (
     }
 
     // Zernio returns the tweet ID as `platformPostId` (not `postId`)
-    const externalId =
+    // IMPORTANT: Do NOT fall back to result._id / result.id — those are
+    // Zernio internal IDs, not Twitter tweet IDs. Storing them breaks replies.
+    let externalId =
       twitterResult?.platformPostId ??
       twitterResult?.postId ??
-      result._id ??
-      result.id ??
       null;
 
     console.log("[x-sync] Resolved externalPostId:", externalId, "| platformPostId:", twitterResult?.platformPostId, "| platformPostUrl:", twitterResult?.platformPostUrl);
+
+    // If Zernio didn't return the tweet ID immediately (async publishing),
+    // wait 2s and re-fetch from Zernio to get it.
+    if (!externalId) {
+      const zernioPostId = result._id ?? result.id;
+      console.log(`[x-sync] No platformPostId in response. Waiting 2s then re-fetching from Zernio (zernioId=${zernioPostId})...`);
+      await new Promise((r) => setTimeout(r, 2000));
+
+      try {
+        const { listRecentPosts } = await import("@/lib/zernio/client");
+        const recentPosts = await listRecentPosts();
+        const normalizedBody = intent.body.trim().toLowerCase();
+        const match =
+          recentPosts.find((p) => p.content.trim().toLowerCase() === normalizedBody) ??
+          recentPosts.find((p) => p.zernioId === zernioPostId);
+        if (match?.platformPostId) {
+          externalId = match.platformPostId;
+          console.log(`[x-sync] Got platformPostId from re-fetch: ${externalId}`);
+        } else {
+          console.warn("[x-sync] Still no platformPostId after re-fetch");
+        }
+      } catch (retryErr) {
+        console.error("[x-sync] Re-fetch failed:", retryErr);
+      }
+    }
 
     return {
       status: "published",
