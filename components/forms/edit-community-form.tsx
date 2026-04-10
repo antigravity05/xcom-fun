@@ -10,6 +10,7 @@ type EditCommunityFormProps = {
   initialName: string;
   initialDescription: string;
   currentBannerUrl?: string | null;
+  initialContractAddress?: string | null;
 };
 
 export const EditCommunityForm = ({
@@ -17,6 +18,7 @@ export const EditCommunityForm = ({
   initialName,
   initialDescription,
   currentBannerUrl,
+  initialContractAddress,
 }: EditCommunityFormProps) => {
   const router = useRouter();
   const [serverMessage, setServerMessage] = useState<string | null>(null);
@@ -102,6 +104,21 @@ export const EditCommunityForm = ({
                 defaultValue={initialDescription}
                 required
                 className="signal-focus w-full rounded-2xl border border-white/10 bg-surface-secondary/50 px-4 py-3 text-[15px] leading-6 text-white placeholder:text-copy-soft"
+              />
+            }
+          />
+        </div>
+
+        <div className="signal-divider px-4 py-4 sm:px-6">
+          <Field
+            label="Contract Address"
+            hint="Optional"
+            input={
+              <input
+                name="contractAddress"
+                defaultValue={initialContractAddress ?? ""}
+                placeholder="0x..."
+                className="signal-focus w-full rounded-2xl border border-white/10 bg-surface-secondary/50 px-4 py-3 font-mono text-[15px] text-white placeholder:text-copy-soft"
               />
             }
           />

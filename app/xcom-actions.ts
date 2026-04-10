@@ -571,6 +571,7 @@ export const updateCommunityAction = async (formData: FormData) => {
   }
 
   const bannerFile = formData.get("banner");
+  const contractAddress = String(formData.get("contractAddress") ?? "").trim() || undefined;
   let bannerUrl: string | undefined;
 
   try {
@@ -584,6 +585,7 @@ export const updateCommunityAction = async (formData: FormData) => {
       name: parsedPayload.data.name,
       description: parsedPayload.data.description,
       bannerUrl,
+      contractAddress,
     });
   } catch (error) {
     return {

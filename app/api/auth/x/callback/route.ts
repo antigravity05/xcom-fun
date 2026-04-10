@@ -56,9 +56,36 @@ export async function GET(request: Request) {
     const username = searchParams.get("username");
 
     if (!accountId && !username) {
-      // Zernio connected successfully but we need to list accounts
-      // to find the newly connected one. For now, redirect to connect page
-      // where the user can pick their account.
+      // Zernio connected successfully but didn't pass account info in params.
+      // Try to auto-detect the newly connected account from the accounts list.
+      try {
+        const { listAccounts } = await import("@/lib/zernio/client");
+        const accounts = await listAccounts();
+        const twitterAccounts = accounts.filter((a) => a.platform === "twitter");
+
+        if (twitterAccounts.length === 1) {
+          // Only one Twitter account — must be the one just connected
+          const auto = twitterAccounts[0];
+          // Re-run the callback logic with the resolved info
+          const resolvedUrl = new URL(request.url);
+          resolvedUrl.searchParams.set("accountId", auto.id);
+          if (auto.username) resolvedUrl.searchParams.set("username", auto.username);
+          return GET(new Request(resolvedUrl.toString(), request));
+        }
+
+        if (twitterAccounts.length > 1) {
+          // Multiple accounts — take the last one (most recently connected)
+          const latest = twitterAccounts[twitterAccounts.length - 1];
+          const resolvedUrl = new URL(request.url);
+          resolvedUrl.searchParams.set("accountId", latest.id);
+          if (latest.username) resolvedUrl.searchParams.set("username", latest.username);
+          return GET(new Request(resolvedUrl.toString(), request));
+        }
+      } catch (err) {
+        console.error("[auth/callback] Failed to auto-detect Zernio account:", err);
+      }
+
+      // Fallback: redirect to connect page so user can pick manually
       redirect("/connect-x?connected=true");
       return;
     }

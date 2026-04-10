@@ -18,6 +18,7 @@ type UpdateCommunityInput = {
   name: string;
   description: string;
   bannerUrl?: string;
+  contractAddress?: string;
 };
 
 type JoinCommunityInput = {
@@ -298,6 +299,10 @@ export const updateCommunity = (
       tagline: input.description.trim().slice(0, 90),
       bannerUrl:
         input.bannerUrl ?? nextState.communities[communityIndex].bannerUrl,
+      contractAddress:
+        input.contractAddress !== undefined
+          ? input.contractAddress || undefined
+          : nextState.communities[communityIndex].contractAddress,
     };
   }
 

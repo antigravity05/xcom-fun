@@ -232,6 +232,7 @@ export const applyUpdateCommunity = async (
       description: updatedCommunity.description,
       tagline: updatedCommunity.tagline,
       bannerUrl: updatedCommunity.bannerUrl,
+      contractAddress: updatedCommunity.contractAddress ?? null,
     })
     .where(eq(communities.id, community.id));
 

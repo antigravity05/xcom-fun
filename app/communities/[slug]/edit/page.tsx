@@ -61,6 +61,7 @@ export default async function EditCommunityPage({
             initialName={view.community.name}
             initialDescription={view.community.description}
             currentBannerUrl={view.community.bannerUrl}
+            initialContractAddress={view.community.contractAddress}
           />
         </div>
 
