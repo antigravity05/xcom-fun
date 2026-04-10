@@ -141,30 +141,21 @@ export async function GET(request: Request) {
     try {
       const { getDb } = await import("@/lib/database/client");
       const db = getDb();
-      const { sql } = await import("drizzle-orm");
 
-      const pubs = await db.execute(
-        sql`SELECT post_id, provider, status, external_post_id, last_error, attempt_count, last_attempt_at
-            FROM post_publications ORDER BY last_attempt_at DESC NULLS LAST LIMIT 30`
-      );
+      // @ts-expect-error raw SQL
+      const pubs = await db.execute({ sql: "SELECT post_id, provider, status, external_post_id, last_error, attempt_count, last_attempt_at FROM post_publications ORDER BY last_attempt_at DESC NULLS LAST LIMIT 30" });
       results.postPublications = pubs.rows ?? pubs;
 
-      const xAccts = await db.execute(
-        sql`SELECT user_id, LEFT(access_token, 20) as token_prefix,
-            CASE WHEN refresh_token IS NOT NULL THEN 'yes' ELSE 'no' END as has_refresh,
-            expires_at FROM x_accounts LIMIT 10`
-      );
+      // @ts-expect-error raw SQL
+      const xAccts = await db.execute({ sql: "SELECT user_id, substring(access_token, 1, 20) as token_prefix, CASE WHEN refresh_token IS NOT NULL THEN 'yes' ELSE 'no' END as has_refresh, expires_at FROM x_accounts LIMIT 10" });
       results.xAccounts = xAccts.rows ?? xAccts;
 
-      const usersDb = await db.execute(
-        sql`SELECT id, display_name, x_handle, x_user_id FROM users LIMIT 20`
-      );
+      // @ts-expect-error raw SQL
+      const usersDb = await db.execute({ sql: "SELECT id, display_name, x_handle, x_user_id FROM users LIMIT 20" });
       results.usersDb = usersDb.rows ?? usersDb;
 
-      const recentPosts = await db.execute(
-        sql`SELECT id, community_id, author_user_id, LEFT(body, 80) as body_preview, created_at
-            FROM posts ORDER BY created_at DESC LIMIT 20`
-      );
+      // @ts-expect-error raw SQL
+      const recentPosts = await db.execute({ sql: "SELECT id, community_id, author_user_id, substring(body, 1, 80) as body_preview, created_at FROM posts ORDER BY created_at DESC LIMIT 20" });
       results.recentPosts = recentPosts.rows ?? recentPosts;
 
       results.xSyncMode = process.env.ZERNIO_API_KEY ? "zernio" : "direct-x-api";
