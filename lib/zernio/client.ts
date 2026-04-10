@@ -325,7 +325,7 @@ export const replyToTweet = async (
   tweetId: string,
   content: string,
 ): Promise<ZernioPostResult> => {
-  // Zernio uses the /posts endpoint with replyToTweetId in platform data
+  // Zernio docs: replyToTweetId goes inside platformSpecificData
   const data = (await zernioFetch("/posts", {
     method: "POST",
     body: JSON.stringify({
@@ -334,13 +334,16 @@ export const replyToTweet = async (
         {
           platform: "twitter",
           accountId,
-          replyToTweetId: tweetId,
+          platformSpecificData: {
+            replyToTweetId: tweetId,
+          },
         },
       ],
       publishNow: true,
     }),
   })) as { post?: ZernioPostResult };
 
+  console.log("[zernio] replyToTweet raw response:", JSON.stringify(data));
   return data.post ?? { id: "", status: "published" };
 };
 
