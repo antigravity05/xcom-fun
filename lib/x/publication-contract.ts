@@ -150,6 +150,7 @@ const publishViaDirectXApi = async (
         try {
           const mimeMatch = imageUrl.match(/^data:([^;]+);base64,/);
           const mimeType = mimeMatch?.[1] ?? "image/jpeg";
+          console.log(`[x-sync] Uploading media, mimeType=${mimeType}, dataLength=${imageUrl.length}`);
           const mediaId = await uploadMedia(accessToken, imageUrl, mimeType);
           mediaIds.push(mediaId);
           console.log(`[x-sync] Uploaded media, got media_id: ${mediaId}`);
@@ -160,7 +161,20 @@ const publishViaDirectXApi = async (
       if (mediaIds.length === 0) mediaIds = undefined;
     }
 
-    const result = await xPostTweet(accessToken, intent.body, mediaIds);
+    // Skip X sync if body is empty/whitespace and no media was uploaded
+    const trimmedBody = intent.body.trim();
+    if (!trimmedBody && !mediaIds) {
+      console.log("[x-sync] Skipping X sync: no text body and no uploaded media");
+      return {
+        status: "published",
+        errorMessage: "Image-only post — skipped X sync (media upload not supported yet)",
+      };
+    }
+
+    // If body is empty but we have media, use a minimal text
+    const tweetText = trimmedBody || ".";
+
+    const result = await xPostTweet(accessToken, tweetText, mediaIds);
 
     return {
       status: "published",

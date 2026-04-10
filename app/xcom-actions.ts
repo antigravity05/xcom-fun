@@ -701,7 +701,7 @@ export const createPostAction = async (formData: FormData) => {
       redirect(errorUrl);
       return;
     }
-    body = rawBody || " "; // X API requires non-empty text, use space as fallback
+    body = rawBody; // Can be empty for image-only posts
   } else {
     try {
       body = bodySchema.parse(rawBody);
