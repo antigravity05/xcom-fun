@@ -168,67 +168,26 @@ const getZernioAccountId = async (userId: string): Promise<string | null> => {
   return creds.mode === "zernio" ? creds.accountId : null;
 };
 
-/** Get the external tweet ID for a local post.
- *  1. Check postPublications DB (must be numeric = real tweet ID)
- *  2. If missing, search Zernio recent posts by content match */
+/** Get the external tweet ID for a local post from postPublications DB. */
 const getExternalTweetId = async (postId: string): Promise<string | null> => {
   try {
+    console.log(`[x-sync] getExternalTweetId: looking up postId=${postId}`);
     const { getDb } = await import("@/lib/database/client");
     const db = getDb();
 
-    // Strategy 1: DB lookup
     const row = await db.query.postPublications.findFirst({
       where: (table, { and, eq }) =>
         and(eq(table.postId, postId), eq(table.provider, "x")),
     });
 
-    // Only return if it's a real numeric Twitter tweet ID
+    console.log(`[x-sync] getExternalTweetId: DB row =`, row ? `{ status: ${row.status}, externalPostId: ${row.externalPostId} }` : "null");
+
     if (row?.externalPostId && /^\d+$/.test(row.externalPostId)) {
+      console.log(`[x-sync] getExternalTweetId: found valid tweet ID ${row.externalPostId}`);
       return row.externalPostId;
     }
 
-    // Strategy 2: search Zernio by content
-    const localPost = await db.query.posts.findFirst({
-      where: (table, { eq }) => eq(table.id, postId),
-    });
-    if (!localPost) return null;
-
-    const { listRecentPosts } = await import("@/lib/zernio/client");
-    const zernioPosts = await listRecentPosts();
-    const needle = localPost.body.trim().toLowerCase();
-
-    const match =
-      zernioPosts.find((zp) => zp.content.trim().toLowerCase() === needle) ??
-      zernioPosts.find((zp) =>
-        zp.content.trim().toLowerCase().includes(needle) ||
-        needle.includes(zp.content.trim().toLowerCase()),
-      );
-
-    if (match?.platformPostId && /^\d+$/.test(match.platformPostId)) {
-      console.log(`[x-sync] Found tweet ID via Zernio: ${match.platformPostId}`);
-      // Save to DB for next time
-      try {
-        const { postPublications } = await import("@/drizzle/schema");
-        const { eq, and } = await import("drizzle-orm");
-        if (row) {
-          await db.update(postPublications).set({
-            externalPostId: match.platformPostId,
-            status: "published",
-          }).where(and(eq(postPublications.postId, postId), eq(postPublications.provider, "x")));
-        } else {
-          await db.insert(postPublications).values({
-            postId,
-            provider: "x",
-            status: "published",
-            externalPostId: match.platformPostId,
-            attemptCount: 1,
-            lastAttemptAt: new Date(),
-          });
-        }
-      } catch { /* DB save is best-effort */ }
-      return match.platformPostId;
-    }
-
+    console.warn(`[x-sync] getExternalTweetId: no valid tweet ID found for postId=${postId}`);
     return null;
   } catch (err) {
     console.error("[x-sync] getExternalTweetId error:", err);
