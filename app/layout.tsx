@@ -4,15 +4,15 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://x-com.fun"),
   title: {
-    default: "X-COM — Crypto Communities",
-    template: "%s | X-COM",
+    default: "x-com.fun — Crypto Communities",
+    template: "%s | x-com.fun",
   },
   description:
     "The home for crypto communities. Create a space for your project, post updates, and everything syncs to X. All the signal, none of the noise.",
   openGraph: {
-    title: "X-COM — Crypto Communities",
+    title: "x-com.fun — Crypto Communities",
     description: "The home for crypto communities. Post here, it goes to X.",
-    siteName: "X-COM",
+    siteName: "x-com.fun",
     url: "https://x-com.fun",
     type: "website",
     images: [
@@ -20,13 +20,13 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "X-COM — Crypto Communities",
+        alt: "x-com.fun — Crypto Communities",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "X-COM — Crypto Communities",
+    title: "x-com.fun — Crypto Communities",
     description: "The home for crypto communities. Post here, it goes to X.",
     images: ["/og-image.png"],
   },

@@ -32,10 +32,12 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
             {/* Logo */}
             <Link
               href="/"
-              className="mb-6 flex size-[50px] items-center justify-center rounded-full transition hover:bg-white/[0.06] xl:mb-4 xl:ml-1 xl:size-auto xl:justify-start xl:px-3"
+              className="mb-6 flex h-[50px] items-center justify-center rounded-full transition hover:bg-white/[0.06] xl:mb-4 xl:ml-1 xl:justify-start xl:px-3"
             >
-              <span className="text-[24px] font-black tracking-tight text-white">
-                X<span className="hidden text-accent-secondary xl:inline">-COM</span>
+              <span className="text-[22px] font-black tracking-tight lg:text-[24px]">
+                <span className="bg-gradient-to-br from-[#4FC3F7] via-[#1d9bf0] to-[#0D47A1] bg-clip-text text-transparent">x</span>
+                <span className="text-white">-com</span>
+                <span className="hidden text-accent-secondary xl:inline">.fun</span>
               </span>
             </Link>
 
@@ -126,9 +128,11 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
             <div className="flex min-h-[53px] items-center justify-between px-4">
               <Link
                 href="/"
-                className="text-[20px] font-black tracking-tight text-white"
+                className="text-[20px] font-black tracking-tight"
               >
-                X<span className="text-accent-secondary">-COM</span>
+                <span className="bg-gradient-to-br from-[#4FC3F7] via-[#1d9bf0] to-[#0D47A1] bg-clip-text text-transparent">x</span>
+                <span className="text-white">-com</span>
+                <span className="text-accent-secondary">.fun</span>
               </Link>
               {viewer ? (
                 <details className="relative">

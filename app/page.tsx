@@ -20,7 +20,7 @@ import {
 } from "@/lib/xcom-read-models";
 
 export const metadata: Metadata = {
-  title: "X-COM — Crypto Communities",
+  title: "x-com.fun — Crypto Communities",
   description:
     "X Communities are back. One place for every crypto project — post here, it syncs to X.",
 };
@@ -191,7 +191,7 @@ export default async function Home({ searchParams }: HomePageProps) {
             </div>
           </section>
 
-          {/* ── WHY X-COM ── */}
+          {/* ── WHY x-com.fun ── */}
           <section className="border-b border-white/[0.08] px-4 py-12 sm:px-8 sm:py-16">
             <div className="mx-auto max-w-2xl">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -420,14 +420,8 @@ export default async function Home({ searchParams }: HomePageProps) {
 
             {/* About — minimal footer */}
             <div className="px-4 py-3 text-[12px] leading-4 text-copy-soft">
-              <span className="font-medium text-copy-muted">X-COM</span> — The
-              home for crypto communities.{" "}
-              <a
-                href="https://x-com.fun"
-                className="text-accent-secondary hover:underline"
-              >
-                x-com.fun
-              </a>
+              <span className="font-medium text-copy-muted">x-com.fun</span> — The
+              home for crypto communities.
             </div>
           </div>
         </aside>

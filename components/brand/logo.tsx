@@ -1,7 +1,7 @@
 import Image from "next/image";
 
 type LogoProps = {
-  /** Show full "X-com.fun" or just the X icon */
+  /** Show full "x-com.fun" or just the "x-c" icon */
   variant?: "full" | "icon";
   /** Height in pixels — width scales proportionally */
   height?: number;
@@ -17,8 +17,8 @@ export const Logo = ({
     return (
       <Image
         src="/logo-icon.svg"
-        alt="X-COM"
-        width={Math.round(height * (52 / 60))}
+        alt="x-com.fun"
+        width={Math.round(height * (100 / 52))}
         height={height}
         className={className}
         priority
@@ -29,8 +29,8 @@ export const Logo = ({
   return (
     <Image
       src="/logo.svg"
-      alt="X-COM.fun"
-      width={Math.round(height * (280 / 60))}
+      alt="x-com.fun"
+      width={Math.round(height * (320 / 52))}
       height={height}
       className={className}
       priority

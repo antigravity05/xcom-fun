@@ -23,7 +23,7 @@ export async function generateMetadata({
 
   return {
     title: `${view.user.displayName} (${view.user.xHandle})`,
-    description: `${view.user.displayName} on X-COM — ${view.stats.posts} posts across ${view.stats.communities} communities`,
+    description: `${view.user.displayName} on x-com.fun — ${view.stats.posts} posts across ${view.stats.communities} communities`,
   };
 }
 
