@@ -103,28 +103,55 @@ export async function GET(request: Request) {
       return NextResponse.json({ ...baseInfo, test: testResult });
     }
 
-    // ── Fix publications: list recent Zernio posts and backfill tweetIds ──
+    // ── Fix publications: list Zernio posts, match to local posts, backfill tweetIds ──
     if (action === "fix-publications") {
-      // List recent posts from Zernio to find tweet IDs
       const res = await fetch(`${ZERNIO_API_BASE}/posts`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
       const body = await res.text();
       testResult.listPostsStatus = res.status;
+
       try {
         const data = JSON.parse(body);
-        testResult.listPostsResponse = data;
-
-        // Try to extract tweet IDs from the Zernio posts
         const zernioPosts = data.posts ?? data.data ?? (Array.isArray(data) ? data : []);
         testResult.zernioPostCount = zernioPosts.length;
 
-        // Show what fields each post has so we know where the tweet ID lives
-        if (zernioPosts.length > 0) {
-          testResult.samplePostKeys = Object.keys(zernioPosts[0]);
-          testResult.samplePost = zernioPosts[0];
+        // Get all local posts from DB to match by content
+        const { posts: postsTable } = await import("@/drizzle/schema");
+        const allPosts = await db.query.posts.findMany();
+
+        const updates: Array<{ postId: string; tweetId: string; tweetUrl: string; content: string }> = [];
+
+        for (const zPost of zernioPosts) {
+          const twitterPlatform = zPost.platforms?.find((p: any) => p.platform === "twitter");
+          const tweetId = twitterPlatform?.platformPostId;
+          const tweetUrl = twitterPlatform?.platformPostUrl;
+          if (!tweetId) continue;
+
+          const content = zPost.content as string;
+          // Match by content to a local post
+          const localPost = allPosts.find((lp) => lp.body === content);
+          if (!localPost) continue;
+
+          // Check if this post has a publication row without externalPostId
+          const pub = pubs.find(
+            (p) => p.postId === localPost.id && p.provider === "x" && !p.externalPostId,
+          );
+          if (!pub) continue;
+
+          // Update the publication row
+          await db
+            .update(postPublications)
+            .set({ externalPostId: tweetId })
+            .where(and(eq(postPublications.postId, localPost.id), eq(postPublications.provider, "x")));
+
+          updates.push({ postId: localPost.id, tweetId, tweetUrl, content: content.slice(0, 50) });
         }
-      } catch {
+
+        testResult.backfilled = updates;
+        testResult.backfilledCount = updates.length;
+      } catch (err) {
+        testResult.error = err instanceof Error ? err.message : String(err);
         testResult.listPostsRaw = body;
       }
 

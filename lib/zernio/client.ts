@@ -206,15 +206,25 @@ export const findTwitterAccount = async (
 
 /* ── Posting ── */
 
-export type ZernioPostResult = {
-  id: string;
+export type ZernioPlatformResult = {
+  platform: string;
+  /** The actual Twitter tweet ID */
+  platformPostId?: string;
+  /** Full URL to the tweet */
+  platformPostUrl?: string;
+  /** Legacy field name (some endpoints) */
+  postId?: string;
   status: string;
-  platforms?: Array<{
-    platform: string;
-    postId?: string;
-    status: string;
-    error?: string;
-  }>;
+  error?: string;
+  _id?: string;
+};
+
+export type ZernioPostResult = {
+  /** Zernio internal post ID (_id) */
+  id: string;
+  _id?: string;
+  status: string;
+  platforms?: ZernioPlatformResult[];
 };
 
 /**

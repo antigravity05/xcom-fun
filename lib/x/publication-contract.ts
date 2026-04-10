@@ -66,17 +66,15 @@ const publishViaZernio = async (
       };
     }
 
-    // Zernio may return the tweet ID under different field names
-    const rawResult = result as Record<string, unknown>;
+    // Zernio returns the tweet ID as `platformPostId` (not `postId`)
     const externalId =
+      twitterResult?.platformPostId ??
       twitterResult?.postId ??
-      (rawResult.tweetId as string | undefined) ??
-      (rawResult.externalId as string | undefined) ??
-      (rawResult.twitterPostId as string | undefined) ??
+      result._id ??
       result.id ??
       null;
 
-    console.log("[x-sync] Resolved externalPostId:", externalId, "from result.id:", result.id, "twitterResult:", JSON.stringify(twitterResult));
+    console.log("[x-sync] Resolved externalPostId:", externalId, "| platformPostId:", twitterResult?.platformPostId, "| platformPostUrl:", twitterResult?.platformPostUrl);
 
     return {
       status: "published",
