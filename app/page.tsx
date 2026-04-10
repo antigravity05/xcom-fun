@@ -2,12 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
-  Globe2,
-  MessageSquare,
   Search,
-  Share2,
   TrendingUp,
-  Users,
   Zap,
 } from "lucide-react";
 import { CommunityCard } from "@/components/community/community-card";
@@ -161,58 +157,136 @@ export default async function Home({ searchParams }: HomePageProps) {
             </div>
           </section>
 
-          {/* ── HOW IT WORKS ── */}
+          {/* ── VISUAL SCHEMA ── */}
           <section className="border-b border-white/[0.08] px-4 py-12 sm:px-8 sm:py-16">
-            <div className="mx-auto max-w-2xl">
+            <div className="mx-auto max-w-3xl">
               <h2 className="text-center text-[13px] font-bold uppercase tracking-[0.16em] text-accent-secondary">
                 How it works
               </h2>
               <p className="mt-3 text-center text-[24px] font-extrabold leading-tight text-white sm:text-[28px]">
-                Everything you loved about X Communities, rebuilt from scratch.
+                All tweets about the same coin,<br />
+                <span className="text-accent-secondary">in one place.</span>
               </p>
 
-              <div className="mt-10 grid gap-6 sm:grid-cols-3">
-                <FeatureItem
-                  icon={Users}
-                  title="Create your community"
-                  description="Set up in seconds. Add a banner, description, and invite your holders."
-                />
-                <FeatureItem
-                  icon={MessageSquare}
-                  title="Post &amp; discuss"
-                  description="Share updates, alpha, and memes. Everything stays organized by project."
-                />
-                <FeatureItem
-                  icon={Share2}
-                  title="Syncs to X"
-                  description="Posts automatically publish to your X timeline. One post, double the reach."
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* ── WHY x-com.fun ── */}
-          <section className="border-b border-white/[0.08] px-4 py-12 sm:px-8 sm:py-16">
-            <div className="mx-auto max-w-2xl">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/[0.06] bg-surface-secondary p-5">
-                  <Globe2 className="size-6 text-accent-secondary" />
-                  <h3 className="mt-3 text-[16px] font-bold text-white">
-                    Open to everyone
-                  </h3>
-                  <p className="mt-1.5 text-[14px] leading-5 text-copy-muted">
-                    Anyone can browse communities without an account. Connect X
-                    to join and post.
+              {/* ── Schema diagram ── */}
+              <div className="mt-12">
+                {/* Row 1 — Scattered tweets from different users */}
+                <div className="flex flex-col items-center">
+                  <p className="mb-4 text-[13px] font-medium uppercase tracking-[0.12em] text-copy-soft">
+                    Scattered across X
                   </p>
+                  <div className="grid w-full max-w-xl grid-cols-3 gap-3">
+                    {/* Fake tweet bubbles */}
+                    {[
+                      { user: "@alice", text: "$PEPE to the moon 🚀", color: "from-[#4FC3F7]/10 to-[#4FC3F7]/5" },
+                      { user: "@bob", text: "Just aped into $PEPE", color: "from-[#f91880]/10 to-[#f91880]/5" },
+                      { user: "@charlie", text: "$PEPE chart looking clean", color: "from-[#00ba7c]/10 to-[#00ba7c]/5" },
+                    ].map((tweet) => (
+                      <div
+                        key={tweet.user}
+                        className={`rounded-xl border border-white/[0.06] bg-gradient-to-br ${tweet.color} p-3`}
+                      >
+                        <div className="text-[11px] font-bold text-copy-muted">{tweet.user}</div>
+                        <div className="mt-1 text-[12px] leading-4 text-white/80">{tweet.text}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="rounded-2xl border border-white/[0.06] bg-surface-secondary p-5">
-                  <Zap className="size-6 text-accent-secondary" />
-                  <h3 className="mt-3 text-[16px] font-bold text-white">
-                    Built for crypto
-                  </h3>
-                  <p className="mt-1.5 text-[14px] leading-5 text-copy-muted">
-                    Contract addresses, token tickers, and community roles —
-                    everything a project needs.
+
+                {/* Animated arrows down → x-com.fun */}
+                <div className="flex flex-col items-center py-6">
+                  <div className="flex items-center gap-3">
+                    <div className="h-px w-16 bg-gradient-to-r from-transparent to-accent-secondary/40" />
+                    <div className="flex flex-col items-center gap-1">
+                      <svg width="24" height="32" viewBox="0 0 24 32" fill="none" className="text-accent-secondary animate-bounce">
+                        <path d="M12 0v24m0 0l-7-7m7 7l7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                    <div className="h-px w-16 bg-gradient-to-l from-transparent to-accent-secondary/40" />
+                  </div>
+                  <div className="mt-2 rounded-full border border-accent-secondary/30 bg-accent-secondary/[0.08] px-4 py-1 text-[12px] font-bold text-accent-secondary">
+                    Grouped on x-com.fun
+                  </div>
+                </div>
+
+                {/* Row 2 — The x-com.fun community (grouped) */}
+                <div className="flex flex-col items-center">
+                  <div className="w-full max-w-md rounded-2xl border border-accent-secondary/20 bg-surface-secondary/80 shadow-lg shadow-accent-secondary/[0.06]">
+                    {/* Community header */}
+                    <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3">
+                      <div className="flex size-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#00ba7c] to-[#4FC3F7] text-[14px] font-black text-white">
+                        P
+                      </div>
+                      <div>
+                        <div className="text-[14px] font-bold text-white">$PEPE Community</div>
+                        <div className="text-[11px] text-copy-muted">3 members posting together</div>
+                      </div>
+                    </div>
+                    {/* Mini feed */}
+                    <div className="divide-y divide-white/[0.04] px-4">
+                      {[
+                        { user: "@alice", text: "$PEPE to the moon 🚀" },
+                        { user: "@bob", text: "Just aped into $PEPE" },
+                        { user: "@charlie", text: "$PEPE chart looking clean" },
+                      ].map((post) => (
+                        <div key={post.user} className="flex items-start gap-2.5 py-2.5">
+                          <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-[10px] font-bold text-white">
+                            {post.user[1]?.toUpperCase()}
+                          </div>
+                          <div>
+                            <span className="text-[12px] font-bold text-white">{post.user}</span>
+                            <p className="text-[12px] leading-4 text-white/70">{post.text}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Animated arrows down → X (Twitter) */}
+                <div className="flex flex-col items-center py-6">
+                  <div className="flex items-center gap-3">
+                    <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#f91880]/40" />
+                    <div className="flex flex-col items-center gap-1">
+                      <svg width="24" height="32" viewBox="0 0 24 32" fill="none" className="text-[#f91880] animate-bounce" style={{ animationDelay: "0.3s" }}>
+                        <path d="M12 0v24m0 0l-7-7m7 7l7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                    <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#f91880]/40" />
+                  </div>
+                  <div className="mt-2 rounded-full border border-[#f91880]/30 bg-[#f91880]/[0.08] px-4 py-1 text-[12px] font-bold text-[#f91880]">
+                    Auto-posted to each user&apos;s 𝕏
+                  </div>
+                </div>
+
+                {/* Row 3 — Published on X simultaneously */}
+                <div className="flex flex-col items-center">
+                  <div className="grid w-full max-w-xl grid-cols-3 gap-3">
+                    {[
+                      { user: "@alice", text: "$PEPE to the moon 🚀" },
+                      { user: "@bob", text: "Just aped into $PEPE" },
+                      { user: "@charlie", text: "$PEPE chart looking clean" },
+                    ].map((tweet) => (
+                      <div
+                        key={tweet.user}
+                        className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <svg viewBox="0 0 24 24" className="size-3 text-white/40" fill="currentColor">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                          </svg>
+                          <span className="text-[11px] font-bold text-copy-muted">{tweet.user}</span>
+                        </div>
+                        <div className="mt-1 text-[12px] leading-4 text-white/60">{tweet.text}</div>
+                        <div className="mt-1.5 flex items-center gap-1 text-[10px] text-copy-soft">
+                          <span className="inline-block size-1.5 rounded-full bg-[#00ba7c]" />
+                          Published
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-4 text-[13px] text-copy-muted">
+                    Each member&apos;s post goes to <span className="font-bold text-white">their own X profile</span> automatically.
                   </p>
                 </div>
               </div>
@@ -430,24 +504,3 @@ export default async function Home({ searchParams }: HomePageProps) {
   );
 }
 
-/* ── Helper components ── */
-
-const FeatureItem = ({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-}) => (
-  <div className="flex flex-col items-center text-center">
-    <div className="flex size-12 items-center justify-center rounded-2xl bg-accent-secondary/10">
-      <Icon className="size-6 text-accent-secondary" />
-    </div>
-    <h3 className="mt-3 text-[15px] font-bold text-white">{title}</h3>
-    <p className="mt-1.5 text-[13px] leading-5 text-copy-muted">
-      {description}
-    </p>
-  </div>
-);
