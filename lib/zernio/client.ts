@@ -242,6 +242,7 @@ export const postTweet = async (
         {
           platform: "twitter",
           accountId,
+          platformSpecificData: {},
         },
       ],
       publishNow: true,
