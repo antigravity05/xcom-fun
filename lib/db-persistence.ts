@@ -403,16 +403,8 @@ export const applyCreateReply = async (input: Parameters<typeof createReplyOpera
     createdAt: new Date(newReply.createdAt),
   });
 
-  // Update post reply count
-  const updatedPost = nextSnapshot.posts.find((p) => p.id === input.postId);
-  const originalPost = snapshot.posts.find((p) => p.id === input.postId);
-
-  if (updatedPost && originalPost && updatedPost.replyCount !== originalPost.replyCount) {
-    await db
-      .update(posts)
-      .set({})
-      .where(eq(posts.id, input.postId));
-  }
+  // Note: replyCount is computed at read time from the postReplies table,
+  // not stored as a column in posts. No update needed here.
 
   return nextSnapshot;
 };
