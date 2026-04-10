@@ -630,51 +630,48 @@ export const createPostAction = async (formData: FormData) => {
   }
 
   // Validate body
-  const rawBody = String(formData.get("body") ?? "");
-  const parsedBody = bodySchema.safeParse(rawBody);
-  if (!parsedBody.success) {
+  let body: string;
+  try {
+    body = bodySchema.parse(String(formData.get("body") ?? ""));
+  } catch {
     const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Post must be between 2 and 1000 characters.")}`;
     redirect(errorUrl);
+    return;
   }
-  const body = parsedBody.data;
 
   // Create post in local DB
-  let newPostId: string | null = null;
+  let nextSnapshot;
   try {
-    const nextSnapshot = await applyCreatePost({
+    nextSnapshot = await applyCreatePost({
       actorUserId: viewerUserId,
       communitySlug,
       body,
     });
-
-    // Find the NEWEST post by this user (last in array = most recently created)
-    const community = nextSnapshot.communities.find((c) => c.slug === communitySlug);
-    if (community) {
-      const userPostsInCommunity = nextSnapshot.posts.filter(
-        (p) =>
-          p.communityId === community.id &&
-          p.authorUserId === viewerUserId,
-      );
-      const newPost = userPostsInCommunity[userPostsInCommunity.length - 1];
-      newPostId = newPost?.id ?? null;
-    }
   } catch (err) {
     console.error("[createPostAction] Failed to create post:", err);
     const message = err instanceof Error ? err.message : "Failed to create post.";
     const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent(message)}`;
     redirect(errorUrl);
+    return;
   }
 
   // ── X/Twitter sync via Zernio — must await before redirect ──
-  if (newPostId) {
-    console.log(`[x-sync] Publishing post ${newPostId} (body: "${body.slice(0, 30)}") to X`);
-    try {
-      await publishToX(viewerUserId, newPostId, body);
-    } catch (err) {
-      console.error("[x-sync] Publication failed:", err);
+  const community = nextSnapshot.communities.find((c) => c.slug === communitySlug);
+  if (community) {
+    const userPostsInCommunity = nextSnapshot.posts.filter(
+      (p) =>
+        p.communityId === community.id &&
+        p.authorUserId === viewerUserId,
+    );
+    const newPost = userPostsInCommunity[userPostsInCommunity.length - 1];
+    if (newPost) {
+      console.log(`[x-sync] Publishing post ${newPost.id} (body: "${body.slice(0, 30)}") to X`);
+      try {
+        await publishToX(viewerUserId, newPost.id, body);
+      } catch (err) {
+        console.error("[x-sync] Publication failed:", err);
+      }
     }
-  } else {
-    console.warn("[x-sync] Could not find new post to publish");
   }
 
   revalidatePath("/");

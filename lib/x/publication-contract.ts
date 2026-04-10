@@ -71,22 +71,11 @@ const publishViaZernio = async (
       twitterResult?.postId ??
       null;
 
-    console.log("[x-sync] Resolved externalPostId:", externalId, "| twitterResult:", JSON.stringify(twitterResult));
-
-    if (!externalId) {
-      // Tweet might have been posted on X but we couldn't get the ID back.
-      // Mark as published but log a warning — replies won't work for this post.
-      console.warn("[x-sync] WARNING: Tweet posted but no platformPostId returned. Zernio _id:", result._id ?? result.id);
-      return {
-        status: "published",
-        externalPostId: undefined,
-        errorMessage: "Tweet posted but external ID not returned by Zernio",
-      };
-    }
+    console.log("[x-sync] Resolved externalPostId:", externalId, "| platformPostId:", twitterResult?.platformPostId, "| platformPostUrl:", twitterResult?.platformPostUrl);
 
     return {
       status: "published",
-      externalPostId: externalId,
+      externalPostId: externalId ?? undefined,
     };
   } catch (error) {
     console.error("Zernio publication error:", error);
