@@ -672,17 +672,6 @@ export const createPostAction = async (formData: FormData) => {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 
-  // Validate body — Zod throws on invalid input, so we catch it
-  let body: string;
-  try {
-    body = bodySchema.parse(String(formData.get("body") ?? ""));
-  } catch {
-    // Body too short or too long — redirect back with error
-    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Post must be between 2 and 1000 characters.")}`;
-    redirect(errorUrl);
-    return; // unreachable, but keeps TS happy
-  }
-
   // ── Handle image uploads — convert to base64 data URLs ──
   const imageFiles = formData.getAll("images") as File[];
   let media: import("@/lib/xcom-domain").CommunityPostMedia | undefined;
@@ -697,6 +686,27 @@ export const createPostAction = async (formData: FormData) => {
     }
     if (imageUrls.length > 0) {
       media = { kind: "images", urls: imageUrls };
+    }
+  }
+
+  // Validate body — allow empty body if images are attached
+  const rawBody = String(formData.get("body") ?? "").trim();
+  let body: string;
+  if (media) {
+    // With images, body is optional (can be empty)
+    if (rawBody.length > 1000) {
+      const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Post must be at most 1000 characters.")}`;
+      redirect(errorUrl);
+      return;
+    }
+    body = rawBody || " "; // X API requires non-empty text, use space as fallback
+  } else {
+    try {
+      body = bodySchema.parse(rawBody);
+    } catch {
+      const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Post must be between 2 and 1000 characters.")}`;
+      redirect(errorUrl);
+      return;
     }
   }
 
