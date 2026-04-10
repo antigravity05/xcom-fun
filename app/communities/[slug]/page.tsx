@@ -16,6 +16,7 @@ import {
 import { CommunityHeader } from "@/components/community/community-header";
 import PostComposer from "@/components/community/post-composer";
 import { PostCard } from "@/components/community/post-card";
+import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { XcomChrome } from "@/components/layout/xcom-chrome";
 import type { CommunityMemberRecord, CommunityTab } from "@/lib/xcom-domain";
 import {
@@ -204,12 +205,12 @@ export default async function CommunityPage({
                         name="communitySlug"
                         value={community.slug}
                       />
-                      <button
-                        type="submit"
+                      <FormSubmitButton
                         className="rounded-full border border-red-400/20 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-100 transition hover:bg-red-500/15"
+                        pendingChildren="Deleting..."
                       >
                         Delete community
-                      </button>
+                      </FormSubmitButton>
                     </form>
                   </div>
                 </div>
@@ -447,12 +448,11 @@ const MemberRow = ({
               name="redirectTo"
               value={`/communities/${communitySlug}?tab=members`}
             />
-            <button
-              type="submit"
+            <FormSubmitButton
               className="rounded-full border border-white/[0.08] bg-background px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-copy-muted transition hover:bg-white/[0.06] hover:text-white sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
             >
               {roleActionLabel}
-            </button>
+            </FormSubmitButton>
           </form>
         ) : null}
       </div>

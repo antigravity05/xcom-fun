@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useFormStatus } from "react-dom";
 import {
   Image as ImageIcon,
-  ListOrdered,
-  MapPin,
-  Smile,
   X,
 } from "lucide-react";
 
@@ -142,25 +140,26 @@ export default function PostComposer({
               >
                 <ImageIcon className="size-[18px]" />
               </label>
-              <span className="flex size-[34px] items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10">
-                <ListOrdered className="size-[18px]" />
-              </span>
-              <span className="flex size-[34px] items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10">
-                <Smile className="size-[18px]" />
-              </span>
-              <span className="flex size-[34px] items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10">
-                <MapPin className="size-[18px]" />
-              </span>
             </div>
-            <button
-              type="submit"
-              className="rounded-full bg-accent-secondary px-5 py-2 text-[15px] font-bold text-white transition hover:brightness-110"
-            >
-              Post
-            </button>
+            <PostSubmitButton />
           </div>
         </div>
       </div>
     </form>
+  );
+}
+
+function PostSubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className={`rounded-full bg-accent-secondary px-5 py-2 text-[15px] font-bold text-white transition hover:brightness-110 ${
+        pending ? "opacity-50 cursor-not-allowed" : ""
+      }`}
+    >
+      {pending ? "Posting..." : "Post"}
+    </button>
   );
 }

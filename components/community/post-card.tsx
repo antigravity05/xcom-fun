@@ -10,7 +10,6 @@ import {
   Pin,
   PinOff,
   Repeat2,
-  Share,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -27,6 +26,7 @@ import {
   formatCompactNumber,
   formatRelativeTime,
 } from "@/lib/xcom-formatters";
+import { FormSubmitButton } from "@/components/ui/form-submit-button";
 
 type PostCardProps = {
   post: CommunityPostRecord & {
@@ -116,8 +116,7 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
                       <input type="hidden" name="postId" value={post.id} />
                       <input type="hidden" name="communitySlug" value={interaction.communitySlug} />
                       <input type="hidden" name="redirectTo" value={interaction.redirectTo} />
-                      <button
-                        type="submit"
+                      <FormSubmitButton
                         className="flex w-full items-center gap-3 px-4 py-3 text-[15px] text-white transition hover:bg-white/[0.04]"
                       >
                         {post.isPinned ? (
@@ -131,7 +130,7 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
                             Pin to community
                           </>
                         )}
-                      </button>
+                      </FormSubmitButton>
                     </form>
                   ) : null}
                   {interaction.canDelete ? (
@@ -139,13 +138,12 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
                       <input type="hidden" name="postId" value={post.id} />
                       <input type="hidden" name="communitySlug" value={interaction.communitySlug} />
                       <input type="hidden" name="redirectTo" value={interaction.redirectTo} />
-                      <button
-                        type="submit"
+                      <FormSubmitButton
                         className="flex w-full items-center gap-3 px-4 py-3 text-[15px] text-danger-soft transition hover:bg-danger-soft/10"
                       >
                         <Trash2 className="size-[18px]" />
                         Delete
-                      </button>
+                      </FormSubmitButton>
                     </form>
                   ) : null}
                 </div>
@@ -172,12 +170,12 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
                 >
                   Cancel
                 </Link>
-                <button
-                  type="submit"
+                <FormSubmitButton
                   className="rounded-full bg-accent-secondary px-5 py-2 text-sm font-bold text-white transition hover:brightness-110"
+                  pendingChildren="Saving..."
                 >
                   Save
-                </button>
+                </FormSubmitButton>
               </div>
             </form>
           ) : (
@@ -237,16 +235,13 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
 
           {/* Interaction bar — Twitter-style layout */}
           <div className="-ml-2 mt-1 flex items-center justify-between sm:max-w-[425px]">
-            {/* Reply */}
-            <button
-              type="button"
-              className="group/btn flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-1.5 text-[13px] text-copy-muted transition hover:text-accent-secondary"
-            >
-              <span className="flex size-[34px] items-center justify-center rounded-full transition group-hover/btn:bg-accent-secondary/10">
+            {/* Reply count (scrolls to reply form area) */}
+            <div className="flex min-w-[52px] items-center gap-1.5 px-2 py-1.5 text-[13px] text-copy-muted">
+              <span className="flex size-[34px] items-center justify-center">
                 <MessageCircle className="size-[18px]" />
               </span>
               <span className="-ml-1">{formatCompactNumber(post.metrics.replies)}</span>
-            </button>
+            </div>
 
             {/* Repost */}
             {interaction?.canInteract ? (
@@ -254,8 +249,7 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
                 <input type="hidden" name="postId" value={post.id} />
                 <input type="hidden" name="communitySlug" value={interaction.communitySlug} />
                 <input type="hidden" name="redirectTo" value={interaction.redirectTo} />
-                <button
-                  type="submit"
+                <FormSubmitButton
                   className={`group/btn flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-1.5 text-[13px] transition ${
                     post.viewerHasReposted
                       ? "text-accent-tertiary"
@@ -266,7 +260,7 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
                     <Repeat2 className="size-[18px]" />
                   </span>
                   <span className="-ml-1">{formatCompactNumber(post.metrics.reposts)}</span>
-                </button>
+                </FormSubmitButton>
               </form>
             ) : (
               <div className="flex min-w-[52px] items-center gap-1.5 px-2 py-1.5 text-[13px] text-copy-muted">
@@ -283,8 +277,7 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
                 <input type="hidden" name="postId" value={post.id} />
                 <input type="hidden" name="communitySlug" value={interaction.communitySlug} />
                 <input type="hidden" name="redirectTo" value={interaction.redirectTo} />
-                <button
-                  type="submit"
+                <FormSubmitButton
                   className={`group/btn flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-1.5 text-[13px] transition ${
                     post.viewerHasLiked
                       ? "text-accent-primary"
@@ -299,7 +292,7 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
                     />
                   </span>
                   <span className="-ml-1">{formatCompactNumber(post.metrics.likes)}</span>
-                </button>
+                </FormSubmitButton>
               </form>
             ) : (
               <div className="flex min-w-[52px] items-center gap-1.5 px-2 py-1.5 text-[13px] text-copy-muted">
@@ -311,31 +304,25 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
             )}
 
             {/* Views */}
-            <div className="group/btn flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-1.5 text-[13px] text-copy-muted transition hover:text-accent-secondary">
-              <span className="flex size-[34px] items-center justify-center rounded-full transition group-hover/btn:bg-accent-secondary/10">
+            <div className="flex min-w-[52px] items-center gap-1.5 px-2 py-1.5 text-[13px] text-copy-muted">
+              <span className="flex size-[34px] items-center justify-center">
                 <BarChart3 className="size-[18px]" />
               </span>
               <span className="-ml-1">{formatCompactNumber(post.metrics.views)}</span>
             </div>
 
-            {/* Share & Bookmark */}
+            {/* Bookmark & Share — disabled for now */}
             <div className="flex items-center gap-0">
-              <button
-                type="button"
-                className="group/btn flex items-center rounded-full p-1.5 text-copy-muted transition hover:text-accent-secondary"
-              >
-                <span className="flex size-[34px] items-center justify-center rounded-full transition group-hover/btn:bg-accent-secondary/10">
+              <span className="flex items-center rounded-full p-1.5 text-copy-muted/40">
+                <span className="flex size-[34px] items-center justify-center">
                   <Bookmark className="size-[18px]" />
                 </span>
-              </button>
-              <button
-                type="button"
-                className="group/btn flex items-center rounded-full p-1.5 text-copy-muted transition hover:text-accent-secondary"
-              >
-                <span className="flex size-[34px] items-center justify-center rounded-full transition group-hover/btn:bg-accent-secondary/10">
+              </span>
+              <span className="flex items-center rounded-full p-1.5 text-copy-muted/40">
+                <span className="flex size-[34px] items-center justify-center">
                   <Upload className="size-[18px]" />
                 </span>
-              </button>
+              </span>
             </div>
           </div>
 
@@ -396,12 +383,12 @@ export const PostCard = ({ post, interaction }: PostCardProps) => {
                   placeholder="Post your reply"
                 />
               </div>
-              <button
-                type="submit"
-                className="shrink-0 rounded-full bg-accent-secondary px-4 py-2 text-[13px] font-bold text-white transition hover:brightness-110 disabled:opacity-50"
+              <FormSubmitButton
+                className="shrink-0 rounded-full bg-accent-secondary px-4 py-2 text-[13px] font-bold text-white transition hover:brightness-110"
+                pendingChildren="..."
               >
                 Reply
-              </button>
+              </FormSubmitButton>
             </form>
           ) : null}
         </div>

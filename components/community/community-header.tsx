@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, BadgeCheck } from "lucide-react";
 import { joinCommunityAction, leaveCommunityAction } from "@/app/xcom-actions";
+import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import type {
   CommunityRecord,
   CommunityTab,
@@ -78,13 +79,13 @@ export const CommunityHeader = ({
               <form action={leaveCommunityAction}>
                 <input type="hidden" name="communitySlug" value={community.slug} />
                 <input type="hidden" name="redirectTo" value={`/communities/${community.slug}`} />
-                <button
-                  type="submit"
+                <FormSubmitButton
                   className="group rounded-full border border-white/20 px-5 py-1.5 text-[14px] font-bold text-white transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
+                  pendingChildren="Leaving..."
                 >
                   <span className="group-hover:hidden">Joined</span>
                   <span className="hidden group-hover:inline">Leave</span>
-                </button>
+                </FormSubmitButton>
               </form>
             ) : (
               <span className="rounded-full border border-white/20 px-5 py-1.5 text-[14px] font-bold text-white">
@@ -99,12 +100,12 @@ export const CommunityHeader = ({
             <form action={joinCommunityAction}>
               <input type="hidden" name="communitySlug" value={community.slug} />
               <input type="hidden" name="redirectTo" value={`/communities/${community.slug}`} />
-              <button
-                type="submit"
+              <FormSubmitButton
                 className="rounded-full bg-accent-secondary px-5 py-1.5 text-[14px] font-bold text-white transition hover:brightness-110"
+                pendingChildren="Joining..."
               >
                 Join
-              </button>
+              </FormSubmitButton>
             </form>
           ) : (
             <Link
