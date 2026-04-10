@@ -17,6 +17,9 @@ export const getDb = () => {
 
   const connection = postgres(process.env.DATABASE_URL, {
     prepare: false,
+    max: 1,
+    idle_timeout: 20,
+    connect_timeout: 30,
   });
 
   databaseInstance = drizzle(connection, { schema });
