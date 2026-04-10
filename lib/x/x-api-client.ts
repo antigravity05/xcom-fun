@@ -20,19 +20,19 @@ export class XAPIError extends Error {
 }
 
 const handleXAPIResponse = async (response: Response) => {
+  const text = await response.text();
+
   if (!response.ok) {
     let errorDetails: unknown;
-
     try {
-      errorDetails = await response.json();
+      errorDetails = JSON.parse(text);
     } catch {
-      errorDetails = await response.text();
+      errorDetails = text;
     }
-
     throw new XAPIError(response.status, `X API error: ${response.statusText}`, errorDetails);
   }
 
-  return response.json();
+  return JSON.parse(text);
 };
 
 /**
@@ -59,17 +59,20 @@ export const uploadMedia = async (
     body: formData,
   });
 
+  const responseText = await response.text();
+
   if (!response.ok) {
     let errorDetails: unknown;
     try {
-      errorDetails = await response.json();
+      errorDetails = JSON.parse(responseText);
     } catch {
-      errorDetails = await response.text();
+      errorDetails = responseText;
     }
+    console.error(`[x-api] uploadMedia error ${response.status}:`, responseText.slice(0, 500));
     throw new XAPIError(response.status, `X Media Upload error: ${response.statusText}`, errorDetails);
   }
 
-  const data = await response.json();
+  const data = JSON.parse(responseText);
   console.log("[x-api] uploadMedia response:", JSON.stringify(data));
   return data.media_id_string;
 };
