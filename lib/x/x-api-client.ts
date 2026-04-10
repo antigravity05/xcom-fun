@@ -102,3 +102,73 @@ export const undoRetweet = async (
   await handleXAPIResponse(response);
   return true;
 };
+
+/**
+ * Reply to a tweet via X API v2.
+ * POST /2/tweets with reply.in_reply_to_tweet_id
+ */
+export const replyToTweet = async (
+  accessToken: string,
+  inReplyToTweetId: string,
+  text: string
+): Promise<{ id: string; text: string }> => {
+  const response = await fetch(`${X_API_BASE}/tweets`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      text,
+      reply: { in_reply_to_tweet_id: inReplyToTweetId },
+    }),
+  });
+
+  const data = (await handleXAPIResponse(response)) as XTweetResponse;
+  return data.data;
+};
+
+/**
+ * Like a tweet via X API v2.
+ * POST /2/users/:userId/likes
+ */
+export const likeTweet = async (
+  accessToken: string,
+  userId: string,
+  tweetId: string
+): Promise<boolean> => {
+  const response = await fetch(`${X_API_BASE}/users/${userId}/likes`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ tweet_id: tweetId }),
+  });
+
+  await handleXAPIResponse(response);
+  return true;
+};
+
+/**
+ * Unlike a tweet via X API v2.
+ * DELETE /2/users/:userId/likes/:tweetId
+ */
+export const unlikeTweet = async (
+  accessToken: string,
+  userId: string,
+  tweetId: string
+): Promise<boolean> => {
+  const response = await fetch(
+    `${X_API_BASE}/users/${userId}/likes/${tweetId}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  await handleXAPIResponse(response);
+  return true;
+};

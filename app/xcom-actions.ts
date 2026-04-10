@@ -111,20 +111,77 @@ const publishToX = async (
   }
 };
 
-// ── Helpers to get Zernio account ID and external tweet ID ──
+// ── Helpers for X sync credentials ──
 
-/** Get the user's Zernio account ID from the token store. */
-const getZernioAccountId = async (userId: string): Promise<string | null> => {
+type XSyncCredentials =
+  | { mode: "zernio"; accountId: string }
+  | { mode: "direct"; accessToken: string; xUserId: string };
+
+/**
+ * Get credentials for X sync operations.
+ * - In Zernio mode: returns the Zernio accountId (stored as accessToken)
+ * - In direct X API mode: returns decrypted + auto-refreshed OAuth token + xUserId
+ */
+const getXSyncCredentials = async (userId: string): Promise<XSyncCredentials | null> => {
   try {
     const { isZernioMode } = await import("@/lib/x/oauth-contract");
-    if (!isZernioMode()) return null;
-
-    const { getUserTokens } = await import("@/lib/x/token-store");
+    const { getUserTokens, saveUserTokens } = await import("@/lib/x/token-store");
     const tokens = await getUserTokens(userId);
-    return tokens?.accessToken ?? null;
-  } catch {
+    if (!tokens) {
+      console.warn("[x-sync] No tokens found for user", userId);
+      return null;
+    }
+
+    if (isZernioMode()) {
+      // In Zernio mode, accessToken field holds the Zernio accountId (unencrypted)
+      return { mode: "zernio", accountId: tokens.accessToken };
+    }
+
+    // Direct X API mode — decrypt tokens and auto-refresh if needed
+    const { decryptToken, encryptToken } = await import("@/lib/x/token-encryption");
+    let accessToken = decryptToken(tokens.accessToken);
+    let refreshToken = tokens.refreshToken ? decryptToken(tokens.refreshToken) : null;
+
+    const expiresAt = new Date(tokens.expiresAt);
+    if (new Date() > expiresAt && refreshToken) {
+      try {
+        const { refreshAccessToken } = await import("@/lib/x/oauth-client");
+        const refreshed = await refreshAccessToken(refreshToken);
+        accessToken = refreshed.access_token;
+        refreshToken = refreshed.refresh_token ?? refreshToken;
+        await saveUserTokens({
+          userId,
+          accessToken: encryptToken(accessToken),
+          refreshToken: refreshToken ? encryptToken(refreshToken) : null,
+          expiresAt: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
+        });
+        console.log("[x-sync] Auto-refreshed X OAuth token for user", userId);
+      } catch (err) {
+        console.error("[x-sync] Token refresh failed:", err);
+        return null;
+      }
+    }
+
+    // Get the user's X user ID from the DB
+    const snapshot = await readXcomStore();
+    const user = snapshot.users.find((u) => u.id === userId);
+    if (!user?.xUserId) {
+      console.warn("[x-sync] No xUserId found for user", userId);
+      return null;
+    }
+
+    return { mode: "direct", accessToken, xUserId: user.xUserId };
+  } catch (err) {
+    console.error("[x-sync] getXSyncCredentials error:", err);
     return null;
   }
+};
+
+/** Legacy alias — kept for getExternalTweetId which only needs the accountId */
+const getZernioAccountId = async (userId: string): Promise<string | null> => {
+  const creds = await getXSyncCredentials(userId);
+  if (!creds) return null;
+  return creds.mode === "zernio" ? creds.accountId : null;
 };
 
 /** Get the external tweet ID for a local post.
@@ -195,14 +252,14 @@ const getExternalTweetId = async (postId: string): Promise<string | null> => {
   }
 };
 
-// ── X/Twitter engagement sync helpers (fire-and-forget) ──
+// ── X/Twitter engagement sync helpers ──
 
 const syncLikeToX = async (userId: string, postId: string, isLiking: boolean) => {
   try {
     console.log(`[x-sync] syncLikeToX: userId=${userId}, postId=${postId}, isLiking=${isLiking}`);
-    const accountId = await getZernioAccountId(userId);
-    if (!accountId) {
-      console.warn("[x-sync] syncLikeToX: no accountId for user", userId);
+    const creds = await getXSyncCredentials(userId);
+    if (!creds) {
+      console.warn("[x-sync] syncLikeToX: no credentials for user", userId);
       return;
     }
 
@@ -211,12 +268,20 @@ const syncLikeToX = async (userId: string, postId: string, isLiking: boolean) =>
       console.warn("[x-sync] syncLikeToX: no external tweetId for post", postId);
       return;
     }
-    console.log(`[x-sync] syncLikeToX: accountId=${accountId}, tweetId=${tweetId}`);
 
-    // NOTE: Zernio API does NOT support /twitter/like endpoint.
-    // Supported engagement actions: retweet, bookmark, follow only.
-    // Likes are applied locally but cannot be synced to X via Zernio.
-    console.warn(`[x-sync] syncLikeToX: Zernio API does not support like/unlike — like applied locally only`);
+    if (creds.mode === "direct") {
+      const { likeTweet, unlikeTweet } = await import("@/lib/x/x-api-client");
+      if (isLiking) {
+        await likeTweet(creds.accessToken, creds.xUserId, tweetId);
+        console.log(`[x-sync] Liked tweet ${tweetId} via direct X API`);
+      } else {
+        await unlikeTweet(creds.accessToken, creds.xUserId, tweetId);
+        console.log(`[x-sync] Unliked tweet ${tweetId} via direct X API`);
+      }
+    } else {
+      // Zernio does NOT support /twitter/like — likes are local only
+      console.warn(`[x-sync] syncLikeToX: Zernio mode — likes cannot sync to X (local only)`);
+    }
   } catch (err) {
     console.error("[x-sync] syncLikeToX error:", err);
   }
@@ -224,9 +289,9 @@ const syncLikeToX = async (userId: string, postId: string, isLiking: boolean) =>
 
 const syncRetweetToX = async (userId: string, postId: string, isRetweeting: boolean) => {
   try {
-    const accountId = await getZernioAccountId(userId);
-    if (!accountId) {
-      console.warn("[x-sync] syncRetweetToX: no accountId for user", userId);
+    const creds = await getXSyncCredentials(userId);
+    if (!creds) {
+      console.warn("[x-sync] syncRetweetToX: no credentials for user", userId);
       return;
     }
 
@@ -236,14 +301,25 @@ const syncRetweetToX = async (userId: string, postId: string, isRetweeting: bool
       return;
     }
 
-    console.log(`[x-sync] syncRetweetToX: accountId=${accountId}, tweetId=${tweetId}, isRetweeting=${isRetweeting}`);
-    const { retweetPost, undoRetweet } = await import("@/lib/zernio/client");
-    if (isRetweeting) {
-      await retweetPost(accountId, tweetId);
-      console.log(`[x-sync] Retweeted tweet ${tweetId}`);
+    if (creds.mode === "direct") {
+      const { retweet, undoRetweet } = await import("@/lib/x/x-api-client");
+      if (isRetweeting) {
+        await retweet(creds.accessToken, creds.xUserId, tweetId);
+        console.log(`[x-sync] Retweeted tweet ${tweetId} via direct X API`);
+      } else {
+        await undoRetweet(creds.accessToken, creds.xUserId, tweetId);
+        console.log(`[x-sync] Undid retweet ${tweetId} via direct X API`);
+      }
     } else {
-      await undoRetweet(accountId, tweetId);
-      console.log(`[x-sync] Undid retweet of tweet ${tweetId}`);
+      console.log(`[x-sync] syncRetweetToX: using Zernio`);
+      const { retweetPost, undoRetweet } = await import("@/lib/zernio/client");
+      if (isRetweeting) {
+        await retweetPost(creds.accountId, tweetId);
+        console.log(`[x-sync] Retweeted tweet ${tweetId} via Zernio`);
+      } else {
+        await undoRetweet(creds.accountId, tweetId);
+        console.log(`[x-sync] Undid retweet ${tweetId} via Zernio`);
+      }
     }
   } catch (err) {
     console.error("[x-sync] syncRetweetToX error:", err);
@@ -253,27 +329,40 @@ const syncRetweetToX = async (userId: string, postId: string, isRetweeting: bool
 const syncReplyToX = async (userId: string, postId: string, body: string) => {
   try {
     console.log(`[x-sync] syncReplyToX: userId=${userId}, postId=${postId}, body="${body.slice(0, 50)}..."`);
-    const accountId = await getZernioAccountId(userId);
-    if (!accountId) {
-      console.warn("[x-sync] syncReplyToX: no accountId for user", userId);
+    const creds = await getXSyncCredentials(userId);
+    if (!creds) {
+      console.warn("[x-sync] syncReplyToX: no credentials for user", userId);
       return;
     }
-    console.log(`[x-sync] syncReplyToX: got accountId=${accountId}`);
+    console.log(`[x-sync] syncReplyToX: mode=${creds.mode}`);
 
     const tweetId = await getExternalTweetId(postId);
     console.log(`[x-sync] syncReplyToX: getExternalTweetId returned: ${tweetId}`);
 
-    // If we have a valid numeric tweet ID, reply as thread; otherwise post standalone
-    if (tweetId && /^\d+$/.test(tweetId)) {
-      console.log(`[x-sync] syncReplyToX: replying to tweet ${tweetId} with accountId=${accountId}`);
-      const { replyToTweet } = await import("@/lib/zernio/client");
-      const result = await replyToTweet(accountId, tweetId, body);
-      console.log(`[x-sync] Replied to tweet ${tweetId}:`, JSON.stringify(result));
+    if (creds.mode === "direct") {
+      if (tweetId && /^\d+$/.test(tweetId)) {
+        const { replyToTweet } = await import("@/lib/x/x-api-client");
+        const result = await replyToTweet(creds.accessToken, tweetId, body);
+        console.log(`[x-sync] Replied to tweet ${tweetId} via direct X API:`, JSON.stringify(result));
+      } else {
+        // No parent tweet ID — post as standalone tweet
+        console.warn(`[x-sync] syncReplyToX: no valid parent tweet ID (got: ${tweetId}) — posting standalone`);
+        const { postTweet } = await import("@/lib/x/x-api-client");
+        const result = await postTweet(creds.accessToken, body);
+        console.log(`[x-sync] Posted reply as standalone via direct X API:`, JSON.stringify(result));
+      }
     } else {
-      console.warn(`[x-sync] syncReplyToX: no valid parent tweet ID (got: ${tweetId}) — posting as standalone`);
-      const { postTweet } = await import("@/lib/zernio/client");
-      const result = await postTweet(accountId, body);
-      console.log(`[x-sync] Posted reply as standalone tweet:`, JSON.stringify(result));
+      // Zernio mode
+      if (tweetId && /^\d+$/.test(tweetId)) {
+        const { replyToTweet } = await import("@/lib/zernio/client");
+        const result = await replyToTweet(creds.accountId, tweetId, body);
+        console.log(`[x-sync] Replied to tweet ${tweetId} via Zernio:`, JSON.stringify(result));
+      } else {
+        console.warn(`[x-sync] syncReplyToX: no valid parent tweet ID (got: ${tweetId}) — posting standalone via Zernio`);
+        const { postTweet } = await import("@/lib/zernio/client");
+        const result = await postTweet(creds.accountId, body);
+        console.log(`[x-sync] Posted reply as standalone via Zernio:`, JSON.stringify(result));
+      }
     }
   } catch (err) {
     console.error("[x-sync] syncReplyToX error:", err);
