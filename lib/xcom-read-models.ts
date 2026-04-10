@@ -264,6 +264,67 @@ export const listDiscoverFeedPosts = async () => {
     .sort((left, right) => right.metrics.views - left.metrics.views);
 };
 
+export const getUserProfileView = async (handle: string) => {
+  const snapshot = await readXcomStore();
+  const viewerId = await getViewerUserId();
+
+  // Normalize handle — accept with or without @
+  const normalizedHandle = handle.startsWith("@") ? handle : `@${handle}`;
+  const user = snapshot.users.find(
+    (entry) => entry.xHandle.toLowerCase() === normalizedHandle.toLowerCase(),
+  );
+
+  if (!user) {
+    return null;
+  }
+
+  const memberships = snapshot.memberships
+    .filter((entry) => entry.userId === user.id && entry.status === "active")
+    .map((entry) => {
+      const community = snapshot.communities.find((c) => c.id === entry.communityId);
+      return community
+        ? {
+            communitySlug: community.slug,
+            communityName: community.name,
+            communityBannerUrl: community.bannerUrl,
+            role: entry.role,
+            joinedAt: entry.createdAt,
+            ...getCommunityVisualProfile(community.slug, community.name),
+          }
+        : null;
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+
+  const posts = snapshot.posts
+    .filter((entry) => entry.authorUserId === user.id)
+    .map((entry) => toPostRecord(snapshot, entry.id, viewerId))
+    .filter(
+      (post): post is NonNullable<ReturnType<typeof toPostRecord>> => post !== null,
+    )
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
+
+  const viewer = snapshot.users.find((entry) => entry.id === viewerId) ?? null;
+
+  return {
+    user: {
+      id: user.id,
+      displayName: user.displayName,
+      xHandle: user.xHandle,
+      avatar: user.avatar,
+      verified: verifiedHandles.has(user.xHandle),
+      isViewer: user.id === viewerId,
+    },
+    viewer,
+    memberships,
+    posts,
+    stats: {
+      posts: posts.length,
+      communities: memberships.length,
+      totalLikes: posts.reduce((sum, post) => sum + post.metrics.likes, 0),
+    },
+  };
+};
+
 export const getCommunityTimelineView = async (slug: string) => {
   const snapshot = await readXcomStore();
   const viewerId = await getViewerUserId();

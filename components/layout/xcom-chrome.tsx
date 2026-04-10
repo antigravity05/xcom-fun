@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { disconnectDemoAccountAction } from "@/app/xcom-actions";
 
-type NavigationKey = "discover" | "create" | "connect" | "community";
+type NavigationKey = "discover" | "create" | "connect" | "community" | "profile";
 
 type XcomChromeProps = {
   active: NavigationKey;
@@ -75,7 +75,7 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
               {viewer ? (
                 <>
                   <Link
-                    href="/"
+                    href={`/profile/${encodeURIComponent(viewer.xHandle)}`}
                     className="flex size-10 items-center justify-center rounded-full bg-accent-secondary/15 text-sm font-bold text-white xl:size-auto xl:gap-3 xl:rounded-full xl:px-3 xl:py-3 xl:transition xl:hover:bg-white/[0.06]"
                   >
                     <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-secondary/20 text-sm font-bold text-white xl:size-10 overflow-hidden">
@@ -142,10 +142,13 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
                     </div>
                   </summary>
                   <div className="absolute right-0 top-full mt-1 z-50 w-56 rounded-2xl border border-white/[0.08] bg-surface-secondary p-2 shadow-xl">
-                    <div className="px-3 py-2 border-b border-white/[0.08] mb-1">
+                    <Link
+                      href={`/profile/${encodeURIComponent(viewer.xHandle)}`}
+                      className="block px-3 py-2 border-b border-white/[0.08] mb-1 transition hover:bg-white/[0.04] rounded-xl"
+                    >
                       <div className="text-[14px] font-bold text-white truncate">{viewer.displayName}</div>
                       <div className="text-[12px] text-copy-muted truncate">{viewer.xHandle}</div>
-                    </div>
+                    </Link>
                     <form action={disconnectDemoAccountAction}>
                       <input type="hidden" name="redirectTo" value="/" />
                       <button

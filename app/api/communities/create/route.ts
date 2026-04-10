@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const name = String(formData.get("name") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
+    const contractAddress = String(formData.get("contractAddress") ?? "").trim() || undefined;
 
     if (name.length < 3 || name.length > 32) {
       return NextResponse.json(
@@ -121,6 +122,7 @@ export async function POST(request: NextRequest) {
       tagline: description.slice(0, 90),
       description,
       bannerUrl,
+      contractAddress,
       rules: ["Stay on topic.", "No spam.", "Keep the feed readable."],
     });
 
