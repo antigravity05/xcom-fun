@@ -282,10 +282,31 @@ export const retweetPost = async (
   accountId: string,
   tweetId: string,
 ): Promise<void> => {
-  await zernioFetch("/twitter/retweet", {
-    method: "POST",
-    body: JSON.stringify({ accountId, tweetId }),
-  });
+  // Zernio /twitter/retweet returns 500 for own tweets.
+  // Fall back to quote tweet via /posts endpoint which is reliable.
+  try {
+    await zernioFetch("/twitter/retweet", {
+      method: "POST",
+      body: JSON.stringify({ accountId, tweetId }),
+    });
+  } catch (err) {
+    console.warn("[zernio] /twitter/retweet failed, trying quote tweet fallback:", err);
+    // Quote tweet fallback via /posts with quoteTweetId
+    await zernioFetch("/posts", {
+      method: "POST",
+      body: JSON.stringify({
+        content: "",
+        platforms: [
+          {
+            platform: "twitter",
+            accountId,
+            quoteTweetId: tweetId,
+          },
+        ],
+        publishNow: true,
+      }),
+    });
+  }
 };
 
 export const undoRetweet = async (

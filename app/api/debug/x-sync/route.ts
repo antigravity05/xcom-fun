@@ -179,15 +179,34 @@ export async function GET(request: Request) {
       testResult.rawResponse = body;
       try { testResult.parsed = JSON.parse(body); } catch { /* ok */ }
     } else if (action === "retweet") {
-      const res = await fetch(`${ZERNIO_API_BASE}/twitter/retweet`, {
+      // First try native retweet
+      const res1 = await fetch(`${ZERNIO_API_BASE}/twitter/retweet`, {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({ accountId, tweetId }),
       });
-      const body = await res.text();
-      testResult.status = res.status;
-      testResult.rawResponse = body;
-      try { testResult.parsed = JSON.parse(body); } catch { /* ok */ }
+      const body1 = await res1.text();
+      testResult.nativeRetweet = { status: res1.status, response: body1 };
+
+      // If native fails, try quote tweet fallback
+      if (!res1.ok) {
+        const res2 = await fetch(`${ZERNIO_API_BASE}/posts`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: "",
+            platforms: [{
+              platform: "twitter",
+              accountId,
+              quoteTweetId: tweetId,
+            }],
+            publishNow: true,
+          }),
+        });
+        const body2 = await res2.text();
+        testResult.quoteTweetFallback = { status: res2.status, response: body2 };
+        try { testResult.quoteTweetParsed = JSON.parse(body2); } catch { /* ok */ }
+      }
     } else if (action === "reply") {
       const res = await fetch(`${ZERNIO_API_BASE}/posts`, {
         method: "POST",
