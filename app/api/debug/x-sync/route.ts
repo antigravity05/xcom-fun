@@ -158,6 +158,88 @@ export async function GET(request: Request) {
       return NextResponse.json({ ...baseInfo, test: testResult });
     }
 
+    // ── Simulate reply: follows the exact same code path as the app ──
+    if (action === "simulate-reply") {
+      const postId = searchParams.get("postId");
+      if (!postId) {
+        return NextResponse.json({
+          ...baseInfo,
+          error: "simulate-reply requires &postId=LOCAL_POST_ID (from the publications list above)",
+        }, { status: 400 });
+      }
+
+      const steps: Record<string, unknown> = { postId, viewerUserId };
+
+      // Step 1: getZernioAccountId
+      try {
+        const { isZernioMode } = await import("@/lib/x/oauth-contract");
+        steps.isZernioMode = isZernioMode();
+        if (!isZernioMode()) {
+          steps.error = "Not in Zernio mode";
+          return NextResponse.json({ ...baseInfo, test: steps });
+        }
+        const { getUserTokens } = await import("@/lib/x/token-store");
+        const tokens = await getUserTokens(viewerUserId!);
+        steps.hasTokens = Boolean(tokens);
+        steps.accountIdFromTokens = tokens?.accessToken ?? "NULL";
+      } catch (err) {
+        steps.getAccountIdError = err instanceof Error ? err.message : String(err);
+        return NextResponse.json({ ...baseInfo, test: steps });
+      }
+
+      // Step 2: getExternalTweetId
+      try {
+        const row = await db.query.postPublications.findFirst({
+          where: (table, ops) =>
+            ops.and(
+              ops.eq(table.postId, postId),
+              ops.eq(table.provider, "x"),
+              ops.eq(table.status, "published"),
+            ),
+        });
+        steps.publicationRow = row ? {
+          postId: row.postId,
+          status: row.status,
+          externalPostId: row.externalPostId,
+        } : "NOT FOUND";
+        steps.resolvedTweetId = row?.externalPostId ?? "NULL";
+      } catch (err) {
+        steps.getExternalTweetIdError = err instanceof Error ? err.message : String(err);
+        return NextResponse.json({ ...baseInfo, test: steps });
+      }
+
+      // Step 3: actually call replyToTweet if we have everything
+      const resolvedTweetId = (steps.resolvedTweetId as string);
+      const resolvedAccountId = (steps.accountIdFromTokens as string);
+      if (resolvedTweetId && resolvedTweetId !== "NULL" && resolvedAccountId && resolvedAccountId !== "NULL") {
+        try {
+          const res = await fetch(`${ZERNIO_API_BASE}/posts`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `App-simulated reply [${Date.now()}]`,
+              platforms: [{
+                platform: "twitter",
+                accountId: resolvedAccountId,
+                replyToTweetId: resolvedTweetId,
+              }],
+              publishNow: true,
+            }),
+          });
+          const body = await res.text();
+          steps.replyStatus = res.status;
+          steps.replyResponse = body;
+          try { steps.replyParsed = JSON.parse(body); } catch { /* ok */ }
+        } catch (err) {
+          steps.replyError = err instanceof Error ? err.message : String(err);
+        }
+      } else {
+        steps.skipped = "Missing tweetId or accountId — reply would be skipped in app";
+      }
+
+      return NextResponse.json({ ...baseInfo, test: steps });
+    }
+
     // ── Like / Retweet / Reply with raw tweetId ──
     if (!tweetId) {
       return NextResponse.json({
