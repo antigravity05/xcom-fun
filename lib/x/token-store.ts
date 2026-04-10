@@ -52,7 +52,7 @@ const saveDbTokens = async (tokens: StoredTokens): Promise<void> => {
       userId: tokens.userId,
       accessTokenCiphertext: tokens.accessToken,
       refreshTokenCiphertext: tokens.refreshToken,
-      scopes: ["tweet.read", "tweet.write", "users.read", "offline.access"],
+      scopes: ["tweet.read", "tweet.write", "like.read", "like.write", "users.read", "offline.access"],
       expiresAt: new Date(tokens.expiresAt),
     })
     .onConflictDoUpdate({
