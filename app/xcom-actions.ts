@@ -708,7 +708,8 @@ export const createPostAction = async (formData: FormData) => {
         p.communityId === community.id &&
         p.authorUserId === viewerUserId,
     );
-    const newPost = userPostsInCommunity[userPostsInCommunity.length - 1];
+    // createPost uses unshift (adds to beginning), so the newest post is FIRST
+    const newPost = userPostsInCommunity[0];
     if (newPost) {
       console.log(`[x-sync] Publishing post ${newPost.id} (body: "${body.slice(0, 30)}") to X`);
       try {
