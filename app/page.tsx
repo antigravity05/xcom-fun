@@ -164,70 +164,53 @@ export default async function Home({ searchParams }: HomePageProps) {
                 How it works
               </h2>
               <p className="mt-3 text-center text-[24px] font-extrabold leading-tight text-white sm:text-[28px]">
-                All tweets about the same coin,<br />
-                <span className="text-accent-secondary">in one place.</span>
+                Post once on x-com.fun,<br />
+                <span className="text-accent-secondary">it goes everywhere.</span>
               </p>
 
               {/* ── Schema diagram ── */}
               <div className="mt-12">
-                {/* Row 1 — Scattered tweets from different users */}
-                <div className="flex flex-col items-center">
-                  <p className="mb-4 text-[13px] font-medium uppercase tracking-[0.12em] text-copy-soft">
-                    Scattered across X
-                  </p>
-                  <div className="grid w-full max-w-xl grid-cols-3 gap-3">
-                    {/* Fake tweet bubbles */}
-                    {[
-                      { user: "@alice", text: "$PEPE to the moon 🚀", color: "from-[#4FC3F7]/10 to-[#4FC3F7]/5" },
-                      { user: "@bob", text: "Just aped into $PEPE", color: "from-[#f91880]/10 to-[#f91880]/5" },
-                      { user: "@charlie", text: "$PEPE chart looking clean", color: "from-[#00ba7c]/10 to-[#00ba7c]/5" },
-                    ].map((tweet) => (
-                      <div
-                        key={tweet.user}
-                        className={`rounded-xl border border-white/[0.06] bg-gradient-to-br ${tweet.color} p-3`}
-                      >
-                        <div className="text-[11px] font-bold text-copy-muted">{tweet.user}</div>
-                        <div className="mt-1 text-[12px] leading-4 text-white/80">{tweet.text}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
 
-                {/* Animated arrows down → x-com.fun */}
-                <div className="flex flex-col items-center py-6">
-                  <div className="flex items-center gap-3">
-                    <div className="h-px w-16 bg-gradient-to-r from-transparent to-accent-secondary/40" />
-                    <div className="flex flex-col items-center gap-1">
-                      <svg width="24" height="32" viewBox="0 0 24 32" fill="none" className="text-accent-secondary animate-bounce">
-                        <path d="M12 0v24m0 0l-7-7m7 7l7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </div>
-                    <div className="h-px w-16 bg-gradient-to-l from-transparent to-accent-secondary/40" />
-                  </div>
-                  <div className="mt-2 rounded-full border border-accent-secondary/30 bg-accent-secondary/[0.08] px-4 py-1 text-[12px] font-bold text-accent-secondary">
-                    Grouped on x-com.fun
-                  </div>
-                </div>
-
-                {/* Row 2 — The x-com.fun community (grouped) */}
+                {/* ── STEP 1 — Post on x-com.fun ── */}
                 <div className="flex flex-col items-center">
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent-secondary/30 bg-accent-secondary/[0.08] px-3 py-1">
+                    <span className="flex size-5 items-center justify-center rounded-full bg-accent-secondary text-[11px] font-black text-white">1</span>
+                    <span className="text-[12px] font-bold text-accent-secondary">Post in a community on x-com.fun</span>
+                  </div>
+
                   <div className="w-full max-w-md rounded-2xl border border-accent-secondary/20 bg-surface-secondary/80 shadow-lg shadow-accent-secondary/[0.06]">
                     {/* Community header */}
                     <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3">
-                      <div className="flex size-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#00ba7c] to-[#4FC3F7] text-[14px] font-black text-white">
-                        P
-                      </div>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/pepe.png" alt="$PEPE" className="size-9 rounded-lg object-cover" />
                       <div>
                         <div className="text-[14px] font-bold text-white">$PEPE Community</div>
-                        <div className="text-[11px] text-copy-muted">3 members posting together</div>
+                        <div className="text-[11px] text-copy-muted">42 members</div>
                       </div>
                     </div>
-                    {/* Mini feed */}
+
+                    {/* Fake composer */}
+                    <div className="border-b border-white/[0.04] px-4 py-3">
+                      <div className="flex items-start gap-2.5">
+                        <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent-secondary to-[#4FC3F7] text-[11px] font-bold text-white">
+                          Y
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-[13px] text-white/50">$PEPE to the moon 🚀</div>
+                          <div className="mt-2 flex items-center justify-end">
+                            <div className="rounded-full bg-accent-secondary px-4 py-1 text-[12px] font-bold text-white">
+                              Post
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mini feed — other members' posts */}
                     <div className="divide-y divide-white/[0.04] px-4">
                       {[
-                        { user: "@alice", text: "$PEPE to the moon 🚀" },
-                        { user: "@bob", text: "Just aped into $PEPE" },
-                        { user: "@charlie", text: "$PEPE chart looking clean" },
+                        { user: "@alice", text: "Just aped into $PEPE, let's go" },
+                        { user: "@bob", text: "$PEPE chart looking bullish 📈" },
                       ].map((post) => (
                         <div key={post.user} className="flex items-start gap-2.5 py-2.5">
                           <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-[10px] font-bold text-white">
@@ -241,31 +224,31 @@ export default async function Home({ searchParams }: HomePageProps) {
                       ))}
                     </div>
                   </div>
+                  <p className="mt-3 max-w-sm text-center text-[13px] leading-5 text-copy-muted">
+                    All discussions about <span className="font-bold text-white">$PEPE</span> are grouped in one feed.
+                    No more searching through timelines.
+                  </p>
                 </div>
 
-                {/* Animated arrows down → X (Twitter) */}
-                <div className="flex flex-col items-center py-6">
-                  <div className="flex items-center gap-3">
-                    <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#f91880]/40" />
-                    <div className="flex flex-col items-center gap-1">
-                      <svg width="24" height="32" viewBox="0 0 24 32" fill="none" className="text-[#f91880] animate-bounce" style={{ animationDelay: "0.3s" }}>
-                        <path d="M12 0v24m0 0l-7-7m7 7l7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </div>
-                    <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#f91880]/40" />
-                  </div>
-                  <div className="mt-2 rounded-full border border-[#f91880]/30 bg-[#f91880]/[0.08] px-4 py-1 text-[12px] font-bold text-[#f91880]">
-                    Auto-posted to each user&apos;s 𝕏
-                  </div>
+                {/* Arrow down */}
+                <div className="flex justify-center py-6">
+                  <svg width="24" height="40" viewBox="0 0 24 40" fill="none" className="text-accent-secondary/60 animate-bounce">
+                    <path d="M12 0v32m0 0l-7-7m7 7l7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </div>
 
-                {/* Row 3 — Published on X simultaneously */}
+                {/* ── STEP 2 — Auto-published to X ── */}
                 <div className="flex flex-col items-center">
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#f91880]/30 bg-[#f91880]/[0.08] px-3 py-1">
+                    <span className="flex size-5 items-center justify-center rounded-full bg-[#f91880] text-[11px] font-black text-white">2</span>
+                    <span className="text-[12px] font-bold text-[#f91880]">Each post auto-publishes to the author&apos;s 𝕏</span>
+                  </div>
+
                   <div className="grid w-full max-w-xl grid-cols-3 gap-3">
                     {[
-                      { user: "@alice", text: "$PEPE to the moon 🚀" },
-                      { user: "@bob", text: "Just aped into $PEPE" },
-                      { user: "@charlie", text: "$PEPE chart looking clean" },
+                      { user: "@you", text: "$PEPE to the moon 🚀" },
+                      { user: "@alice", text: "Just aped into $PEPE, let's go" },
+                      { user: "@bob", text: "$PEPE chart looking bullish 📈" },
                     ].map((tweet) => (
                       <div
                         key={tweet.user}
@@ -278,17 +261,19 @@ export default async function Home({ searchParams }: HomePageProps) {
                           <span className="text-[11px] font-bold text-copy-muted">{tweet.user}</span>
                         </div>
                         <div className="mt-1 text-[12px] leading-4 text-white/60">{tweet.text}</div>
-                        <div className="mt-1.5 flex items-center gap-1 text-[10px] text-copy-soft">
+                        <div className="mt-1.5 flex items-center gap-1 text-[10px] text-[#00ba7c]">
                           <span className="inline-block size-1.5 rounded-full bg-[#00ba7c]" />
-                          Published
+                          Published on X
                         </div>
                       </div>
                     ))}
                   </div>
-                  <p className="mt-4 text-[13px] text-copy-muted">
-                    Each member&apos;s post goes to <span className="font-bold text-white">their own X profile</span> automatically.
+
+                  <p className="mt-4 max-w-sm text-center text-[13px] leading-5 text-copy-muted">
+                    Every post written on x-com.fun is <span className="font-bold text-white">automatically tweeted</span> from each member&apos;s own X account. One post, double the reach.
                   </p>
                 </div>
+
               </div>
             </div>
           </section>

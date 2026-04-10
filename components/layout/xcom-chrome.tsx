@@ -6,6 +6,7 @@ import {
   Zap,
 } from "lucide-react";
 import { disconnectDemoAccountAction } from "@/app/xcom-actions";
+import { MobileUserMenu } from "@/components/layout/mobile-user-menu";
 
 type NavigationKey = "discover" | "create" | "connect" | "community" | "profile";
 
@@ -135,36 +136,12 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
                 <span className="text-accent-secondary">.fun</span>
               </Link>
               {viewer ? (
-                <details className="relative">
-                  <summary className="list-none cursor-pointer">
-                    <div className="flex size-8 items-center justify-center rounded-full bg-accent-secondary/20 text-xs font-bold text-white overflow-hidden">
-                      {viewerAvatarUrl ? (
-                        <img src={viewerAvatarUrl} alt={viewer.displayName} className="size-full object-cover" />
-                      ) : (
-                        viewerAvatarInitial
-                      )}
-                    </div>
-                  </summary>
-                  <div className="absolute right-0 top-full mt-1 z-50 w-56 rounded-2xl border border-white/[0.08] bg-surface-secondary p-2 shadow-xl">
-                    <Link
-                      href={`/profile/${encodeURIComponent(viewer.xHandle)}`}
-                      className="block px-3 py-2 border-b border-white/[0.08] mb-1 transition hover:bg-white/[0.04] rounded-xl"
-                    >
-                      <div className="text-[14px] font-bold text-white truncate">{viewer.displayName}</div>
-                      <div className="text-[12px] text-copy-muted truncate">{viewer.xHandle}</div>
-                    </Link>
-                    <form action={disconnectDemoAccountAction}>
-                      <input type="hidden" name="redirectTo" value="/" />
-                      <button
-                        type="submit"
-                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] text-red-400 transition hover:bg-white/[0.06]"
-                      >
-                        <LogOut className="size-4" />
-                        Log out
-                      </button>
-                    </form>
-                  </div>
-                </details>
+                <MobileUserMenu
+                  displayName={viewer.displayName}
+                  xHandle={viewer.xHandle}
+                  avatarUrl={viewerAvatarUrl}
+                  avatarInitial={viewerAvatarInitial}
+                />
               ) : (
                 <Link
                   href="/connect-x"

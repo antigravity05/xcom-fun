@@ -3,7 +3,6 @@ import {
   BadgeCheck,
   BarChart3,
   Heart,
-  MoreHorizontal,
   Pencil,
   Pin,
   PinOff,
@@ -27,6 +26,7 @@ import { PostBody } from "@/components/community/post-body";
 import { BookmarkButton, ShareButton } from "@/components/community/post-actions";
 import { LikeButton } from "@/components/community/like-button";
 import { ConnectCTAWrapper } from "@/components/community/connect-cta";
+import { PostMenu } from "@/components/community/post-menu";
 
 type PostCardProps = {
   post: CommunityPostRecord & {
@@ -118,11 +118,7 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
             {/* More menu */}
             {interaction &&
             (interaction.canEdit || interaction.canDelete || interaction.canPin) ? (
-              <details className="group/menu relative shrink-0">
-                <summary className="flex size-[34px] cursor-pointer list-none items-center justify-center rounded-full text-copy-soft transition hover:bg-accent-secondary/10 hover:text-accent-secondary">
-                  <MoreHorizontal className="size-[18px]" />
-                </summary>
-                <div className="absolute right-0 top-full z-30 mt-0.5 min-w-[200px] overflow-hidden rounded-xl border border-white/10 bg-black shadow-lg shadow-black/40">
+              <PostMenu>
                   {interaction.canEdit && !interaction.isEditing ? (
                     <Link
                       href={interaction.editHref}
@@ -167,8 +163,7 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
                       </FormSubmitButton>
                     </form>
                   ) : null}
-                </div>
-              </details>
+              </PostMenu>
             ) : null}
           </div>
 

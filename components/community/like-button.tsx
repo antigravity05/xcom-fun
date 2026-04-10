@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Heart } from "lucide-react";
 import { toggleLikeAction } from "@/app/xcom-actions";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
@@ -23,6 +23,12 @@ export const LikeButton = ({
 }: LikeButtonProps) => {
   const [justLiked, setJustLiked] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   const handleClick = () => {
     if (!viewerHasLiked) {
