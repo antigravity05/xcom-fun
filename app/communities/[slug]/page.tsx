@@ -15,7 +15,7 @@ import {
 } from "@/app/xcom-actions";
 import { CommunityHeader } from "@/components/community/community-header";
 import PostComposer from "@/components/community/post-composer";
-import { PostCard } from "@/components/community/post-card";
+import { PostFeed } from "@/components/community/post-feed";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { XcomChrome } from "@/components/layout/xcom-chrome";
 import type { CommunityMemberRecord, CommunityTab } from "@/lib/xcom-domain";
@@ -270,37 +270,15 @@ export default async function CommunityPage({
               ) : null}
 
               <section>
-                {posts.length ? (
-                  posts.map((post) => (
-                    <PostCard
-                      key={post.id}
-                      post={post}
-                      interaction={{
-                        communitySlug: community.slug,
-                        redirectTo: `/communities/${community.slug}?tab=${activeTab}`,
-                        canInteract: viewerMembershipStatus === "active",
-                        canEdit: viewer?.xHandle === post.author.handle,
-                        canDelete:
-                          viewer?.xHandle === post.author.handle ||
-                          viewerRole === "admin" ||
-                          viewerRole === "moderator",
-                        canPin:
-                          viewerRole === "admin" || viewerRole === "moderator",
-                        isEditing: editing === post.id,
-                        editHref: `/communities/${community.slug}?tab=${activeTab}&editing=${post.id}`,
-                      }}
-                    />
-                  ))
-                ) : (
-                  <div className="px-4 py-12 text-center sm:px-6">
-                    <div className="text-[15px] font-medium text-copy-muted">
-                      No posts yet
-                    </div>
-                    <div className="mt-1 text-[13px] text-copy-soft">
-                      Be the first to share something with this community.
-                    </div>
-                  </div>
-                )}
+                <PostFeed
+                  posts={posts}
+                  communitySlug={community.slug}
+                  activeTab={activeTab}
+                  canInteract={viewerMembershipStatus === "active"}
+                  viewerHandle={viewer?.xHandle ?? null}
+                  viewerRole={viewerRole}
+                  editingPostId={editing ?? null}
+                />
               </section>
             </>
           )}

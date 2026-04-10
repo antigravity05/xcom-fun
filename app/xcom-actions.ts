@@ -21,6 +21,7 @@ import {
   readXcomStore,
 } from "@/lib/xcom-persistence";
 import { clearViewerUserId, getViewerUserId, setViewerUserId } from "@/lib/xcom-session";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // ── X/Twitter auto-sync helper ──
 const publishToX = async (
@@ -677,6 +678,15 @@ export const createPostAction = async (formData: FormData) => {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 
+  // ── Rate limit: max 5 posts per 60 seconds per user ──
+  const rateCheck = checkRateLimit(`post:${viewerUserId}`, 5, 60_000);
+  if (!rateCheck.allowed) {
+    const seconds = Math.ceil(rateCheck.retryAfterMs / 1000);
+    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent(`Too many posts. Please wait ${seconds}s before posting again.`)}`;
+    redirect(errorUrl);
+    return;
+  }
+
   // ── Handle image uploads — convert to base64 data URLs ──
   const imageFiles = formData.getAll("images") as File[];
   let media: import("@/lib/xcom-domain").CommunityPostMedia | undefined;
@@ -772,6 +782,15 @@ export const createReplyAction = async (formData: FormData) => {
 
   if (!viewerUserId) {
     redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
+  }
+
+  // ── Rate limit: max 10 replies per 60 seconds per user ──
+  const rateCheck = checkRateLimit(`reply:${viewerUserId}`, 10, 60_000);
+  if (!rateCheck.allowed) {
+    const seconds = Math.ceil(rateCheck.retryAfterMs / 1000);
+    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent(`Too many replies. Please wait ${seconds}s.`)}`;
+    redirect(errorUrl);
+    return;
   }
 
   let body: string;
