@@ -224,7 +224,7 @@ export const postTweet = async (
   accountId: string,
   content: string,
 ): Promise<ZernioPostResult> => {
-  const data = (await zernioFetch("/posts", {
+  const raw = (await zernioFetch("/posts", {
     method: "POST",
     body: JSON.stringify({
       content,
@@ -236,9 +236,14 @@ export const postTweet = async (
       ],
       publishNow: true,
     }),
-  })) as { post: ZernioPostResult };
+  })) as Record<string, unknown>;
 
-  return data.post;
+  // Log full response to understand the shape
+  console.log("[zernio] postTweet raw response:", JSON.stringify(raw));
+
+  // Zernio may nest the result under "post", "data", or return it at root
+  const post = (raw.post ?? raw.data ?? raw) as ZernioPostResult;
+  return post;
 };
 
 /* ── Engagement ── */

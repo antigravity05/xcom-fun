@@ -52,6 +52,9 @@ const publishViaZernio = async (
     const zernioAccountId = storedTokens.accessToken;
     const result = await zernioPostTweet(zernioAccountId, intent.body);
 
+    // Log the full Zernio response so we can see the exact shape
+    console.log("[x-sync] Zernio postTweet full response:", JSON.stringify(result));
+
     const twitterResult = result.platforms?.find(
       (p) => p.platform === "twitter",
     );
@@ -63,9 +66,21 @@ const publishViaZernio = async (
       };
     }
 
+    // Zernio may return the tweet ID under different field names
+    const rawResult = result as Record<string, unknown>;
+    const externalId =
+      twitterResult?.postId ??
+      (rawResult.tweetId as string | undefined) ??
+      (rawResult.externalId as string | undefined) ??
+      (rawResult.twitterPostId as string | undefined) ??
+      result.id ??
+      null;
+
+    console.log("[x-sync] Resolved externalPostId:", externalId, "from result.id:", result.id, "twitterResult:", JSON.stringify(twitterResult));
+
     return {
       status: "published",
-      externalPostId: twitterResult?.postId ?? result.id,
+      externalPostId: externalId ?? undefined,
     };
   } catch (error) {
     console.error("Zernio publication error:", error);

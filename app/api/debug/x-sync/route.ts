@@ -1,22 +1,30 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/database/client";
+import { postPublications } from "@/drizzle/schema";
+import { eq, and } from "drizzle-orm";
 
 /**
- * Diagnostic endpoint: GET /api/debug/x-sync?action=retweet|reply|like&postId=xxx
+ * Diagnostic endpoint for X/Twitter sync debugging.
  *
- * Without params: shows token accounts, publications, and env check.
- * With action + postId: actually tests the Zernio call and shows the result.
+ * GET /api/debug/x-sync                              → show accounts + publications
+ * GET /api/debug/x-sync?action=test-post             → post a test tweet and log full response
+ * GET /api/debug/x-sync?action=like&tweetId=xxx      → test like with raw tweet ID
+ * GET /api/debug/x-sync?action=retweet&tweetId=xxx   → test retweet with raw tweet ID
+ * GET /api/debug/x-sync?action=reply&tweetId=xxx     → test reply with raw tweet ID
+ * GET /api/debug/x-sync?action=fix-publications      → fetch recent tweets and backfill externalPostId
  *
  * DELETE THIS FILE before going to production.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const action = searchParams.get("action");
-  const postId = searchParams.get("postId");
+  const tweetId = searchParams.get("tweetId");
 
   try {
     const db = getDb();
+    const ZERNIO_API_BASE = "https://zernio.com/api/v1";
+    const apiKey = process.env.ZERNIO_API_KEY!;
 
     // Always show tokens + publications for context
     const xAccounts = await db.query.xAccounts.findMany();
@@ -26,12 +34,10 @@ export async function GET(request: Request) {
       accessTokenPreview: account.accessTokenCiphertext
         ? String(account.accessTokenCiphertext).slice(0, 20) + "..."
         : null,
-      hasRefreshToken: Boolean(account.refreshTokenCiphertext),
-      expiresAt: account.expiresAt?.toISOString() ?? null,
     }));
 
-    const publications = await db.query.postPublications.findMany();
-    const pubSummary = publications.map((pub) => ({
+    const pubs = await db.query.postPublications.findMany();
+    const pubSummary = pubs.map((pub) => ({
       postId: pub.postId,
       provider: pub.provider,
       status: pub.status,
@@ -42,92 +48,40 @@ export async function GET(request: Request) {
     const baseInfo = {
       tokenAccounts: tokenSummary,
       publications: pubSummary,
-      zernioApiKey: process.env.ZERNIO_API_KEY ? "SET (" + process.env.ZERNIO_API_KEY.slice(0, 10) + "...)" : "NOT SET",
+      zernioApiKey: apiKey ? "SET (" + apiKey.slice(0, 10) + "...)" : "NOT SET",
       zernioProfileId: process.env.ZERNIO_PROFILE_ID ?? "NOT SET",
     };
 
-    // If no action requested, just return diagnostics
-    if (!action || !postId) {
+    // Get current user's Zernio accountId
+    const cookieStore = await cookies();
+    const viewerUserId = cookieStore.get("xcom_demo_user_id")?.value;
+    const xAccount = viewerUserId ? xAccounts.find((a) => a.userId === viewerUserId) : null;
+    const accountId = xAccount ? String(xAccount.accessTokenCiphertext) : null;
+
+    if (!action) {
       return NextResponse.json({
         ...baseInfo,
-        usage: "Add ?action=retweet|reply|like&postId=xxx to test a Zernio sync call",
+        viewerUserId,
+        accountId,
+        usage: {
+          "test-post": "/api/debug/x-sync?action=test-post — post a test tweet and show full Zernio response",
+          "like": "/api/debug/x-sync?action=like&tweetId=TWITTER_TWEET_ID",
+          "retweet": "/api/debug/x-sync?action=retweet&tweetId=TWITTER_TWEET_ID",
+          "reply": "/api/debug/x-sync?action=reply&tweetId=TWITTER_TWEET_ID",
+          "fix-publications": "/api/debug/x-sync?action=fix-publications — fetch recent tweets and backfill missing externalPostIds",
+        },
         timestamp: new Date().toISOString(),
       });
     }
 
-    // Get the current user
-    const cookieStore = await cookies();
-    const viewerUserId = cookieStore.get("xcom_demo_user_id")?.value;
-    if (!viewerUserId) {
-      return NextResponse.json({ ...baseInfo, error: "No session cookie - log in first" }, { status: 401 });
+    if (!viewerUserId || !accountId) {
+      return NextResponse.json({ ...baseInfo, error: "No session or no X account linked. Log in first." }, { status: 401 });
     }
 
-    // Get Zernio accountId for this user
-    const xAccount = xAccounts.find((a) => a.userId === viewerUserId);
-    if (!xAccount) {
-      return NextResponse.json({
-        ...baseInfo,
-        error: `No xAccount found for userId=${viewerUserId}`,
-        allUserIds: xAccounts.map((a) => a.userId),
-      }, { status: 404 });
-    }
+    const testResult: Record<string, unknown> = { action, accountId };
 
-    // In Zernio mode, accessTokenCiphertext IS the Zernio accountId (not encrypted)
-    const accountId = String(xAccount.accessTokenCiphertext);
-
-    // Get the external tweet ID
-    const publication = publications.find(
-      (p) => p.postId === postId && p.provider === "x" && p.status === "published",
-    );
-    if (!publication?.externalPostId) {
-      return NextResponse.json({
-        ...baseInfo,
-        error: `No published tweet found for postId=${postId}`,
-        matchingPubs: publications.filter((p) => p.postId === postId),
-      }, { status: 404 });
-    }
-
-    const tweetId = publication.externalPostId;
-    const testResult: Record<string, unknown> = {
-      accountId,
-      tweetId,
-      postId,
-      action,
-    };
-
-    // Test the actual Zernio API call
-    const ZERNIO_API_BASE = "https://zernio.com/api/v1";
-    const apiKey = process.env.ZERNIO_API_KEY!;
-
-    if (action === "like") {
-      const res = await fetch(`${ZERNIO_API_BASE}/twitter/like`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ accountId, tweetId }),
-      });
-      const body = await res.text();
-      testResult.status = res.status;
-      testResult.statusText = res.statusText;
-      testResult.responseBody = body;
-      try { testResult.responseParsed = JSON.parse(body); } catch { /* ok */ }
-    } else if (action === "retweet") {
-      const res = await fetch(`${ZERNIO_API_BASE}/twitter/retweet`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ accountId, tweetId }),
-      });
-      const body = await res.text();
-      testResult.status = res.status;
-      testResult.statusText = res.statusText;
-      testResult.responseBody = body;
-      try { testResult.responseParsed = JSON.parse(body); } catch { /* ok */ }
-    } else if (action === "reply") {
+    // ── Test post: publish a real tweet and show the FULL Zernio response ──
+    if (action === "test-post") {
       const res = await fetch(`${ZERNIO_API_BASE}/posts`, {
         method: "POST",
         headers: {
@@ -135,34 +89,103 @@ export async function GET(request: Request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          content: "Test reply from x-com.fun debug endpoint",
-          platforms: [
-            {
-              platform: "twitter",
-              accountId,
-              replyToTweetId: tweetId,
-            },
-          ],
+          content: `Test from x-com.fun debug [${Date.now()}]`,
+          platforms: [{ platform: "twitter", accountId }],
           publishNow: true,
         }),
       });
       const body = await res.text();
       testResult.status = res.status;
-      testResult.statusText = res.statusText;
-      testResult.responseBody = body;
-      try { testResult.responseParsed = JSON.parse(body); } catch { /* ok */ }
-    } else {
-      testResult.error = `Unknown action: ${action}. Use retweet, reply, or like.`;
+      testResult.rawResponse = body;
+      try {
+        testResult.parsed = JSON.parse(body);
+      } catch { /* ok */ }
+      return NextResponse.json({ ...baseInfo, test: testResult });
+    }
+
+    // ── Fix publications: list recent Zernio posts and backfill tweetIds ──
+    if (action === "fix-publications") {
+      // List recent posts from Zernio to find tweet IDs
+      const res = await fetch(`${ZERNIO_API_BASE}/posts`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      const body = await res.text();
+      testResult.listPostsStatus = res.status;
+      try {
+        const data = JSON.parse(body);
+        testResult.listPostsResponse = data;
+
+        // Try to extract tweet IDs from the Zernio posts
+        const zernioPosts = data.posts ?? data.data ?? (Array.isArray(data) ? data : []);
+        testResult.zernioPostCount = zernioPosts.length;
+
+        // Show what fields each post has so we know where the tweet ID lives
+        if (zernioPosts.length > 0) {
+          testResult.samplePostKeys = Object.keys(zernioPosts[0]);
+          testResult.samplePost = zernioPosts[0];
+        }
+      } catch {
+        testResult.listPostsRaw = body;
+      }
+
+      return NextResponse.json({ ...baseInfo, test: testResult });
+    }
+
+    // ── Like / Retweet / Reply with raw tweetId ──
+    if (!tweetId) {
+      return NextResponse.json({
+        ...baseInfo,
+        error: `action=${action} requires &tweetId=TWITTER_TWEET_ID parameter. Use action=test-post first to get a tweet ID, or action=fix-publications to list your tweets.`,
+      }, { status: 400 });
+    }
+
+    testResult.tweetId = tweetId;
+
+    if (action === "like") {
+      const res = await fetch(`${ZERNIO_API_BASE}/twitter/like`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ accountId, tweetId }),
+      });
+      const body = await res.text();
+      testResult.status = res.status;
+      testResult.rawResponse = body;
+      try { testResult.parsed = JSON.parse(body); } catch { /* ok */ }
+    } else if (action === "retweet") {
+      const res = await fetch(`${ZERNIO_API_BASE}/twitter/retweet`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ accountId, tweetId }),
+      });
+      const body = await res.text();
+      testResult.status = res.status;
+      testResult.rawResponse = body;
+      try { testResult.parsed = JSON.parse(body); } catch { /* ok */ }
+    } else if (action === "reply") {
+      const res = await fetch(`${ZERNIO_API_BASE}/posts`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: `Test reply from x-com.fun [${Date.now()}]`,
+          platforms: [{
+            platform: "twitter",
+            accountId,
+            replyToTweetId: tweetId,
+          }],
+          publishNow: true,
+        }),
+      });
+      const body = await res.text();
+      testResult.status = res.status;
+      testResult.rawResponse = body;
+      try { testResult.parsed = JSON.parse(body); } catch { /* ok */ }
     }
 
     return NextResponse.json({ ...baseInfo, test: testResult, timestamp: new Date().toISOString() });
   } catch (err) {
-    return NextResponse.json(
-      {
-        error: err instanceof Error ? err.message : String(err),
-        stack: err instanceof Error ? err.stack : undefined,
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    }, { status: 500 });
   }
 }
