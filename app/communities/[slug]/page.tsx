@@ -9,6 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import {
+  createPostAction,
   deleteCommunityAction,
   setMemberRoleAction,
 } from "@/app/xcom-actions";
@@ -263,6 +264,7 @@ export default async function CommunityPage({
                   }}
                   accentColor={community.accentColor}
                   coverTo={community.coverTo}
+                  action={createPostAction}
                 />
               ) : null}
 
