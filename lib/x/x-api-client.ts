@@ -39,8 +39,10 @@ const handleXAPIResponse = async (response: Response) => {
  * Upload media (image) to X via v2 media upload endpoint.
  * Returns the media_id to attach to a tweet.
  *
- * Uses simple upload for images < 5MB.
- * Endpoint: POST https://api.x.com/2/media/upload
+ * v2 simple upload uses application/x-www-form-urlencoded with:
+ *   - media: base64-encoded image data
+ *   - media_category: "tweet_image"
+ *   - media_type: MIME type (e.g. "image/jpeg")
  */
 export const uploadMedia = async (
   accessToken: string,
@@ -50,16 +52,20 @@ export const uploadMedia = async (
   // Strip data URL prefix if present
   const base64Data = imageBase64.replace(/^data:[^;]+;base64,/, "");
 
-  const formData = new FormData();
-  formData.append("media_data", base64Data);
-  formData.append("media_category", "tweet_image");
+  const params = new URLSearchParams();
+  params.append("media", base64Data);
+  params.append("media_category", "tweet_image");
+  params.append("media_type", mimeType);
+
+  console.log(`[x-sync] Uploading media via v2, mimeType=${mimeType}, base64Length=${base64Data.length}`);
 
   const response = await fetch(`${X_UPLOAD_BASE}/media/upload`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: formData,
+    body: params.toString(),
   });
 
   const responseText = await response.text();
