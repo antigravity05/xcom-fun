@@ -51,7 +51,31 @@ const publishViaZernio = async (
     }
 
     const zernioAccountId = storedTokens.accessToken;
-    const result = await zernioPostTweet(zernioAccountId, intent.body);
+
+    // If body is empty but we have images, use minimal text for X compatibility
+    const hasImages = intent.imageBase64Urls && intent.imageBase64Urls.length > 0;
+    const tweetBody = intent.body.trim() || (hasImages ? "" : "");
+
+    // Skip sync if no body and no images
+    if (!tweetBody && !hasImages) {
+      return {
+        status: "published" as const,
+        errorMessage: "Empty post — skipped X sync",
+      };
+    }
+
+    // Convert base64 images to public URLs via our media API
+    // Zernio needs public URLs, not inline base64 data
+    let imagePublicUrls: string[] | undefined;
+    if (hasImages) {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://x-com.fun";
+      imagePublicUrls = intent.imageBase64Urls!.slice(0, 4).map(
+        (_, i) => `${baseUrl}/api/media/${intent.localPostId}/${i}`,
+      );
+      console.log("[x-sync] Zernio media URLs:", imagePublicUrls);
+    }
+
+    const result = await zernioPostTweet(zernioAccountId, tweetBody, imagePublicUrls);
 
     // Log the full Zernio response so we can see the exact shape
     console.log("[x-sync] Zernio postTweet full response:", JSON.stringify(result));

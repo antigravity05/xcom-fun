@@ -229,24 +229,38 @@ export type ZernioPostResult = {
 
 /**
  * Publish a tweet via Zernio on behalf of a connected account.
+ * Supports optional image attachments via mediaItems (public URLs).
  */
 export const postTweet = async (
   accountId: string,
   content: string,
+  imageUrls?: string[],
 ): Promise<ZernioPostResult> => {
+  // Build the post payload
+  const payload: Record<string, unknown> = {
+    content,
+    platforms: [
+      {
+        platform: "twitter",
+        accountId,
+        platformSpecificData: {},
+      },
+    ],
+    publishNow: true,
+  };
+
+  // Attach images if present — Zernio accepts mediaItems with public URLs
+  if (imageUrls && imageUrls.length > 0) {
+    payload.mediaItems = imageUrls.slice(0, 4).map((url) => ({
+      type: "image",
+      url,
+    }));
+    console.log(`[zernio] postTweet: attaching ${imageUrls.length} image(s):`, imageUrls);
+  }
+
   const raw = (await zernioFetch("/posts", {
     method: "POST",
-    body: JSON.stringify({
-      content,
-      platforms: [
-        {
-          platform: "twitter",
-          accountId,
-          platformSpecificData: {},
-        },
-      ],
-      publishNow: true,
-    }),
+    body: JSON.stringify(payload),
   })) as Record<string, unknown>;
 
   // Log full response to understand the shape
