@@ -248,7 +248,7 @@ const MobileNavItem = ({
   <Link
     href={href}
     aria-label={label}
-    className={`flex flex-col items-center gap-0.5 px-6 py-1 ${
+    className={`flex flex-col items-center gap-0.5 px-6 py-2 ${
       isActive ? "text-white" : "text-copy-muted"
     }`}
   >

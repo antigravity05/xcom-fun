@@ -342,7 +342,7 @@ export default async function Home({ searchParams }: HomePageProps) {
               </h2>
               <p className="mx-auto mt-2 max-w-sm text-[15px] leading-6 text-copy-muted">
                 Connect your X account and start posting in communities
-                today.
+                today. No signup needed.
               </p>
               <Link
                 href="/connect-x"
@@ -351,6 +351,9 @@ export default async function Home({ searchParams }: HomePageProps) {
                 <span className="text-[20px] font-black">𝕏</span>
                 Get started — it&apos;s free
               </Link>
+              <p className="mt-3 text-[12px] text-copy-soft">
+                One-click login via X. No email, no password.
+              </p>
             </div>
           </section>
         </div>
@@ -421,15 +424,23 @@ export default async function Home({ searchParams }: HomePageProps) {
               ))
             ) : (
               <div className="px-4 py-16 text-center">
-                <p className="text-[15px] text-copy-muted">
+                <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-white/[0.04]">
+                  <Search className="size-6 text-copy-soft" />
+                </div>
+                <p className="mt-4 text-[16px] font-bold text-white">
                   {query
-                    ? "No communities match your search."
-                    : "No communities yet."}
+                    ? "No results"
+                    : "No communities yet"}
+                </p>
+                <p className="mt-1.5 text-[14px] text-copy-muted">
+                  {query
+                    ? `Nothing matches "${query}". Try a different search.`
+                    : "Be the first to create a community for your project."}
                 </p>
                 {viewer && !query ? (
                   <Link
                     href="/create-community"
-                    className="mt-4 inline-flex rounded-full bg-accent-secondary px-5 py-2.5 text-[14px] font-bold text-white transition hover:brightness-110"
+                    className="mt-5 inline-flex rounded-full bg-accent-secondary px-5 py-2.5 text-[14px] font-bold text-white transition hover:brightness-110"
                   >
                     Create the first one
                   </Link>

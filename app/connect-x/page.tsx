@@ -48,8 +48,12 @@ export default async function ConnectXPage({
             <div className="px-4 py-6 sm:px-6">
               <div className="flex items-center justify-between gap-4 rounded-2xl bg-surface-secondary/60 p-4">
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent-secondary/15 text-sm font-bold text-white">
-                    {viewer.displayName.slice(0, 1).toUpperCase()}
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent-secondary/15 text-sm font-bold text-white overflow-hidden">
+                    {viewer.avatar?.startsWith("http") ? (
+                      <img src={viewer.avatar} alt={viewer.displayName} className="size-full object-cover" />
+                    ) : (
+                      viewer.displayName.slice(0, 1).toUpperCase()
+                    )}
                   </div>
                   <div className="min-w-0">
                     <div className="truncate text-[15px] font-bold text-white">

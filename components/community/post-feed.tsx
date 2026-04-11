@@ -74,13 +74,29 @@ export function PostFeed({
   }, [hasMore, loadMore]);
 
   if (posts.length === 0) {
+    const isMediaTab = activeTab === "media";
     return (
-      <div className="px-4 py-12 text-center sm:px-6">
-        <div className="text-[15px] font-medium text-copy-muted">
-          No posts yet
+      <div className="px-4 py-16 text-center sm:px-6">
+        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-white/[0.04]">
+          {isMediaTab ? (
+            <svg className="size-7 text-copy-soft" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <path d="m21 15-5-5L5 21" />
+            </svg>
+          ) : (
+            <svg className="size-7 text-copy-soft" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          )}
         </div>
-        <div className="mt-1 text-[13px] text-copy-soft">
-          Be the first to share something with this community.
+        <div className="mt-4 text-[16px] font-bold text-white">
+          {isMediaTab ? "No media yet" : "No posts yet"}
+        </div>
+        <div className="mt-1.5 text-[14px] text-copy-muted">
+          {isMediaTab
+            ? "Posts with images will show up here."
+            : "Be the first to share something with this community."}
         </div>
       </div>
     );
