@@ -30,8 +30,8 @@ export const CommunityHeader = ({
 }: CommunityHeaderProps) => {
   return (
     <section>
-      {/* Sticky top bar */}
-      <div className="sticky top-[53px] z-20 flex min-h-[53px] items-center gap-3 border-b border-white/[0.08] bg-background/80 px-4 backdrop-blur lg:top-0 sm:px-6">
+      {/* Sticky top bar — minimal like X */}
+      <div className="sticky top-[53px] z-20 flex min-h-[53px] items-center gap-3 border-b border-white/[0.08] bg-background/80 px-4 backdrop-blur lg:top-0">
         <Link
           href="/"
           className="inline-flex size-9 items-center justify-center rounded-full text-white transition hover:bg-white/[0.06]"
@@ -54,9 +54,9 @@ export const CommunityHeader = ({
         </div>
       </div>
 
-      {/* Banner */}
+      {/* Banner — taller on mobile like X */}
       <div
-        className="relative h-[125px] sm:h-[200px]"
+        className="relative h-[150px] sm:h-[200px]"
         style={
           community.bannerUrl
             ? {
@@ -68,19 +68,16 @@ export const CommunityHeader = ({
                 background: `linear-gradient(135deg, ${community.coverFrom}, ${community.coverTo})`,
               }
         }
-      />
-
-      {/* Profile section */}
-      <div className="border-b border-white/[0.08] px-4 pb-0 sm:px-6">
-        {/* Join/Leave button */}
-        <div className="flex justify-end pt-3 pb-1">
+      >
+        {/* Join/Leave button overlaid on banner — bottom right like X */}
+        <div className="absolute bottom-3 right-4">
           {viewerMembershipStatus === "active" ? (
             canLeaveCommunity ? (
               <form action={leaveCommunityAction}>
                 <input type="hidden" name="communitySlug" value={community.slug} />
                 <input type="hidden" name="redirectTo" value={`/communities/${community.slug}`} />
                 <FormSubmitButton
-                  className="group rounded-full border border-white/20 px-5 py-1.5 text-[14px] font-bold text-white transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
+                  className="group rounded-full border border-white/40 bg-black/60 px-5 py-1.5 text-[14px] font-bold text-white backdrop-blur-sm transition hover:border-red-500/60 hover:bg-red-500/20 hover:text-red-400"
                   pendingChildren="Leaving..."
                 >
                   <span className="group-hover:hidden">Joined</span>
@@ -88,12 +85,12 @@ export const CommunityHeader = ({
                 </FormSubmitButton>
               </form>
             ) : (
-              <span className="rounded-full border border-white/20 px-5 py-1.5 text-[14px] font-bold text-white">
+              <span className="rounded-full border border-white/40 bg-black/60 px-5 py-1.5 text-[14px] font-bold text-white backdrop-blur-sm">
                 Joined
               </span>
             )
           ) : viewerMembershipStatus === "pending" ? (
-            <span className="rounded-full border border-white/20 px-5 py-1.5 text-[14px] font-bold text-copy-muted">
+            <span className="rounded-full border border-white/40 bg-black/60 px-5 py-1.5 text-[14px] font-bold text-copy-muted backdrop-blur-sm">
               Pending
             </span>
           ) : hasViewer ? (
@@ -101,7 +98,7 @@ export const CommunityHeader = ({
               <input type="hidden" name="communitySlug" value={community.slug} />
               <input type="hidden" name="redirectTo" value={`/communities/${community.slug}`} />
               <FormSubmitButton
-                className="rounded-full bg-accent-secondary px-5 py-1.5 text-[14px] font-bold text-white transition hover:brightness-110"
+                className="rounded-full bg-accent-secondary px-5 py-1.5 text-[14px] font-bold text-white shadow-lg transition hover:brightness-110"
                 pendingChildren="Joining..."
               >
                 Join
@@ -110,28 +107,30 @@ export const CommunityHeader = ({
           ) : (
             <Link
               href={`/connect-x?redirectTo=${encodeURIComponent(`/communities/${community.slug}`)}`}
-              className="rounded-full bg-accent-secondary px-5 py-1.5 text-[14px] font-bold text-white transition hover:brightness-110"
+              className="rounded-full bg-accent-secondary px-5 py-1.5 text-[14px] font-bold text-white shadow-lg transition hover:brightness-110"
             >
               Connect to Join
             </Link>
           )}
         </div>
+      </div>
 
-        {/* Community info */}
-        <div className="mt-2 sm:mt-3">
-          <h1 className="text-[20px] font-extrabold leading-7 text-white sm:text-[22px]">
+      {/* Community info — tighter spacing like X */}
+      <div className="border-b border-white/[0.08] px-4 pb-0 sm:px-6">
+        <div className="mt-3">
+          <h1 className="text-[22px] font-extrabold leading-7 text-white sm:text-[24px]">
             {community.name}
           </h1>
+          <p className="mt-1 max-w-lg text-[15px] leading-5 text-copy-muted">
+            {community.tagline}
+          </p>
           {community.contractAddress ? (
-            <div className="mt-1 text-[12px] text-copy-soft">
+            <div className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-white/[0.04] px-2 py-0.5 text-[12px] font-mono text-copy-soft">
               {shortenContractAddress(community.contractAddress)}
             </div>
           ) : null}
-          <p className="mt-1.5 max-w-lg text-[15px] leading-5 text-copy-muted">
-            {community.tagline}
-          </p>
-          <div className="mt-2 flex items-center gap-4 text-[14px] text-copy-muted">
-            <span>
+          <div className="mt-2 flex items-center gap-4 text-[14px]">
+            <span className="text-copy-muted">
               <span className="font-bold text-white">
                 {formatCompactNumber(community.memberCount)}
               </span>{" "}
@@ -140,17 +139,17 @@ export const CommunityHeader = ({
           </div>
         </div>
 
-        {/* Tab navigation */}
-        <nav className="mt-3 flex">
+        {/* Tab navigation — scrollable on mobile like X */}
+        <nav className="-mx-4 mt-3 flex overflow-x-auto scrollbar-none sm:mx-0">
           {communityTabs.map((tab) => {
             const isActive = tab.id === activeTab;
             return (
               <Link
                 key={tab.id}
                 href={`/communities/${community.slug}?tab=${tab.id}`}
-                className={`relative flex flex-1 items-center justify-center py-3 text-[14px] font-medium transition ${
+                className={`relative flex min-w-0 flex-1 items-center justify-center whitespace-nowrap px-4 py-3 text-[14px] font-medium transition sm:px-0 ${
                   isActive
-                    ? "text-white"
+                    ? "font-bold text-white"
                     : "text-copy-muted hover:bg-white/[0.03] hover:text-white"
                 }`}
               >

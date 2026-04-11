@@ -3,6 +3,8 @@ import {
   Compass,
   LogOut,
   PenSquare,
+  Search,
+  User,
   Zap,
 } from "lucide-react";
 import { disconnectDemoAccountAction } from "@/app/xcom-actions";
@@ -153,7 +155,7 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
             </div>
           </header>
 
-          {/* ── Mobile bottom nav ── */}
+          {/* ── Mobile bottom nav — 4 items like X ── */}
           <nav className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-white/[0.08] bg-background/95 py-2 backdrop-blur lg:hidden mobile-safe-bottom">
             <MobileNavItem
               href="/"
@@ -161,13 +163,27 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
               icon={Compass}
               isActive={active === "discover" || active === "community"}
             />
+            <MobileNavItem
+              href="/?q="
+              label="Search"
+              icon={Search}
+              isActive={false}
+            />
             {viewer ? (
-              <MobileNavItem
-                href="/create-community"
-                label="Create"
-                icon={PenSquare}
-                isActive={active === "create"}
-              />
+              <>
+                <MobileNavItem
+                  href="/create-community"
+                  label="Create"
+                  icon={PenSquare}
+                  isActive={active === "create"}
+                />
+                <MobileNavItem
+                  href={`/profile/${encodeURIComponent(viewer.xHandle)}`}
+                  label="Profile"
+                  icon={User}
+                  isActive={active === "profile"}
+                />
+              </>
             ) : (
               <MobileNavItem
                 href="/connect-x"

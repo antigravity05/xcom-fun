@@ -88,7 +88,7 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
                   {post.author.role}
                 </span>
               ) : null}
-              <span className="hidden shrink-0 text-copy-muted sm:inline">{post.author.handle}</span>
+              <span className="shrink-0 truncate text-copy-muted">{post.author.handle}</span>
               <span className="shrink-0 text-copy-soft">·</span>
               <time className="shrink-0 text-copy-muted hover:underline">
                 {formatRelativeTime(post.createdAt)}

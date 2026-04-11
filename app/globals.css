@@ -140,6 +140,15 @@ a:focus-visible {
   border-radius: 999px;
 }
 
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Textarea auto-grow ── */
 
 textarea {
