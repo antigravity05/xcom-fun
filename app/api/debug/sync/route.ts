@@ -2,162 +2,87 @@ export const dynamic = "force-dynamic";
 
 /**
  * Diagnostic endpoint for X sync troubleshooting.
- * GET /api/debug/sync?userId=<x_account_user_id>
- *
- * Returns a JSON report showing:
- * - Which env vars are set
- * - Which publishing path is active (Zernio vs Direct X)
- * - What tokens are stored for the user
- * - Whether Zernio API is reachable
+ * GET /api/debug/sync
  */
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get("userId");
-
+export async function GET() {
   const report: Record<string, unknown> = {};
 
   // 1. Env vars check
   report.envVars = {
-    ZERNIO_API_KEY: process.env.ZERNIO_API_KEY
-      ? `set (${process.env.ZERNIO_API_KEY.slice(0, 8)}...)`
-      : "NOT SET",
-    ZERNIO_PROFILE_ID: process.env.ZERNIO_PROFILE_ID
-      ? `set (${process.env.ZERNIO_PROFILE_ID})`
-      : "NOT SET",
-    X_CLIENT_ID: process.env.X_CLIENT_ID ? "set" : "NOT SET",
-    X_CLIENT_SECRET: process.env.X_CLIENT_SECRET ? "set" : "NOT SET",
-    X_CALLBACK_URL: process.env.X_CALLBACK_URL ? "set" : "NOT SET",
-    DATABASE_URL: process.env.DATABASE_URL ? "set" : "NOT SET",
-    NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL || "NOT SET (will default to https://www.x-com.fun)",
+    ZERNIO_API_KEY: process.env.ZERNIO_API_KEY ? "SET" : "NOT SET",
+    ZERNIO_PROFILE_ID: process.env.ZERNIO_PROFILE_ID ? "SET" : "NOT SET",
+    X_CLIENT_ID: process.env.X_CLIENT_ID ? "SET" : "NOT SET",
+    X_CLIENT_SECRET: process.env.X_CLIENT_SECRET ? "SET" : "NOT SET",
+    X_CALLBACK_URL: process.env.X_CALLBACK_URL ?? "NOT SET",
+    DATABASE_URL: process.env.DATABASE_URL ? "SET" : "NOT SET",
+    NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL ?? "NOT SET",
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? "NOT SET",
   };
 
   // 2. Active mode
   const isZernio = Boolean(process.env.ZERNIO_API_KEY);
   report.activeMode = isZernio ? "ZERNIO" : "DIRECT_X_API";
+  report.connectFlowReady = isZernio ? Boolean(process.env.ZERNIO_PROFILE_ID) : "N/A";
 
-  // 3. Token check
-  if (userId) {
-    try {
-      const { getUserTokens } = await import("@/lib/x/token-store");
-      const tokens = await getUserTokens(userId);
+  // 3. List stored X accounts + token analysis
+  try {
+    const { getDb } = await import("@/lib/database/client");
+    const db = getDb();
 
-      if (!tokens) {
-        report.tokens = { status: "NO TOKENS FOUND", userId };
-      } else {
-        const accessToken = tokens.accessToken;
-        const looksLikeZernioAccountId =
-          /^[a-f0-9]{24}$/.test(accessToken) ||
-          accessToken.startsWith("acc_");
-        const looksLikeEncrypted =
-          accessToken.includes(":") && accessToken.length > 50;
+    const rows = await db.query.xAccounts.findMany({ limit: 20 });
 
-        report.tokens = {
-          status: "FOUND",
-          userId,
-          accessTokenPreview: `${accessToken.slice(0, 12)}...${accessToken.slice(-6)}`,
-          accessTokenLength: accessToken.length,
-          looksLikeZernioAccountId,
-          looksLikeEncryptedXToken: looksLikeEncrypted,
-          hasRefreshToken: Boolean(tokens.refreshToken),
-          expiresAt: tokens.expiresAt,
-          isExpired: new Date(tokens.expiresAt) < new Date(),
-        };
+    report.storedAccounts = rows.map((row: Record<string, unknown>) => {
+      const token = String(row.accessTokenCiphertext ?? "");
+      const looksLikeZernioId = /^[a-f0-9]{24}$/.test(token) || token.startsWith("acc_");
+      const looksLikeEncrypted = token.includes(":") && token.length > 50;
 
-        if (isZernio && !looksLikeZernioAccountId) {
-          (report.tokens as Record<string, unknown>).WARNING =
-            "Zernio mode is active but the stored token does NOT look like a Zernio accountId. " +
-            "The user likely connected BEFORE Zernio was configured. " +
-            "They need to reconnect their X account.";
-        }
-      }
-    } catch (err) {
-      report.tokens = {
-        status: "ERROR",
-        error: err instanceof Error ? err.message : String(err),
+      return {
+        userId: row.userId,
+        tokenPreview: `${token.slice(0, 10)}...${token.slice(-6)}`,
+        tokenLength: token.length,
+        looksLikeZernioId,
+        looksLikeEncrypted,
+        tokenType: looksLikeZernioId ? "ZERNIO_ACCOUNT_ID" : looksLikeEncrypted ? "ENCRYPTED_X_TOKEN" : "UNKNOWN",
+        warning: isZernio && !looksLikeZernioId
+          ? "MISMATCH: Zernio mode active but token is NOT a Zernio accountId. User must reconnect X."
+          : undefined,
+        hasRefreshToken: Boolean(row.refreshTokenCiphertext),
+        expiresAt: row.expiresAt instanceof Date ? row.expiresAt.toISOString() : String(row.expiresAt ?? ""),
+        updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt ?? ""),
       };
-    }
-  } else {
-    report.tokens = {
-      status: "SKIPPED",
-      hint: "Add ?userId=<x_account_user_id> to check stored tokens. Find your userId in browser devtools or DB.",
-    };
+    });
+  } catch (err) {
+    report.storedAccounts = { error: err instanceof Error ? err.message : String(err) };
   }
 
-  // 4. Zernio API connectivity check
+  // 4. Zernio API connectivity
   if (isZernio) {
     try {
       const res = await fetch("https://api.zernio.com/v1/accounts", {
-        headers: {
-          Authorization: `Bearer ${process.env.ZERNIO_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${process.env.ZERNIO_API_KEY}` },
       });
-
       const body = await res.text();
-
-      report.zernioApiCheck = {
-        status: res.status,
-        ok: res.ok,
-        accountsPreview: res.ok
-          ? (() => {
-              try {
-                const parsed = JSON.parse(body);
-                const accounts = Array.isArray(parsed) ? parsed : parsed.accounts || parsed.data || [];
-                return accounts.map((a: Record<string, unknown>) => ({
-                  id: a.id || a._id,
-                  platform: a.platform,
-                  username: a.username,
-                }));
-              } catch {
-                return body.slice(0, 200);
-              }
-            })()
-          : body.slice(0, 200),
-      };
+      let accounts: unknown = body.slice(0, 300);
+      if (res.ok) {
+        try {
+          const parsed = JSON.parse(body);
+          const list = Array.isArray(parsed) ? parsed : parsed.accounts ?? parsed.data ?? [];
+          accounts = list.map((a: Record<string, unknown>) => ({
+            id: a.id ?? a._id,
+            platform: a.platform,
+            username: a.username,
+          }));
+        } catch { /* keep raw */ }
+      }
+      report.zernioApi = { status: res.status, ok: res.ok, accounts };
     } catch (err) {
-      report.zernioApiCheck = {
-        status: "NETWORK_ERROR",
-        error: err instanceof Error ? err.message : String(err),
-      };
+      report.zernioApi = { error: err instanceof Error ? err.message : String(err) };
     }
   }
 
-  // 5. Zernio connect flow check
-  if (isZernio) {
-    report.connectFlowReady = Boolean(process.env.ZERNIO_PROFILE_ID);
-    if (!process.env.ZERNIO_PROFILE_ID) {
-      report.connectFlowWarning =
-        "ZERNIO_PROFILE_ID is NOT set. The OAuth connect flow (reconnecting X account) will FAIL. " +
-        "Users cannot link their Twitter account via Zernio without this. " +
-        "Set it to: 69d81a8abc780f134d7b352a";
-    }
-  }
-
-  // 6. List all stored X accounts (to find userIds)
-  try {
-    const { getDb } = await import("@/lib/database/client");
-    const { xAccounts } = await import("@/drizzle/schema");
-    const db = getDb();
-    const allAccounts = await db
-      .select({
-        userId: xAccounts.userId,
-        updatedAt: xAccounts.updatedAt,
-        expiresAt: xAccounts.expiresAt,
-      })
-      .from(xAccounts)
-      .limit(20);
-
-    report.storedAccounts = allAccounts.map((a) => ({
-      userId: a.userId,
-      updatedAt: a.updatedAt?.toISOString(),
-      expiresAt: a.expiresAt?.toISOString(),
-    }));
-  } catch (err) {
-    report.storedAccounts = {
-      status: "ERROR",
-      error: err instanceof Error ? err.message : String(err),
-    };
-  }
+  // 5. Image URL that would be generated
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.x-com.fun";
+  report.imageUrlExample = `${baseUrl}/api/media/<postId>/0`;
 
   return new Response(JSON.stringify(report, null, 2), {
     status: 200,
