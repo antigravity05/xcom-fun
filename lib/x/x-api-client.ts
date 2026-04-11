@@ -85,8 +85,13 @@ export const uploadMedia = async (
 
   const data = JSON.parse(responseText);
   console.log("[x-api] uploadMedia FULL response:", responseText.slice(0, 1000));
-  const mediaId = data.media_id_string ?? data.id ?? data.media_id;
-  console.log("[x-api] uploadMedia resolved mediaId:", mediaId, "type:", typeof mediaId);
+  // v2 may wrap in { data: { id: ... } }, v1.1 returns { media_id_string: ... }
+  const inner = data.data ?? data;
+  const mediaId = inner.media_id_string ?? inner.id ?? inner.media_id ?? data.media_id_string ?? data.id ?? data.media_id;
+  console.log("[x-api] uploadMedia resolved mediaId:", mediaId, "keys:", Object.keys(data));
+  if (!mediaId) {
+    throw new XAPIError(0, "Upload succeeded but no media_id in response", data);
+  }
   return String(mediaId);
 };
 
