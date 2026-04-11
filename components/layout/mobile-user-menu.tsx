@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { disconnectDemoAccountAction } from "@/app/xcom-actions";
+import { FormSubmitButton } from "@/components/ui/form-submit-button";
 
 type MobileUserMenuProps = {
   displayName: string;
@@ -73,13 +74,13 @@ export function MobileUserMenu({
           </Link>
           <form action={disconnectDemoAccountAction}>
             <input type="hidden" name="redirectTo" value="/" />
-            <button
-              type="submit"
+            <FormSubmitButton
               className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] text-red-400 transition hover:bg-white/[0.06]"
+              pendingChildren={<><span className="size-4 animate-spin rounded-full border-2 border-red-400 border-t-transparent" /> Logging out...</>}
             >
               <LogOut className="size-4" />
               Log out
-            </button>
+            </FormSubmitButton>
           </form>
         </div>
       ) : null}

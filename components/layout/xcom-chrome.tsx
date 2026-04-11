@@ -8,6 +8,7 @@ import {
   Zap,
 } from "lucide-react";
 import { disconnectDemoAccountAction } from "@/app/xcom-actions";
+import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { MobileUserMenu } from "@/components/layout/mobile-user-menu";
 
 type NavigationKey = "discover" | "create" | "connect" | "community" | "profile";
@@ -101,13 +102,13 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
                   </Link>
                   <form action={disconnectDemoAccountAction} className="w-full">
                     <input type="hidden" name="redirectTo" value="/" />
-                    <button
-                      type="submit"
+                    <FormSubmitButton
                       className="flex w-full items-center justify-center gap-2 rounded-full px-3 py-2 text-[13px] text-copy-soft transition hover:bg-white/[0.06] hover:text-red-400 xl:justify-start"
+                      pendingChildren={<><span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" /><span className="hidden xl:inline">Logging out...</span></>}
                     >
                       <LogOut className="size-4" />
                       <span className="hidden xl:inline">Log out</span>
-                    </button>
+                    </FormSubmitButton>
                   </form>
                 </>
               ) : (
