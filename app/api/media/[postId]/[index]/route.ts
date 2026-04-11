@@ -44,7 +44,7 @@ export async function GET(
     const dataUrl = media.urls[index];
 
     // Parse data URL: data:image/jpeg;base64,/9j/4AAQ...
-    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/s);
+    const match = dataUrl.match(/^data:([^;]+);base64,([\s\S]+)$/);
 
     if (!match) {
       return new Response("Invalid image data", { status: 500 });
