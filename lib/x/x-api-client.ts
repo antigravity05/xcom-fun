@@ -1,5 +1,5 @@
 const X_API_BASE = "https://api.x.com/2";
-const X_UPLOAD_BASE = "https://upload.twitter.com/1.1";
+const X_UPLOAD_BASE = "https://api.x.com/2";
 
 export interface XTweetResponse {
   data: {
@@ -36,8 +36,11 @@ const handleXAPIResponse = async (response: Response) => {
 };
 
 /**
- * Upload media (image) to X via v1.1 media upload endpoint.
- * Returns the media_id_string to attach to a tweet.
+ * Upload media (image) to X via v2 media upload endpoint.
+ * Returns the media_id to attach to a tweet.
+ *
+ * Uses simple upload for images < 5MB.
+ * Endpoint: POST https://api.x.com/2/media/upload
  */
 export const uploadMedia = async (
   accessToken: string,
@@ -51,7 +54,7 @@ export const uploadMedia = async (
   formData.append("media_data", base64Data);
   formData.append("media_category", "tweet_image");
 
-  const response = await fetch(`${X_UPLOAD_BASE}/media/upload.json`, {
+  const response = await fetch(`${X_UPLOAD_BASE}/media/upload`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -74,7 +77,7 @@ export const uploadMedia = async (
 
   const data = JSON.parse(responseText);
   console.log("[x-api] uploadMedia response:", JSON.stringify(data));
-  return data.media_id_string;
+  return data.media_id_string ?? data.id;
 };
 
 export const postTweet = async (
