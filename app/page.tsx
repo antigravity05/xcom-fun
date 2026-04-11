@@ -158,122 +158,127 @@ export default async function Home({ searchParams }: HomePageProps) {
           </section>
 
           {/* ── VISUAL SCHEMA ── */}
-          <section className="border-b border-white/[0.08] px-4 py-12 sm:px-8 sm:py-16">
-            <div className="mx-auto max-w-3xl">
-              <h2 className="text-center text-[13px] font-bold uppercase tracking-[0.16em] text-accent-secondary">
-                How it works
-              </h2>
-              <p className="mt-3 text-center text-[24px] font-extrabold leading-tight text-white sm:text-[28px]">
-                Post once on x-com.fun,<br />
-                <span className="text-accent-secondary">it goes everywhere.</span>
+          <section className="border-b border-white/[0.08] px-4 py-14 sm:px-8 sm:py-20 overflow-hidden">
+            <div className="mx-auto max-w-2xl">
+              <p className="text-center text-[26px] font-extrabold leading-tight text-white sm:text-[34px]">
+                Post once here,<br />
+                <span className="text-accent-secondary">it tweets for you.</span>
+              </p>
+              <p className="mx-auto mt-4 max-w-md text-center text-[15px] leading-6 text-copy-muted sm:text-[16px]">
+                Every community groups all posts about the same coin.
+                When you post, it goes to your X automatically.
               </p>
 
-              {/* ── Schema diagram ── */}
-              <div className="mt-12">
+              {/* ── 3-step horizontal flow on desktop, vertical on mobile ── */}
+              <div className="mt-14 flex flex-col items-center gap-0 sm:flex-row sm:items-start sm:gap-0">
 
-                {/* ── STEP 1 — Post on x-com.fun ── */}
-                <div className="flex flex-col items-center">
-                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent-secondary/30 bg-accent-secondary/[0.08] px-3 py-1">
-                    <span className="flex size-5 items-center justify-center rounded-full bg-accent-secondary text-[11px] font-black text-white">1</span>
-                    <span className="text-[12px] font-bold text-accent-secondary">Post in a community on x-com.fun</span>
+                {/* STEP 1 — Write */}
+                <div className="flex flex-col items-center sm:flex-1">
+                  <div className="flex size-12 items-center justify-center rounded-2xl bg-accent-secondary/15 sm:size-14">
+                    <svg viewBox="0 0 24 24" className="size-6 text-accent-secondary sm:size-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 20h9" /><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z" />
+                    </svg>
                   </div>
-
-                  <div className="w-full max-w-md rounded-2xl border border-accent-secondary/20 bg-surface-secondary/80 shadow-lg shadow-accent-secondary/[0.06]">
-                    {/* Community header */}
-                    <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/pepe.png" alt="$PEPE" className="size-9 rounded-lg object-cover" />
-                      <div>
-                        <div className="text-[14px] font-bold text-white">$PEPE Community</div>
-                        <div className="text-[11px] text-copy-muted">42 members</div>
-                      </div>
-                    </div>
-
-                    {/* Fake composer */}
-                    <div className="border-b border-white/[0.04] px-4 py-3">
-                      <div className="flex items-start gap-2.5">
-                        <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent-secondary to-[#4FC3F7] text-[11px] font-bold text-white">
-                          Y
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-[13px] text-white/50">$PEPE to the moon 🚀</div>
-                          <div className="mt-2 flex items-center justify-end">
-                            <div className="rounded-full bg-accent-secondary px-4 py-1 text-[12px] font-bold text-white">
-                              Post
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Mini feed — other members' posts */}
-                    <div className="divide-y divide-white/[0.04] px-4">
-                      {[
-                        { user: "@alice", text: "Just aped into $PEPE, let's go" },
-                        { user: "@bob", text: "$PEPE chart looking bullish 📈" },
-                      ].map((post) => (
-                        <div key={post.user} className="flex items-start gap-2.5 py-2.5">
-                          <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-[10px] font-bold text-white">
-                            {post.user[1]?.toUpperCase()}
-                          </div>
-                          <div>
-                            <span className="text-[12px] font-bold text-white">{post.user}</span>
-                            <p className="text-[12px] leading-4 text-white/70">{post.text}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <p className="mt-3 max-w-sm text-center text-[13px] leading-5 text-copy-muted">
-                    All discussions about <span className="font-bold text-white">$PEPE</span> are grouped in one feed.
-                    No more searching through timelines.
+                  <h3 className="mt-3 text-[15px] font-bold text-white sm:text-[16px]">Write a post</h3>
+                  <p className="mt-1 max-w-[200px] text-center text-[13px] leading-[18px] text-copy-muted">
+                    Post in your coin&apos;s community on x-com.fun
                   </p>
                 </div>
 
-                {/* Arrow down */}
-                <div className="flex justify-center py-6">
-                  <svg width="24" height="40" viewBox="0 0 24 40" fill="none" className="text-accent-secondary/60 animate-bounce">
-                    <path d="M12 0v32m0 0l-7-7m7 7l7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                {/* Arrow 1 */}
+                <div className="flex items-center justify-center py-3 sm:mt-5 sm:py-0 sm:px-0">
+                  {/* Mobile: vertical arrow */}
+                  <svg className="size-6 text-white/20 sm:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14m0 0l-5-5m5 5l5-5" />
+                  </svg>
+                  {/* Desktop: horizontal arrow */}
+                  <svg className="hidden sm:block h-5 w-10 text-white/20" viewBox="0 0 40 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 10h32m0 0l-6-6m6 6l-6 6" />
                   </svg>
                 </div>
 
-                {/* ── STEP 2 — Auto-published to X ── */}
-                <div className="flex flex-col items-center">
-                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#f91880]/30 bg-[#f91880]/[0.08] px-3 py-1">
-                    <span className="flex size-5 items-center justify-center rounded-full bg-[#f91880] text-[11px] font-black text-white">2</span>
-                    <span className="text-[12px] font-bold text-[#f91880]">Each post auto-publishes to the author&apos;s 𝕏</span>
+                {/* STEP 2 — Grouped */}
+                <div className="flex flex-col items-center sm:flex-1">
+                  <div className="flex size-12 items-center justify-center rounded-2xl bg-[#00ba7c]/15 sm:size-14">
+                    <svg viewBox="0 0 24 24" className="size-6 text-[#00ba7c] sm:size-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                  </div>
+                  <h3 className="mt-3 text-[15px] font-bold text-white sm:text-[16px]">Grouped by coin</h3>
+                  <p className="mt-1 max-w-[200px] text-center text-[13px] leading-[18px] text-copy-muted">
+                    All posts about the same token, in one feed
+                  </p>
+                </div>
+
+                {/* Arrow 2 */}
+                <div className="flex items-center justify-center py-3 sm:mt-5 sm:py-0 sm:px-0">
+                  <svg className="size-6 text-white/20 sm:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14m0 0l-5-5m5 5l5-5" />
+                  </svg>
+                  <svg className="hidden sm:block h-5 w-10 text-white/20" viewBox="0 0 40 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 10h32m0 0l-6-6m6 6l-6 6" />
+                  </svg>
+                </div>
+
+                {/* STEP 3 — Published to X */}
+                <div className="flex flex-col items-center sm:flex-1">
+                  <div className="flex size-12 items-center justify-center rounded-2xl bg-white/[0.08] sm:size-14">
+                    <svg viewBox="0 0 24 24" className="size-6 text-white sm:size-7" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                  </div>
+                  <h3 className="mt-3 text-[15px] font-bold text-white sm:text-[16px]">Live on X</h3>
+                  <p className="mt-1 max-w-[200px] text-center text-[13px] leading-[18px] text-copy-muted">
+                    Auto-tweeted from your own account
+                  </p>
+                </div>
+              </div>
+
+              {/* ── Live demo card ── */}
+              <div className="mx-auto mt-12 max-w-sm">
+                <div className="rounded-2xl border border-white/[0.06] bg-surface-secondary/60 overflow-hidden">
+                  {/* Community header */}
+                  <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/pepe.png" alt="$PEPE" className="size-8 rounded-lg object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[14px] font-bold text-white">$PEPE</div>
+                    </div>
+                    <span className="rounded-full bg-accent-secondary/15 px-2.5 py-0.5 text-[11px] font-bold text-accent-secondary">42 members</span>
                   </div>
 
-                  <div className="grid w-full max-w-xl grid-cols-3 gap-3">
+                  {/* 3 mini posts */}
+                  <div className="divide-y divide-white/[0.04]">
                     {[
-                      { user: "@you", text: "$PEPE to the moon 🚀" },
-                      { user: "@alice", text: "Just aped into $PEPE, let's go" },
-                      { user: "@bob", text: "$PEPE chart looking bullish 📈" },
-                    ].map((tweet) => (
-                      <div
-                        key={tweet.user}
-                        className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <svg viewBox="0 0 24 24" className="size-3 text-white/40" fill="currentColor">
-                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                          </svg>
-                          <span className="text-[11px] font-bold text-copy-muted">{tweet.user}</span>
+                      { handle: "@alice", text: "$PEPE to the moon 🚀", synced: true },
+                      { handle: "@bob", text: "Just aped in, chart is clean 📈", synced: true },
+                      { handle: "@charlie", text: "Community is growing fast", synced: false },
+                    ].map((p) => (
+                      <div key={p.handle} className="flex items-start gap-2.5 px-4 py-2.5">
+                        <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-[10px] font-bold text-white/80">
+                          {p.handle[1]?.toUpperCase()}
                         </div>
-                        <div className="mt-1 text-[12px] leading-4 text-white/60">{tweet.text}</div>
-                        <div className="mt-1.5 flex items-center gap-1 text-[10px] text-[#00ba7c]">
-                          <span className="inline-block size-1.5 rounded-full bg-[#00ba7c]" />
-                          Published on X
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[12px] font-bold text-white">{p.handle}</span>
+                            {p.synced ? (
+                              <span className="flex items-center gap-0.5 text-[10px] text-[#00ba7c]">
+                                <svg viewBox="0 0 24 24" className="size-2.5" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                                synced
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-0.5 text-[10px] text-yellow-500/70">
+                                <span className="inline-block size-1 rounded-full bg-yellow-500/70 animate-pulse" />
+                                pending
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-0.5 text-[12px] leading-4 text-white/60">{p.text}</p>
                         </div>
                       </div>
                     ))}
                   </div>
-
-                  <p className="mt-4 max-w-sm text-center text-[13px] leading-5 text-copy-muted">
-                    Every post written on x-com.fun is <span className="font-bold text-white">automatically tweeted</span> from each member&apos;s own X account. One post, double the reach.
-                  </p>
                 </div>
-
               </div>
             </div>
           </section>
