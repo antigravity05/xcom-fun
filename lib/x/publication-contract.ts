@@ -64,18 +64,17 @@ const publishViaZernio = async (
       };
     }
 
-    // Convert base64 images to public URLs via our media API
-    // Zernio needs public URLs, not inline base64 data
-    let imagePublicUrls: string[] | undefined;
+    // Pass images to Zernio via public URLs from our media API
+    let imageUrls: string[] | undefined;
     if (hasImages) {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://x-com.fun";
-      imagePublicUrls = intent.imageBase64Urls!.slice(0, 4).map(
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.x-com.fun";
+      imageUrls = intent.imageBase64Urls!.slice(0, 4).map(
         (_, i) => `${baseUrl}/api/media/${intent.localPostId}/${i}`,
       );
-      console.log("[x-sync] Zernio media URLs:", imagePublicUrls);
+      console.log("[x-sync] Zernio media URLs:", imageUrls);
     }
 
-    const result = await zernioPostTweet(zernioAccountId, tweetBody, imagePublicUrls);
+    const result = await zernioPostTweet(zernioAccountId, tweetBody, imageUrls);
 
     // Log the full Zernio response so we can see the exact shape
     console.log("[x-sync] Zernio postTweet full response:", JSON.stringify(result));
