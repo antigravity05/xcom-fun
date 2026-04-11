@@ -369,7 +369,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       }
     >
       <div className="grid w-full max-w-[990px] xl:grid-cols-[600px_350px]">
-        <div className="min-w-0 border-x border-white/[0.08]">
+        <div className="min-w-0 lg:border-x border-white/[0.08]">
           {/* Sticky search bar */}
           <div className="sticky top-[53px] z-20 border-b border-white/[0.08] bg-background/85 px-4 py-2 backdrop-blur lg:top-0">
             <form>

@@ -103,7 +103,7 @@ export default async function CommunityPage({
       }
     >
       <div className="grid w-full max-w-[990px] xl:grid-cols-[600px_350px]">
-        <div className="min-w-0 border-x border-white/[0.08]">
+        <div className="min-w-0 lg:border-x border-white/[0.08]">
           <CommunityHeader
             community={community}
             activeTab={activeTab}

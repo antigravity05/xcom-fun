@@ -50,7 +50,7 @@ export default async function EditCommunityPage({
       }
     >
       <div className="grid w-full max-w-[990px] xl:grid-cols-[600px_350px]">
-        <div className="min-w-0 border-x border-white/10">
+        <div className="min-w-0 lg:border-x border-white/10">
           <CenterColumnHeader
             title="Edit community"
             description="Keep the community details accurate before the design pass."
