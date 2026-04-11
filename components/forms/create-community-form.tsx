@@ -110,20 +110,6 @@ export const CreateCommunityForm = () => {
         </div>
 
         <div className="signal-divider px-4 py-4 sm:px-6">
-          <Field
-            label="Contract address"
-            hint="Optional"
-            input={
-              <input
-                name="contractAddress"
-                className="signal-focus w-full rounded-2xl border border-white/10 bg-surface-secondary/50 px-4 py-3 text-[15px] font-mono text-white placeholder:text-copy-soft"
-                placeholder="0x..."
-              />
-            }
-          />
-        </div>
-
-        <div className="signal-divider px-4 py-4 sm:px-6">
           <div className="grid gap-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-[13px] font-bold uppercase tracking-[0.16em] text-copy-muted">
