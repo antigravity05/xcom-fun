@@ -117,6 +117,7 @@ export const readXcomStore = cache(async (): Promise<XcomStoreSnapshot> => {
       viewCount: 0,
       createdAt: post.createdAt.toISOString(),
       xSyncStatus,
+      externalPostId: publication?.externalPostId ?? undefined,
     };
   });
 

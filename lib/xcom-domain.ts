@@ -85,6 +85,7 @@ export type CommunityPostRecord = {
   replies: CommunityReplyRecord[];
   media?: CommunityPostMedia;
   xSyncStatus: PublicationStatus;
+  externalPostId?: string;
   viewerRepostXSyncStatus?: PublicationStatus;
 };
 

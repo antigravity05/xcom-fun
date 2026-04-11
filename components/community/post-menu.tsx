@@ -1,11 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MoreHorizontal } from "lucide-react";
+import { Link2, MoreHorizontal } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
-export function PostMenu({ children }: { children: React.ReactNode }) {
+export function PostMenu({
+  children,
+  xTweetUrl,
+}: {
+  children: React.ReactNode;
+  xTweetUrl?: string | null;
+}) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!open) return;
@@ -33,6 +41,16 @@ export function PostMenu({ children }: { children: React.ReactNode }) {
     };
   }, [open]);
 
+  const handleCopyLink = async () => {
+    const url = xTweetUrl ?? window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast("Copied to clipboard");
+    } catch {
+      // silent fail
+    }
+  };
+
   return (
     <div ref={menuRef} className="relative shrink-0">
       <button
@@ -48,6 +66,14 @@ export function PostMenu({ children }: { children: React.ReactNode }) {
           className="absolute right-0 top-full z-30 mt-0.5 min-w-[200px] overflow-hidden rounded-xl border border-white/10 bg-black shadow-lg shadow-black/40"
           onClick={() => setOpen(false)}
         >
+          <button
+            type="button"
+            onClick={handleCopyLink}
+            className="flex w-full items-center gap-3 px-4 py-3 text-[15px] text-white transition hover:bg-white/[0.04]"
+          >
+            <Link2 className="size-[18px] text-copy-muted" />
+            Copy link
+          </button>
           {children}
         </div>
       ) : null}

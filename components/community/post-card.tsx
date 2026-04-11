@@ -47,6 +47,12 @@ type PostCardProps = {
 };
 
 export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
+  // Build tweet URL: https://x.com/handle/status/tweetId
+  const xTweetUrl =
+    post.externalPostId && post.author.handle
+      ? `https://x.com/${post.author.handle.replace(/^@/, "")}/status/${post.externalPostId}`
+      : null;
+
   return (
     <article className="group/post border-b border-white/[0.08] px-3 py-2.5 transition-colors hover:bg-white/[0.02] sm:px-6 sm:py-3">
       {/* Pinned indicator */}
@@ -90,9 +96,20 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
               ) : null}
               <span className="shrink-0 truncate text-copy-muted">{post.author.handle}</span>
               <span className="shrink-0 text-copy-soft">·</span>
-              <time className="shrink-0 text-copy-muted hover:underline">
-                {formatRelativeTime(post.createdAt)}
-              </time>
+              {xTweetUrl ? (
+                <a
+                  href={xTweetUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 text-copy-muted hover:underline"
+                >
+                  <time>{formatRelativeTime(post.createdAt)}</time>
+                </a>
+              ) : (
+                <time className="shrink-0 text-copy-muted">
+                  {formatRelativeTime(post.createdAt)}
+                </time>
+              )}
               {/* X sync status indicator */}
               {post.xSyncStatus === "published" ? (
                 <span className="shrink-0 text-copy-soft" title="Synced to X">
@@ -118,7 +135,7 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
             {/* More menu */}
             {interaction &&
             (interaction.canEdit || interaction.canDelete || interaction.canPin) ? (
-              <PostMenu>
+              <PostMenu xTweetUrl={xTweetUrl}>
                   {interaction.canEdit && !interaction.isEditing ? (
                     <Link
                       href={interaction.editHref}
@@ -164,7 +181,11 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
                     </form>
                   ) : null}
               </PostMenu>
-            ) : null}
+            ) : (
+              <PostMenu xTweetUrl={xTweetUrl}>
+                {null}
+              </PostMenu>
+            )}
           </div>
 
           {/* Post body */}
@@ -194,6 +215,18 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
                 </FormSubmitButton>
               </div>
             </form>
+          ) : xTweetUrl ? (
+            <a
+              href={xTweetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block cursor-pointer"
+            >
+              <PostBody
+                body={post.body}
+                className="mt-0.5 text-[15px] leading-[22px] text-white/[0.93]"
+              />
+            </a>
           ) : (
             <PostBody
               body={post.body}

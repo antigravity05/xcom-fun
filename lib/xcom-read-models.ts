@@ -221,6 +221,7 @@ const toPostRecord = (
     replies,
     media: post.media,
     xSyncStatus: post.xSyncStatus,
+    externalPostId: post.externalPostId,
     viewerRepostXSyncStatus:
       snapshot.reactions.find(
         (entry) =>

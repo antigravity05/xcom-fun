@@ -50,6 +50,7 @@ export type XcomStorePost = {
   viewCount: number;
   createdAt: string;
   xSyncStatus: PublicationStatus;
+  externalPostId?: string;
 };
 
 export type XcomStoreReply = {
