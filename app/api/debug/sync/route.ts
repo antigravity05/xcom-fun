@@ -64,7 +64,7 @@ export async function GET(request: Request) {
         };
 
         if (isZernio && !looksLikeZernioAccountId) {
-          report.tokens.WARNING =
+          (report.tokens as Record<string, unknown>).WARNING =
             "Zernio mode is active but the stored token does NOT look like a Zernio accountId. " +
             "The user likely connected BEFORE Zernio was configured. " +
             "They need to reconnect their X account.";
