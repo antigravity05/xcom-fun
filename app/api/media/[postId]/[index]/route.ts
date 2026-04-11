@@ -1,15 +1,10 @@
-import { getDb } from "@/lib/database/client";
-import { posts } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
-
 export const dynamic = "force-dynamic";
 
 /**
- * Serves a post's image as a binary response.
+ * Serves a post image as a binary response.
  * URL: /api/media/{postId}/{index}
  *
- * This lets us give Zernio (and anyone) a public URL
- * for images that are stored as base64 data URLs in the DB.
+ * Lets us give Zernio a public URL for images stored as base64 in the DB.
  */
 export async function GET(
   _request: Request,
@@ -23,13 +18,18 @@ export async function GET(
   }
 
   try {
+    const { getDb } = await import("@/lib/database/client");
+    const { posts } = await import("@/drizzle/schema");
+    const { eq } = await import("drizzle-orm");
+
     const db = getDb();
-    const row = await db
+    const rows = await db
       .select({ mediaPayload: posts.mediaPayload })
       .from(posts)
       .where(eq(posts.id, postId))
-      .limit(1)
-      .then((rows) => rows[0]);
+      .limit(1);
+
+    const row = rows[0];
 
     if (!row?.mediaPayload) {
       return new Response("Not found", { status: 404 });
