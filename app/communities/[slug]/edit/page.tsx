@@ -53,7 +53,7 @@ export default async function EditCommunityPage({
         <div className="min-w-0 lg:border-x border-white/10">
           <CenterColumnHeader
             title="Edit community"
-            description="Keep the community details accurate before the design pass."
+            description="Update your community details. Changes are reflected immediately."
           />
 
           <EditCommunityForm

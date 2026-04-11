@@ -16,7 +16,7 @@ export async function GET() {
     X_CALLBACK_URL: process.env.X_CALLBACK_URL ?? "NOT SET",
     DATABASE_URL: process.env.DATABASE_URL ? "SET" : "NOT SET",
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL ?? "NOT SET",
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? "NOT SET",
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? "NOT SET (unused — use NEXT_PUBLIC_BASE_URL)",
   };
 
   // 2. Active mode
