@@ -39,33 +39,35 @@ const handleXAPIResponse = async (response: Response) => {
  * Upload media (image) to X via v2 media upload endpoint.
  * Returns the media_id to attach to a tweet.
  *
- * v2 simple upload uses application/x-www-form-urlencoded with:
- *   - media: base64-encoded image data
+ * Sends binary image as multipart/form-data with:
+ *   - media: binary file blob
  *   - media_category: "tweet_image"
- *   - media_type: MIME type (e.g. "image/jpeg")
  */
 export const uploadMedia = async (
   accessToken: string,
   imageBase64: string,
   mimeType: string,
 ): Promise<string> => {
-  // Strip data URL prefix if present
+  // Strip data URL prefix and convert base64 to binary
   const base64Data = imageBase64.replace(/^data:[^;]+;base64,/, "");
+  const binaryBuffer = Buffer.from(base64Data, "base64");
 
-  const params = new URLSearchParams();
-  params.append("media", base64Data);
-  params.append("media_category", "tweet_image");
-  params.append("media_type", mimeType);
+  // Determine file extension from mime type
+  const ext = mimeType.split("/")[1] ?? "jpg";
 
-  console.log(`[x-sync] Uploading media via v2, mimeType=${mimeType}, base64Length=${base64Data.length}`);
+  const blob = new Blob([binaryBuffer], { type: mimeType });
+  const formData = new FormData();
+  formData.append("media", blob, `image.${ext}`);
+  formData.append("media_category", "tweet_image");
+
+  console.log(`[x-sync] Uploading media via v2, mimeType=${mimeType}, binarySize=${binaryBuffer.length}`);
 
   const response = await fetch(`${X_UPLOAD_BASE}/media/upload`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: params.toString(),
+    body: formData,
   });
 
   const responseText = await response.text();
