@@ -4,7 +4,6 @@ import {
   ArrowRight,
   Search,
   TrendingUp,
-  Zap,
 } from "lucide-react";
 import { CommunityCard } from "@/components/community/community-card";
 import { XcomChrome } from "@/components/layout/xcom-chrome";
@@ -85,12 +84,6 @@ export default async function Home({ searchParams }: HomePageProps) {
 
             <div className="relative px-4 pb-12 pt-16 sm:px-8 sm:pb-16 sm:pt-20">
               <div className="mx-auto max-w-xl text-center">
-                {/* Badge */}
-                <div className="inline-flex items-center gap-2 rounded-full border border-accent-secondary/20 bg-accent-secondary/[0.08] px-4 py-1.5 text-[13px] font-medium text-accent-secondary">
-                  <Zap className="size-3.5" />
-                  Replacing X Communities
-                </div>
-
                 {/* Title */}
                 <h1 className="mt-6 text-[36px] font-extrabold leading-[1.1] tracking-tight text-white sm:text-[52px]">
                   X communities
