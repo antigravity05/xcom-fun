@@ -16,6 +16,7 @@ import {
 import { CommunityHeader } from "@/components/community/community-header";
 import PostComposer from "@/components/community/post-composer";
 import { PostFeed } from "@/components/community/post-feed";
+import { ScrollToComposeFab } from "@/components/community/scroll-to-compose-fab";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { XcomChrome } from "@/components/layout/xcom-chrome";
 import type { CommunityMemberRecord, CommunityTab } from "@/lib/xcom-domain";
@@ -281,6 +282,11 @@ export default async function CommunityPage({
                   viewer={viewer ? { displayName: viewer.displayName, avatar: viewer.avatar } : null}
                 />
               </section>
+
+              {/* Mobile FAB — scroll to composer */}
+              {viewerMembershipStatus === "active" ? (
+                <ScrollToComposeFab />
+              ) : null}
             </>
           )}
         </div>

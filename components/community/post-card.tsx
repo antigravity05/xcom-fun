@@ -48,7 +48,7 @@ type PostCardProps = {
 
 export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
   return (
-    <article className="group/post border-b border-white/[0.08] px-4 py-3 transition-colors hover:bg-white/[0.02] sm:px-6">
+    <article className="group/post border-b border-white/[0.08] px-3 py-2.5 transition-colors hover:bg-white/[0.02] sm:px-6 sm:py-3">
       {/* Pinned indicator */}
       {post.isPinned ? (
         <div className="mb-1.5 flex items-center gap-2 pl-[52px] text-[13px] font-bold text-copy-muted">
@@ -201,29 +201,40 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
             />
           )}
 
-          {/* Media attachment */}
+          {/* Media attachment — X-style image grid */}
           {post.media?.kind === "images" ? (
             <div
               className={`mt-3 grid gap-0.5 overflow-hidden rounded-2xl border border-white/[0.08] ${
                 post.media.urls.length === 1
                   ? "grid-cols-1"
-                  : "grid-cols-2"
+                  : post.media.urls.length === 3
+                    ? "grid-cols-2 grid-rows-2"
+                    : "grid-cols-2"
               }`}
+              style={{
+                height:
+                  post.media.urls.length === 1
+                    ? "auto"
+                    : post.media.urls.length === 2
+                      ? "280px"
+                      : "280px",
+              }}
             >
-              {post.media.urls.map((url: string, i: number) => (
-                <img
-                  key={i}
-                  src={url}
-                  alt={`Image ${i + 1}`}
-                  className={`w-full object-cover ${
-                    post.media?.kind === "images" && post.media.urls.length === 1
-                      ? "max-h-[400px]"
-                      : post.media?.kind === "images" && post.media.urls.length === 3 && i === 0
-                        ? "row-span-2 h-full"
-                        : "max-h-[200px]"
-                  }`}
-                />
-              ))}
+              {post.media.urls.map((url: string, i: number) => {
+                const count = post.media?.kind === "images" ? post.media.urls.length : 0;
+                let extraClass = "w-full h-full object-cover";
+                if (count === 1) extraClass = "w-full object-cover max-h-[510px]";
+                if (count === 3 && i === 0) extraClass = "w-full h-full object-cover row-span-2";
+                return (
+                  <img
+                    key={i}
+                    src={url}
+                    alt={`Image ${i + 1}`}
+                    className={extraClass}
+                    loading="lazy"
+                  />
+                );
+              })}
             </div>
           ) : post.media ? (
             <div className="mt-3 overflow-hidden rounded-2xl border border-white/[0.08] transition hover:border-white/15">

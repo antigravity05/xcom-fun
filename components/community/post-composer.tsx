@@ -89,7 +89,7 @@ export default function PostComposer({
     <form
       ref={formRef}
       action={handleSubmit}
-      className="border-b border-white/[0.08] px-4 pb-3 pt-4 sm:px-6"
+      className="border-b border-white/[0.08] px-3 pb-2.5 pt-3 sm:px-6 sm:pb-3 sm:pt-4"
     >
       <input type="hidden" name="communitySlug" value={communitySlug} />
       <input

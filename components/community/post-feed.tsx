@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Search } from "lucide-react";
 import { PostCard } from "@/components/community/post-card";
 import type { CommunityPostRecord } from "@/lib/xcom-domain";
@@ -35,6 +35,7 @@ export function PostFeed({
 }: PostFeedProps) {
   const [visibleCount, setVisibleCount] = useState(POSTS_PER_PAGE);
   const [searchQuery, setSearchQuery] = useState("");
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const filteredPosts = useMemo(() => {
     if (!searchQuery.trim()) return posts;
@@ -49,6 +50,28 @@ export function PostFeed({
 
   const visiblePosts = filteredPosts.slice(0, visibleCount);
   const hasMore = visibleCount < filteredPosts.length;
+
+  // Infinite scroll via IntersectionObserver
+  const loadMore = useCallback(() => {
+    setVisibleCount((prev) => prev + POSTS_PER_PAGE);
+  }, []);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          loadMore();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore]);
 
   if (posts.length === 0) {
     return (
@@ -113,15 +136,12 @@ export function PostFeed({
         />
       ))}
 
-      {hasMore && (
-        <button
-          type="button"
-          onClick={() => setVisibleCount((prev) => prev + POSTS_PER_PAGE)}
-          className="w-full border-t border-white/[0.08] py-4 text-center text-[15px] font-bold text-accent-secondary transition hover:bg-white/[0.02]"
-        >
-          Show more posts
-        </button>
-      )}
+      {/* Infinite scroll sentinel */}
+      {hasMore ? (
+        <div ref={sentinelRef} className="flex items-center justify-center py-6">
+          <div className="size-5 animate-spin rounded-full border-2 border-white/20 border-t-accent-secondary" />
+        </div>
+      ) : null}
     </>
   );
 }
