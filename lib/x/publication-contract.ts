@@ -197,12 +197,32 @@ const publishViaDirectXApi = async (
     // If body is empty but we have media, use a minimal text
     const tweetText = trimmedBody || ".";
 
-    const result = await xPostTweet(accessToken, tweetText, mediaIds);
-
-    return {
-      status: "published",
-      externalPostId: result.id,
-    };
+    // Try posting with media first, fallback to text-only if media causes error
+    try {
+      const result = await xPostTweet(accessToken, tweetText, mediaIds);
+      return {
+        status: "published",
+        externalPostId: result.id,
+      };
+    } catch (tweetErr) {
+      if (mediaIds && mediaIds.length > 0) {
+        console.error("[x-sync] Tweet with media failed, retrying text-only:", tweetErr);
+        console.error("[x-sync] Failed media_ids were:", JSON.stringify(mediaIds));
+        // Fallback: post text only so we never lose the sync
+        try {
+          const fallbackResult = await xPostTweet(accessToken, tweetText);
+          return {
+            status: "published",
+            externalPostId: fallbackResult.id,
+            errorMessage: "Posted text only — image upload not yet supported on current X API tier",
+          };
+        } catch (fallbackErr) {
+          console.error("[x-sync] Text-only fallback also failed:", fallbackErr);
+          throw fallbackErr;
+        }
+      }
+      throw tweetErr;
+    }
   } catch (error) {
     if (error instanceof XAPIError) {
       if (error.statusCode === 401) {

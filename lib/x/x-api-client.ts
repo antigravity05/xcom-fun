@@ -84,8 +84,10 @@ export const uploadMedia = async (
   }
 
   const data = JSON.parse(responseText);
-  console.log("[x-api] uploadMedia response:", JSON.stringify(data));
-  return data.media_id_string ?? data.id;
+  console.log("[x-api] uploadMedia FULL response:", responseText.slice(0, 1000));
+  const mediaId = data.media_id_string ?? data.id ?? data.media_id;
+  console.log("[x-api] uploadMedia resolved mediaId:", mediaId, "type:", typeof mediaId);
+  return String(mediaId);
 };
 
 export const postTweet = async (
