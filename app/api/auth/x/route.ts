@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { isZernioMode } from "@/lib/x/oauth-contract";
 import { getTwitterConnectUrl } from "@/lib/zernio/client";
 import {
@@ -29,9 +28,7 @@ export async function GET() {
       );
     }
 
-    // redirect() must be called OUTSIDE try/catch because Next.js
-    // implements it by throwing a special NEXT_REDIRECT error
-    redirect(authUrl);
+    return Response.json({ authUrl });
   }
 
   /* ── Legacy direct X OAuth PKCE ── */
@@ -69,5 +66,9 @@ export async function GET() {
   }
 
   const authUrl = buildAuthorizationUrl(codeChallenge, state);
-  redirect(authUrl);
+
+  // If client requests JSON (mobile flow), return URL for client-side navigation
+  // which triggers Universal Links / App Links to open the X app
+  // Otherwise, fallback to server redirect (desktop)
+  return Response.json({ authUrl });
 }

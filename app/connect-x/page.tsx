@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { LogOut, Shield, Zap } from "lucide-react";
+import { LogOut, Zap } from "lucide-react";
+import { ConnectXButton } from "@/components/auth/connect-x-button";
 import {
   connectDemoAccountAction,
   disconnectDemoAccountAction,
@@ -92,17 +93,7 @@ export default async function ConnectXPage({
                 <p className="mt-2 text-[14px] leading-5 text-copy-muted">
                   Secure OAuth 2.0 with PKCE. Your tokens are encrypted at rest.
                 </p>
-                <a
-                  href="/api/auth/x"
-                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-accent-secondary px-6 py-3 text-[15px] font-bold text-white transition hover:brightness-110"
-                >
-                  <span className="text-[18px] font-black">𝕏</span>
-                  Connect with X
-                </a>
-                <div className="mt-3 flex items-center justify-center gap-1.5 text-[12px] text-copy-soft">
-                  <Shield className="size-3" />
-                  OAuth 2.0 PKCE
-                </div>
+                <ConnectXButton />
               </div>
             </div>
           ) : null}
