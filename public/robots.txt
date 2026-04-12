@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /connect-x
+
+Sitemap: https://www.x-com.fun/sitemap.xml

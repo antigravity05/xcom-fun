@@ -10,6 +10,7 @@ import { hasXOAuthEnvironment } from "@/lib/x/oauth-contract";
 
 export const metadata: Metadata = {
   title: "Connect X",
+  description: "Connect your X account to join crypto communities and start posting. One-click login, no signup needed.",
 };
 
 type ConnectXPageProps = {

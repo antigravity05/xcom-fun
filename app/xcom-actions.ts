@@ -492,6 +492,14 @@ export const createCommunityAction = async (formData: FormData) => {
     };
   }
 
+  const rateCheck = checkRateLimit(`community:${viewerUserId}`, 5, 3_600_000);
+  if (!rateCheck.allowed) {
+    return {
+      ok: false as const,
+      error: "You're creating communities too fast. Please wait a while.",
+    };
+  }
+
   const parsedPayload = createCommunityPayloadSchema.safeParse({
     name: String(formData.get("name") ?? ""),
     description: String(formData.get("description") ?? ""),

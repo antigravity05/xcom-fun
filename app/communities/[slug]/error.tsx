@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { RefreshCw } from "lucide-react";
 
 export default function CommunityError({
@@ -16,28 +17,25 @@ export default function CommunityError({
           <span className="text-[20px] text-danger-soft">!</span>
         </div>
         <h1 className="mt-4 text-[20px] font-extrabold text-white">
-          Something went wrong
+          Unable to load community
         </h1>
         <p className="mt-2 text-[14px] leading-5 text-copy-muted">
-          {error.message || "An unexpected error occurred."}
+          {error.message || "Something went wrong loading this community."}
         </p>
-        {error.digest ? (
-          <p className="mt-1 text-[11px] text-copy-soft">{error.digest}</p>
-        ) : null}
         <div className="mt-5 flex items-center justify-center gap-3">
           <button
             onClick={reset}
-            className="inline-flex items-center gap-2 rounded-full bg-accent-secondary px-5 py-2.5 text-[14px] font-bold text-white transition hover:brightness-110"
+            className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[14px] font-bold text-black transition hover:bg-white/90"
           >
             <RefreshCw className="size-3.5" />
             Try again
           </button>
-          <a
+          <Link
             href="/"
-            className="rounded-full border border-white/[0.08] px-5 py-2.5 text-[14px] font-bold text-white transition hover:bg-white/[0.06]"
+            className="inline-flex rounded-full border border-white/[0.12] px-5 py-2.5 text-[14px] font-bold text-white transition hover:bg-white/[0.06]"
           >
-            Back to home
-          </a>
+            Go home
+          </Link>
         </div>
       </div>
     </div>

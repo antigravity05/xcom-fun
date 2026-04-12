@@ -37,9 +37,9 @@ export const ConnectCTAWrapper = ({ children }: ConnectCTAWrapperProps) => {
 
   return (
     <div ref={wrapperRef} className="relative">
-      <div onClick={() => setShowCTA(true)} className="cursor-pointer">
+      <button type="button" onClick={() => setShowCTA(true)} className="cursor-pointer appearance-none bg-transparent border-none p-0 m-0 text-left">
         {children}
-      </div>
+      </button>
 
       {showCTA ? (
         <div className="absolute bottom-full left-1/2 z-40 mb-2 -translate-x-1/2 animate-[menu-appear_0.15s_ease-out]">

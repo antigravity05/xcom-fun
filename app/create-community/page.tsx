@@ -6,6 +6,7 @@ import { getViewer } from "@/lib/xcom-read-models";
 
 export const metadata: Metadata = {
   title: "Create community",
+  description: "Create a community for your crypto project. Group all posts about your coin in one place.",
 };
 
 export default async function CreateCommunityPage() {
