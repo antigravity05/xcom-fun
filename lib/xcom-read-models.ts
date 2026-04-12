@@ -10,7 +10,13 @@ import type {
 } from "@/lib/xcom-domain";
 import { getViewerUserId } from "@/lib/xcom-session";
 import { cachedReadXcomStore as readXcomStore } from "@/lib/xcom-persistence";
-import type { XcomStoreSnapshot, XcomStoreUser } from "@/lib/xcom-store";
+import type {
+  XcomStoreSnapshot,
+  XcomStoreUser,
+  XcomStoreMembership,
+  XcomStoreReaction,
+  XcomStoreReply,
+} from "@/lib/xcom-store";
 
 type CommunityVisualProfile = {
   avatar: string;
@@ -67,8 +73,117 @@ const membershipRoleOrder: Record<CommunityRole, number> = {
   member: 2,
 };
 
+// ── Snapshot index helpers ──────────────────────────────────
+
+type SnapshotIndex = {
+  usersById: Map<string, XcomStoreUser>;
+  communitiesById: Map<string, XcomStoreSnapshot["communities"][number]>;
+  communitiesBySlug: Map<string, XcomStoreSnapshot["communities"][number]>;
+  /** key = `${communityId}:${userId}` */
+  membershipByCommunityUser: Map<string, XcomStoreMembership>;
+  /** key = userId */
+  membershipsByUser: Map<string, XcomStoreMembership[]>;
+  /** key = communityId */
+  membershipsByCommunity: Map<string, XcomStoreMembership[]>;
+  /** key = postId */
+  repliesByPost: Map<string, XcomStoreReply[]>;
+  /** key = `${postId}:${userId}:${kind}` */
+  reactionByPostUserKind: Map<string, XcomStoreReaction>;
+  /** key = postId */
+  postsByIdMap: Map<string, XcomStoreSnapshot["posts"][number]>;
+  /** key = communityId */
+  postsByCommunity: Map<string, XcomStoreSnapshot["posts"][number][]>;
+};
+
+const buildIndex = (snapshot: XcomStoreSnapshot): SnapshotIndex => {
+  const usersById = new Map<string, XcomStoreUser>();
+  for (const user of snapshot.users) {
+    usersById.set(user.id, user);
+  }
+
+  const communitiesById = new Map<string, XcomStoreSnapshot["communities"][number]>();
+  const communitiesBySlug = new Map<string, XcomStoreSnapshot["communities"][number]>();
+  for (const community of snapshot.communities) {
+    communitiesById.set(community.id, community);
+    communitiesBySlug.set(community.slug, community);
+  }
+
+  const membershipByCommunityUser = new Map<string, XcomStoreMembership>();
+  const membershipsByUser = new Map<string, XcomStoreMembership[]>();
+  const membershipsByCommunity = new Map<string, XcomStoreMembership[]>();
+  for (const membership of snapshot.memberships) {
+    membershipByCommunityUser.set(
+      `${membership.communityId}:${membership.userId}`,
+      membership,
+    );
+    const userList = membershipsByUser.get(membership.userId) ?? [];
+    userList.push(membership);
+    membershipsByUser.set(membership.userId, userList);
+
+    const communityList = membershipsByCommunity.get(membership.communityId) ?? [];
+    communityList.push(membership);
+    membershipsByCommunity.set(membership.communityId, communityList);
+  }
+
+  const repliesByPost = new Map<string, XcomStoreReply[]>();
+  for (const reply of snapshot.replies) {
+    const list = repliesByPost.get(reply.postId) ?? [];
+    list.push(reply);
+    repliesByPost.set(reply.postId, list);
+  }
+
+  const reactionByPostUserKind = new Map<string, XcomStoreReaction>();
+  for (const reaction of snapshot.reactions) {
+    reactionByPostUserKind.set(
+      `${reaction.postId}:${reaction.userId}:${reaction.kind}`,
+      reaction,
+    );
+  }
+
+  const postsByIdMap = new Map<string, XcomStoreSnapshot["posts"][number]>();
+  const postsByCommunity = new Map<string, XcomStoreSnapshot["posts"][number][]>();
+  for (const post of snapshot.posts) {
+    postsByIdMap.set(post.id, post);
+    const list = postsByCommunity.get(post.communityId) ?? [];
+    list.push(post);
+    postsByCommunity.set(post.communityId, list);
+  }
+
+  return {
+    usersById,
+    communitiesById,
+    communitiesBySlug,
+    membershipByCommunityUser,
+    membershipsByUser,
+    membershipsByCommunity,
+    repliesByPost,
+    reactionByPostUserKind,
+    postsByIdMap,
+    postsByCommunity,
+  };
+};
+
+// ── Snapshot cache (index is rebuilt per snapshot) ───────────
+
+let cachedSnapshotRef: WeakRef<XcomStoreSnapshot> | null = null;
+let cachedIndex: SnapshotIndex | null = null;
+
+const getIndexedSnapshot = async () => {
+  const snapshot = await readXcomStore();
+
+  // If the snapshot object reference changed, rebuild the index
+  if (!cachedSnapshotRef || cachedSnapshotRef.deref() !== snapshot) {
+    cachedSnapshotRef = new WeakRef(snapshot);
+    cachedIndex = buildIndex(snapshot);
+  }
+
+  return { snapshot, idx: cachedIndex! };
+};
+
+// ── Private helpers ─────────────────────────────────────────
+
 const findViewerMembership = (
-  snapshot: XcomStoreSnapshot,
+  idx: SnapshotIndex,
   communityId: string,
   viewerId: string | null,
 ) => {
@@ -76,12 +191,10 @@ const findViewerMembership = (
     return null;
   }
 
-  return (
-    snapshot.memberships.find(
-      (entry) => entry.communityId === communityId && entry.userId === viewerId,
-    ) ?? null
-  );
+  return idx.membershipByCommunityUser.get(`${communityId}:${viewerId}`) ?? null;
 };
+
+// ── Public queries ──────────────────────────────────────────
 
 export const getViewer = async () => {
   const viewerUserId = await getViewerUserId();
@@ -90,24 +203,24 @@ export const getViewer = async () => {
     return null;
   }
 
-  const snapshot = await readXcomStore();
+  const { idx } = await getIndexedSnapshot();
 
-  return snapshot.users.find((entry) => entry.id === viewerUserId) ?? null;
+  return idx.usersById.get(viewerUserId) ?? null;
 };
 
 export const listConnectableUsers = async () => {
-  const snapshot = await readXcomStore();
+  const { snapshot } = await getIndexedSnapshot();
 
   return snapshot.users
     .sort((left, right) => left.displayName.localeCompare(right.displayName));
 };
 
 export const listCommunityCards = async () => {
-  const snapshot = await readXcomStore();
+  const { snapshot, idx } = await getIndexedSnapshot();
 
   return snapshot.communities
     .map((community) => {
-      const author = snapshot.users.find((entry) => entry.id === community.createdByUserId);
+      const author = idx.usersById.get(community.createdByUserId);
       const visualProfile = getCommunityVisualProfile(community.slug, community.name);
 
       if (!author) {
@@ -147,38 +260,32 @@ export const listTrendingCommunityCards = async () => {
 };
 
 const toPostRecord = (
-  snapshot: XcomStoreSnapshot,
+  idx: SnapshotIndex,
   postId: string,
   viewerId: string | null,
 ) => {
-  const post = snapshot.posts.find((entry) => entry.id === postId);
+  const post = idx.postsByIdMap.get(postId);
 
   if (!post) {
     return null;
   }
 
-  const author = snapshot.users.find((entry) => entry.id === post.authorUserId);
-  const community = snapshot.communities.find((entry) => entry.id === post.communityId);
-  const membership = snapshot.memberships.find(
-    (entry) =>
-      entry.communityId === post.communityId &&
-      entry.userId === post.authorUserId &&
-      entry.status === "active",
+  const author = idx.usersById.get(post.authorUserId);
+  const community = idx.communitiesById.get(post.communityId);
+  const membership = idx.membershipByCommunityUser.get(
+    `${post.communityId}:${post.authorUserId}`,
   );
 
   if (!author || !community) {
     return null;
   }
 
-  const replies = snapshot.replies
-    .filter((entry) => entry.postId === post.id)
+  const rawReplies = idx.repliesByPost.get(post.id) ?? [];
+  const replies = rawReplies
     .reduce<CommunityReplyRecord[]>((items, entry) => {
-      const replyAuthor = snapshot.users.find((user) => user.id === entry.authorUserId);
-      const replyMembership = snapshot.memberships.find(
-        (membershipEntry) =>
-          membershipEntry.communityId === post.communityId &&
-          membershipEntry.userId === entry.authorUserId &&
-          membershipEntry.status === "active",
+      const replyAuthor = idx.usersById.get(entry.authorUserId);
+      const replyMembership = idx.membershipByCommunityUser.get(
+        `${post.communityId}:${entry.authorUserId}`,
       );
 
       if (!replyAuthor) {
@@ -201,12 +308,19 @@ const toPostRecord = (
     }, [])
     .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
 
+  const viewerRepostReaction = viewerId
+    ? idx.reactionByPostUserKind.get(`${post.id}:${viewerId}:repost`)
+    : undefined;
+  const viewerLikeReaction = viewerId
+    ? idx.reactionByPostUserKind.get(`${post.id}:${viewerId}:like`)
+    : undefined;
+
   return {
     id: post.id,
     communitySlug: community.slug,
     author: toMemberIdentity(
       author,
-      membership?.role,
+      membership?.status === "active" ? membership?.role : undefined,
       verifiedHandles.has(author.xHandle),
     ),
     body: post.body,
@@ -222,31 +336,9 @@ const toPostRecord = (
     media: post.media,
     xSyncStatus: post.xSyncStatus,
     externalPostId: post.externalPostId,
-    viewerRepostXSyncStatus:
-      snapshot.reactions.find(
-        (entry) =>
-          entry.postId === post.id &&
-          entry.userId === viewerId &&
-          entry.kind === "repost",
-      )?.xSyncStatus,
-    viewerHasLiked: Boolean(
-      viewerId &&
-        snapshot.reactions.find(
-          (entry) =>
-            entry.postId === post.id &&
-            entry.userId === viewerId &&
-            entry.kind === "like",
-        ),
-    ),
-    viewerHasReposted: Boolean(
-      viewerId &&
-        snapshot.reactions.find(
-          (entry) =>
-            entry.postId === post.id &&
-            entry.userId === viewerId &&
-            entry.kind === "repost",
-        ),
-    ),
+    viewerRepostXSyncStatus: viewerRepostReaction?.xSyncStatus,
+    viewerHasLiked: Boolean(viewerLikeReaction),
+    viewerHasReposted: Boolean(viewerRepostReaction),
   } satisfies CommunityPostRecord & {
     viewerHasLiked: boolean;
     viewerHasReposted: boolean;
@@ -254,11 +346,11 @@ const toPostRecord = (
 };
 
 export const listDiscoverFeedPosts = async () => {
-  const snapshot = await readXcomStore();
+  const { snapshot, idx } = await getIndexedSnapshot();
   const viewerId = await getViewerUserId();
 
   return snapshot.posts
-    .map((post) => toPostRecord(snapshot, post.id, viewerId))
+    .map((post) => toPostRecord(idx, post.id, viewerId))
     .filter(
       (post): post is NonNullable<ReturnType<typeof toPostRecord>> => post !== null,
     )
@@ -266,7 +358,7 @@ export const listDiscoverFeedPosts = async () => {
 };
 
 export const getUserProfileView = async (handle: string) => {
-  const snapshot = await readXcomStore();
+  const { snapshot, idx } = await getIndexedSnapshot();
   const viewerId = await getViewerUserId();
 
   // Normalize handle — accept with or without @
@@ -279,10 +371,11 @@ export const getUserProfileView = async (handle: string) => {
     return null;
   }
 
-  const memberships = snapshot.memberships
-    .filter((entry) => entry.userId === user.id && entry.status === "active")
+  const userMemberships = idx.membershipsByUser.get(user.id) ?? [];
+  const memberships = userMemberships
+    .filter((entry) => entry.status === "active")
     .map((entry) => {
-      const community = snapshot.communities.find((c) => c.id === entry.communityId);
+      const community = idx.communitiesById.get(entry.communityId);
       return community
         ? {
             communitySlug: community.slug,
@@ -298,13 +391,13 @@ export const getUserProfileView = async (handle: string) => {
 
   const posts = snapshot.posts
     .filter((entry) => entry.authorUserId === user.id)
-    .map((entry) => toPostRecord(snapshot, entry.id, viewerId))
+    .map((entry) => toPostRecord(idx, entry.id, viewerId))
     .filter(
       (post): post is NonNullable<ReturnType<typeof toPostRecord>> => post !== null,
     )
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
 
-  const viewer = snapshot.users.find((entry) => entry.id === viewerId) ?? null;
+  const viewer = idx.usersById.get(viewerId ?? "") ?? null;
 
   return {
     user: {
@@ -327,10 +420,9 @@ export const getUserProfileView = async (handle: string) => {
 };
 
 export const getCommunityTimelineView = async (slug: string) => {
-  const snapshot = await readXcomStore();
+  const { idx } = await getIndexedSnapshot();
   const viewerId = await getViewerUserId();
-  const viewer =
-    snapshot.users.find((entry) => entry.id === viewerId) ?? null;
+  const viewer = idx.usersById.get(viewerId ?? "") ?? null;
   const communityCards = await listCommunityCards();
   const community = communityCards.find((entry) => entry.slug === slug) ?? null;
 
@@ -338,19 +430,18 @@ export const getCommunityTimelineView = async (slug: string) => {
     return null;
   }
 
-  const rawCommunity = snapshot.communities.find((entry) => entry.slug === slug);
+  const rawCommunity = idx.communitiesBySlug.get(slug);
 
   if (!rawCommunity) {
     return null;
   }
 
-  const viewerMembership = findViewerMembership(snapshot, rawCommunity.id, viewerId);
-  const members = snapshot.memberships
-    .filter(
-      (entry) => entry.communityId === rawCommunity.id && entry.status === "active",
-    )
+  const viewerMembership = findViewerMembership(idx, rawCommunity.id, viewerId);
+  const communityMemberships = idx.membershipsByCommunity.get(rawCommunity.id) ?? [];
+  const members = communityMemberships
+    .filter((entry) => entry.status === "active")
     .reduce<CommunityMemberRecord[]>((items, entry) => {
-      const member = snapshot.users.find((user) => user.id === entry.userId);
+      const member = idx.usersById.get(entry.userId);
 
       if (!member) {
         return items;
@@ -382,9 +473,9 @@ export const getCommunityTimelineView = async (slug: string) => {
       return left.displayName.localeCompare(right.displayName);
     });
 
-  const posts = snapshot.posts
-    .filter((entry) => entry.communityId === rawCommunity.id)
-    .map((entry) => toPostRecord(snapshot, entry.id, viewerId))
+  const communityPosts = idx.postsByCommunity.get(rawCommunity.id) ?? [];
+  const posts = communityPosts
+    .map((entry) => toPostRecord(idx, entry.id, viewerId))
     .filter(
       (post): post is NonNullable<ReturnType<typeof toPostRecord>> => post !== null,
     )

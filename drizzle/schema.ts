@@ -134,6 +134,7 @@ export const posts = pgTable(
       table.communityId,
       table.createdAt,
     ),
+    authorIndex: index("posts_author_user_id_idx").on(table.authorUserId),
   }),
 );
 
@@ -177,6 +178,8 @@ export const postReactions = pgTable(
       table.userId,
       table.kind,
     ),
+    postIndex: index("post_reactions_post_id_idx").on(table.postId),
+    userIndex: index("post_reactions_user_id_idx").on(table.userId),
   }),
 );
 
