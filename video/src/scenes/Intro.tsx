@@ -10,32 +10,31 @@ export const Intro: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Logo scale entrance
-  const logoScale = spring({
-    frame,
+  // Staggered entrance for each part of the logo
+  const xProgress = spring({ frame, fps, config: { damping: 15, stiffness: 120 } });
+  const comProgress = spring({ frame: frame - 4, fps, config: { damping: 15, stiffness: 120 } });
+  const funProgress = spring({ frame: frame - 8, fps, config: { damping: 15, stiffness: 120 } });
+
+  // Tagline fades in after logo
+  const taglineProgress = spring({
+    frame: frame - Math.round(1 * fps),
     fps,
     config: { damping: 200 },
   });
 
-  // Logo opacity
-  const logoOpacity = interpolate(frame, [0, 0.5 * fps], [0, 1], {
+  // Background glow pulses
+  const glowScale = interpolate(frame, [0, 2 * fps], [0.5, 1.2], {
+    extrapolateRight: "clamp",
+  });
+  const glowOpacity = interpolate(frame, [0, 0.5 * fps, 2 * fps], [0, 0.4, 0.15], {
     extrapolateRight: "clamp",
   });
 
-  // Tagline entrance (delayed)
-  const taglineProgress = spring({
-    frame: frame - Math.round(0.8 * fps),
-    fps,
-    config: { damping: 200 },
-  });
-  const taglineY = interpolate(taglineProgress, [0, 1], [30, 0]);
-
-  // Subtle glow pulse
-  const glowOpacity = interpolate(
-    frame,
-    [0, 1 * fps, 2 * fps],
-    [0, 0.3, 0.15],
-    { extrapolateRight: "clamp" },
+  // Subtle line decoration
+  const lineWidth = interpolate(
+    spring({ frame: frame - 5, fps, config: { damping: 200 } }),
+    [0, 1],
+    [0, 300],
   );
 
   return (
@@ -49,25 +48,25 @@ export const Intro: React.FC = () => {
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
+        overflow: "hidden",
       }}
     >
       {/* Background glow */}
       <div
         style={{
           position: "absolute",
-          width: 600,
-          height: 600,
+          width: 700,
+          height: 700,
           borderRadius: "50%",
-          background: `radial-gradient(circle, ${COLORS.ACCENT_BLUE}40, transparent 70%)`,
+          background: `radial-gradient(circle, ${COLORS.ACCENT_BLUE}35, transparent 70%)`,
           opacity: glowOpacity,
+          transform: `scale(${glowScale})`,
         }}
       />
 
-      {/* Logo text */}
+      {/* Logo - staggered entrance */}
       <div
         style={{
-          opacity: logoOpacity,
-          transform: `scale(${0.8 + logoScale * 0.2})`,
           display: "flex",
           alignItems: "baseline",
         }}
@@ -76,12 +75,14 @@ export const Intro: React.FC = () => {
         <span
           style={{
             fontFamily: FONT_FAMILY,
-            fontSize: 120,
+            fontSize: 130,
             fontWeight: 900,
             letterSpacing: -4,
             background: `linear-gradient(135deg, #4FC3F7, ${COLORS.ACCENT_BLUE}, #0D47A1)`,
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
+            opacity: xProgress,
+            transform: `translateY(${interpolate(xProgress, [0, 1], [40, 0])}px)`,
           }}
         >
           x
@@ -90,10 +91,12 @@ export const Intro: React.FC = () => {
         <span
           style={{
             fontFamily: FONT_FAMILY,
-            fontSize: 120,
+            fontSize: 130,
             fontWeight: 900,
             letterSpacing: -4,
             color: COLORS.FOREGROUND,
+            opacity: comProgress,
+            transform: `translateY(${interpolate(comProgress, [0, 1], [40, 0])}px)`,
           }}
         >
           -com
@@ -102,31 +105,44 @@ export const Intro: React.FC = () => {
         <span
           style={{
             fontFamily: FONT_FAMILY,
-            fontSize: 120,
+            fontSize: 130,
             fontWeight: 900,
             letterSpacing: -4,
             color: COLORS.ACCENT_BLUE,
+            opacity: funProgress,
+            transform: `translateY(${interpolate(funProgress, [0, 1], [40, 0])}px)`,
           }}
         >
           .fun
         </span>
       </div>
 
+      {/* Accent line under logo */}
+      <div
+        style={{
+          width: lineWidth,
+          height: 2,
+          background: `linear-gradient(90deg, transparent, ${COLORS.ACCENT_BLUE}, transparent)`,
+          marginTop: 12,
+        }}
+      />
+
       {/* Tagline */}
       <div
         style={{
           opacity: taglineProgress,
-          transform: `translateY(${taglineY}px)`,
-          marginTop: 24,
+          transform: `translateY(${interpolate(taglineProgress, [0, 1], [20, 0])}px)`,
+          marginTop: 20,
         }}
       >
         <span
           style={{
             fontFamily: FONT_FAMILY,
-            fontSize: 32,
+            fontSize: 28,
             fontWeight: 500,
             color: COLORS.COPY_MUTED,
-            letterSpacing: 2,
+            letterSpacing: 4,
+            textTransform: "uppercase",
           }}
         >
           X communities, supercharged

@@ -14,37 +14,27 @@ export const Outro: React.FC = () => {
   const logoProgress = spring({
     frame,
     fps,
-    config: { damping: 200 },
+    config: { damping: 15, stiffness: 120 },
   });
 
-  // URL entrance (delayed)
+  // URL
   const urlProgress = spring({
-    frame: frame - Math.round(0.5 * fps),
+    frame: frame - Math.round(0.4 * fps),
     fps,
     config: { damping: 200 },
   });
 
-  // CTA entrance (delayed more)
+  // CTA
   const ctaProgress = spring({
-    frame: frame - Math.round(1 * fps),
+    frame: frame - Math.round(0.8 * fps),
     fps,
     config: { damping: 200 },
   });
 
-  // Subtle pulse on CTA
-  const ctaPulse = interpolate(
-    frame % (2 * fps),
-    [0, fps, 2 * fps],
-    [1, 1.05, 1],
-  );
-
-  // Background glow
-  const glowOpacity = interpolate(
-    frame,
-    [0, 1 * fps],
-    [0, 0.2],
-    { extrapolateRight: "clamp" },
-  );
+  // Background dual glow
+  const glowOpacity = interpolate(frame, [0, 0.5 * fps], [0, 0.25], {
+    extrapolateRight: "clamp",
+  });
 
   return (
     <div
@@ -57,17 +47,32 @@ export const Outro: React.FC = () => {
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
+        overflow: "hidden",
       }}
     >
-      {/* Background glow */}
+      {/* Dual background glow */}
       <div
         style={{
           position: "absolute",
-          width: 800,
-          height: 800,
+          width: 600,
+          height: 600,
           borderRadius: "50%",
-          background: `radial-gradient(circle, ${COLORS.ACCENT_PINK}30, transparent 70%)`,
+          background: `radial-gradient(circle, ${COLORS.ACCENT_BLUE}30, transparent 70%)`,
           opacity: glowOpacity,
+          left: "30%",
+          top: "20%",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          width: 600,
+          height: 600,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${COLORS.ACCENT_PINK}25, transparent 70%)`,
+          opacity: glowOpacity,
+          right: "25%",
+          bottom: "15%",
         }}
       />
 
@@ -75,7 +80,7 @@ export const Outro: React.FC = () => {
       <div
         style={{
           opacity: logoProgress,
-          transform: `scale(${0.8 + logoProgress * 0.2})`,
+          transform: `scale(${0.85 + logoProgress * 0.15})`,
           display: "flex",
           alignItems: "baseline",
         }}
@@ -83,7 +88,7 @@ export const Outro: React.FC = () => {
         <span
           style={{
             fontFamily: FONT_FAMILY,
-            fontSize: 100,
+            fontSize: 110,
             fontWeight: 900,
             letterSpacing: -4,
             background: `linear-gradient(135deg, #4FC3F7, ${COLORS.ACCENT_BLUE}, #0D47A1)`,
@@ -96,7 +101,7 @@ export const Outro: React.FC = () => {
         <span
           style={{
             fontFamily: FONT_FAMILY,
-            fontSize: 100,
+            fontSize: 110,
             fontWeight: 900,
             letterSpacing: -4,
             color: COLORS.FOREGROUND,
@@ -107,7 +112,7 @@ export const Outro: React.FC = () => {
         <span
           style={{
             fontFamily: FONT_FAMILY,
-            fontSize: 100,
+            fontSize: 110,
             fontWeight: 900,
             letterSpacing: -4,
             color: COLORS.ACCENT_BLUE,
@@ -117,23 +122,27 @@ export const Outro: React.FC = () => {
         </span>
       </div>
 
-      {/* URL */}
+      {/* URL + tagline */}
       <div
         style={{
           opacity: urlProgress,
-          transform: `translateY(${interpolate(urlProgress, [0, 1], [20, 0])}px)`,
-          marginTop: 20,
+          transform: `translateY(${interpolate(urlProgress, [0, 1], [15, 0])}px)`,
+          marginTop: 16,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
         }}
       >
         <span
           style={{
             fontFamily: FONT_FAMILY,
-            fontSize: 28,
+            fontSize: 22,
             fontWeight: 500,
             color: COLORS.COPY_MUTED,
+            letterSpacing: 2,
           }}
         >
-          x-com.fun
+          The home for crypto communities
         </span>
       </div>
 
@@ -141,26 +150,27 @@ export const Outro: React.FC = () => {
       <div
         style={{
           opacity: ctaProgress,
-          transform: `translateY(${interpolate(ctaProgress, [0, 1], [20, 0])}px) scale(${ctaPulse})`,
-          marginTop: 40,
+          transform: `translateY(${interpolate(ctaProgress, [0, 1], [15, 0])}px)`,
+          marginTop: 32,
         }}
       >
         <div
           style={{
-            background: COLORS.ACCENT_PINK,
+            background: `linear-gradient(135deg, ${COLORS.ACCENT_BLUE}, ${COLORS.ACCENT_PINK})`,
             borderRadius: 50,
-            padding: "16px 48px",
+            padding: "14px 44px",
           }}
         >
           <span
             style={{
               fontFamily: FONT_FAMILY,
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: 700,
               color: "#ffffff",
+              letterSpacing: 1,
             }}
           >
-            Join your community today
+            Start for free — x-com.fun
           </span>
         </div>
       </div>

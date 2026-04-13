@@ -1,23 +1,12 @@
-import { Sequence, useVideoConfig } from "remotion";
-import { Video as RemotionVideo } from "@remotion/media";
-import { staticFile } from "remotion";
+import { useVideoConfig } from "remotion";
 import { TransitionSeries, linearTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 import { Intro } from "./scenes/Intro";
 import { Outro } from "./scenes/Outro";
 import { VideoOverlays } from "./scenes/VideoOverlays";
+import { ProgressBar } from "./components/ProgressBar";
 import { frames, VIDEO } from "./utils/constants";
-
-/**
- * Main composition.
- *
- * Structure:
- *   1. Intro (3s) - Logo animation
- *   2. Screen recording with overlays - trimmed & sped up for dynamism
- *   3. Outro (6s) - Logo + CTA
- *
- * The recording is 1280x720, we scale it to fill 1920x1080.
- */
+import { getTotalVideoOverlaysDuration } from "./scenes/VideoOverlays";
 
 const TRANSITION = (
   <TransitionSeries.Transition
@@ -27,28 +16,30 @@ const TRANSITION = (
 );
 
 export const Video: React.FC = () => {
-  const { fps } = useVideoConfig();
+  const videoDuration = getTotalVideoOverlaysDuration(VIDEO.FPS);
 
   return (
-    <TransitionSeries>
-      {/* Intro */}
-      <TransitionSeries.Sequence durationInFrames={frames(3)}>
-        <Intro />
-      </TransitionSeries.Sequence>
+    <div style={{ width: VIDEO.WIDTH, height: VIDEO.HEIGHT, position: "relative" }}>
+      <TransitionSeries>
+        <TransitionSeries.Sequence durationInFrames={frames(3)}>
+          <Intro />
+        </TransitionSeries.Sequence>
 
-      {TRANSITION}
+        {TRANSITION}
 
-      {/* Screen recording with overlays */}
-      <TransitionSeries.Sequence durationInFrames={frames(70)}>
-        <VideoOverlays />
-      </TransitionSeries.Sequence>
+        <TransitionSeries.Sequence durationInFrames={videoDuration}>
+          <VideoOverlays />
+        </TransitionSeries.Sequence>
 
-      {TRANSITION}
+        {TRANSITION}
 
-      {/* Outro */}
-      <TransitionSeries.Sequence durationInFrames={frames(4)}>
-        <Outro />
-      </TransitionSeries.Sequence>
-    </TransitionSeries>
+        <TransitionSeries.Sequence durationInFrames={frames(4)}>
+          <Outro />
+        </TransitionSeries.Sequence>
+      </TransitionSeries>
+
+      {/* Global progress bar */}
+      <ProgressBar />
+    </div>
   );
 };

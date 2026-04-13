@@ -13,6 +13,8 @@ type Segment = {
   labelPosition?: "bottom" | "top" | "center";
   labelAccent?: string;
   blur?: boolean;
+  /** Zoom target: [originX%, originY%] - subtle zoom-in during this segment */
+  zoom?: [number, number];
 };
 
 const CHROME_OFFSET = 115;
@@ -27,19 +29,19 @@ const SEGMENTS: Segment[] = [
   // Approaching "Get started"
   { sourceStart: 8, sourceEnd: 9, speed: 2 },
   // CLICK "Get started"
-  { sourceStart: 9, sourceEnd: 10, speed: 0.8 },
+  { sourceStart: 9, sourceEnd: 10, speed: 0.8, zoom: [55, 65] },
   // Connect X page
   { sourceStart: 10, sourceEnd: 11, speed: 2,
     label: "One-click login via X", labelAccent: COLORS.ACCENT_BLUE },
   // CLICK "Connect with X"
-  { sourceStart: 11, sourceEnd: 12, speed: 0.8 },
+  { sourceStart: 11, sourceEnd: 12, speed: 0.8, zoom: [50, 50] },
   // OAuth loading
   { sourceStart: 12, sourceEnd: 14, speed: 3 },
   // OAuth page
   { sourceStart: 14, sourceEnd: 16, speed: 2,
     label: "Secure OAuth 2.0", labelSize: "medium", labelAccent: COLORS.ACCENT_GREEN },
   // CLICK "Authorize app"
-  { sourceStart: 16, sourceEnd: 17.5, speed: 0.8 },
+  { sourceStart: 16, sourceEnd: 17.5, speed: 0.8, zoom: [50, 55] },
   // Auth processing
   { sourceStart: 17.5, sourceEnd: 18, speed: 2 },
   // SKIP 18-24s
@@ -47,7 +49,7 @@ const SEGMENTS: Segment[] = [
   { sourceStart: 24, sourceEnd: 28, speed: 3,
     label: "You're in", labelSize: "medium", labelAccent: COLORS.ACCENT_GREEN },
   // CLICK "New Community"
-  { sourceStart: 28, sourceEnd: 29.5, speed: 0.8,
+  { sourceStart: 28, sourceEnd: 29.5, speed: 0.8, zoom: [15, 35],
     label: "Create a community", labelAccent: COLORS.ACCENT_PINK },
   // Navigate to form
   { sourceStart: 29.5, sourceEnd: 30, speed: 2 },
@@ -55,11 +57,11 @@ const SEGMENTS: Segment[] = [
   { sourceStart: 30, sourceEnd: 34, speed: 3,
     label: "Name your community", labelSize: "medium" },
   // CLICK name field
-  { sourceStart: 34, sourceEnd: 35, speed: 0.8 },
+  { sourceStart: 34, sourceEnd: 35, speed: 0.8, zoom: [50, 35] },
   // Typing description
   { sourceStart: 35, sourceEnd: 44, speed: 4 },
   // CLICK banner upload
-  { sourceStart: 44, sourceEnd: 45.5, speed: 0.8,
+  { sourceStart: 44, sourceEnd: 45.5, speed: 0.8, zoom: [50, 60],
     label: "Add a banner", labelSize: "medium" },
   // Banner upload rest
   { sourceStart: 45.5, sourceEnd: 48, speed: 3 },
@@ -68,7 +70,7 @@ const SEGMENTS: Segment[] = [
   // Banner loaded
   { sourceStart: 56, sourceEnd: 57, speed: 1.5 },
   // CLICK "Create community"
-  { sourceStart: 57, sourceEnd: 58, speed: 0.8 },
+  { sourceStart: 57, sourceEnd: 58, speed: 0.8, zoom: [35, 80] },
   // Community created
   { sourceStart: 58, sourceEnd: 62, speed: 2,
     label: "Community ready", labelAccent: COLORS.ACCENT_GREEN },
@@ -77,19 +79,19 @@ const SEGMENTS: Segment[] = [
   { sourceStart: 85, sourceEnd: 87, speed: 0.8,
     label: "Write, attach, post", labelAccent: COLORS.ACCENT_BLUE },
   // CLICK "Post"
-  { sourceStart: 87, sourceEnd: 88, speed: 0.6 },
+  { sourceStart: 87, sourceEnd: 88, speed: 0.6, zoom: [65, 80] },
   // Post publishing
   { sourceStart: 88, sourceEnd: 92, speed: 1.5,
     label: "Auto-synced to X", labelSize: "medium", labelAccent: COLORS.ACCENT_GREEN },
   // CLICK like
-  { sourceStart: 92, sourceEnd: 93, speed: 0.7,
+  { sourceStart: 92, sourceEnd: 93, speed: 0.7, zoom: [45, 85],
     label: "Like, comment, retweet", labelAccent: COLORS.ACCENT_PINK },
   // CLICK comment + RT
-  { sourceStart: 93, sourceEnd: 95, speed: 0.8 },
+  { sourceStart: 93, sourceEnd: 95, speed: 0.8, zoom: [45, 85] },
   // After interactions
   { sourceStart: 95, sourceEnd: 96, speed: 1.5 },
   // CLICK post → X
-  { sourceStart: 96, sourceEnd: 97.5, speed: 0.8,
+  { sourceStart: 96, sourceEnd: 97.5, speed: 0.8, zoom: [50, 40],
     label: "View on X", labelAccent: COLORS.ACCENT_BLUE },
   // X.com synced
   { sourceStart: 97.5, sourceEnd: 100, speed: 1,
@@ -155,12 +157,41 @@ const BlurOverlay: React.FC = () => {
   );
 };
 
+const CROSSFADE_FRAMES = 8; // ~0.27s crossfade
+
 const CroppedVideo: React.FC<{
   speed: number;
   sourceStart: number;
   sourceEnd: number;
-}> = ({ speed, sourceStart, sourceEnd }) => {
-  const { fps } = useVideoConfig();
+  fadeIn?: boolean;
+  fadeOut?: boolean;
+  /** Zoom origin [x%, y%] — subtle zoom-in during this segment */
+  zoom?: [number, number];
+}> = ({ speed, sourceStart, sourceEnd, fadeIn, fadeOut, zoom }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+
+  // Crossfade envelope
+  let opacity = 1;
+  if (fadeIn) {
+    opacity = Math.min(opacity, interpolate(frame, [0, CROSSFADE_FRAMES], [0, 1], {
+      extrapolateLeft: "clamp", extrapolateRight: "clamp",
+    }));
+  }
+  if (fadeOut) {
+    opacity = Math.min(opacity, interpolate(frame, [durationInFrames - CROSSFADE_FRAMES, durationInFrames], [1, 0], {
+      extrapolateLeft: "clamp", extrapolateRight: "clamp",
+    }));
+  }
+
+  // Zoom: animate from 1 to 1.08 scale over the segment duration
+  const zoomScale = zoom
+    ? interpolate(frame, [0, durationInFrames], [1, 1.08], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      })
+    : 1;
+  const zoomOrigin = zoom ? `${zoom[0]}% ${zoom[1]}%` : "50% 50%";
 
   return (
     <div
@@ -169,6 +200,9 @@ const CroppedVideo: React.FC<{
         inset: 0,
         overflow: "hidden",
         background: "#000",
+        opacity,
+        transform: `scale(${zoomScale})`,
+        transformOrigin: zoomOrigin,
       }}
     >
       <Video
@@ -225,7 +259,14 @@ export const VideoOverlays: React.FC = () => {
         position: "relative",
       }}
     >
-      {sequences.map((seq, i) => (
+      {sequences.map((seq, i) => {
+        // Detect source time jumps (>2s gap) for crossfade
+        const prevEnd = i > 0 ? SEGMENTS[i - 1].sourceEnd : seq.segment.sourceStart;
+        const nextStart = i < SEGMENTS.length - 1 ? SEGMENTS[i + 1].sourceStart : seq.segment.sourceEnd;
+        const hasJumpBefore = seq.segment.sourceStart - prevEnd > 2;
+        const hasJumpAfter = nextStart - seq.segment.sourceEnd > 2;
+
+        return (
         <Sequence
           key={i}
           from={seq.from}
@@ -236,6 +277,9 @@ export const VideoOverlays: React.FC = () => {
             speed={seq.segment.speed}
             sourceStart={seq.segment.sourceStart}
             sourceEnd={seq.segment.sourceEnd}
+            fadeIn={hasJumpBefore}
+            fadeOut={hasJumpAfter || !!seq.segment.blur}
+            zoom={seq.segment.zoom}
           />
 
           {seq.segment.blur && <BlurOverlay />}
@@ -251,7 +295,8 @@ export const VideoOverlays: React.FC = () => {
             />
           )}
         </Sequence>
-      ))}
+        );
+      })}
     </div>
   );
 };
