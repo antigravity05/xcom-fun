@@ -42,6 +42,7 @@ yarn-error.log*
 # dev runtime artifacts
 .codex-runtime/
 .claude/
+.fuse_hidden*
 
 # vercel
 .vercel
