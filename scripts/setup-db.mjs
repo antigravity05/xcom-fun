@@ -141,13 +141,13 @@ async function seedData() {
 
   // Users
   const usersData = [
-    { id: "a0000000-0000-0000-0000-000000000001", xUserId: "x-ahmed", xHandle: "@ahmedx", displayName: "Ahmed", avatar: "AH" },
-    { id: "a0000000-0000-0000-0000-000000000002", xUserId: "x-shuvonsec", xHandle: "@shuvonsec", displayName: "Shuvonsec", avatar: "S" },
-    { id: "a0000000-0000-0000-0000-000000000003", xUserId: "x-meatsos", xHandle: "@SpaceOutJim", displayName: "MeatSOS", avatar: "M" },
-    { id: "a0000000-0000-0000-0000-000000000004", xUserId: "x-rdbotato", xHandle: "@rdbotato", displayName: "rdbotato", avatar: "R" },
-    { id: "a0000000-0000-0000-0000-000000000005", xUserId: "x-kaka", xHandle: "@Kaka", displayName: "Kaka", avatar: "K" },
-    { id: "a0000000-0000-0000-0000-000000000006", xUserId: "x-marin", xHandle: "@marinbuilds", displayName: "Marin", avatar: "M" },
-    { id: "a0000000-0000-0000-0000-000000000007", xUserId: "x-aya", xHandle: "@ayaops", displayName: "Aya", avatar: "A" },
+    { id: "a0000000-0000-0000-0000-000000000001", xUserId: "x-alice", xHandle: "@alice", displayName: "Alice", avatar: "A" },
+    { id: "a0000000-0000-0000-0000-000000000002", xUserId: "x-bob", xHandle: "@bob", displayName: "Bob", avatar: "B" },
+    { id: "a0000000-0000-0000-0000-000000000003", xUserId: "x-charlie", xHandle: "@charlie", displayName: "Charlie", avatar: "C" },
+    { id: "a0000000-0000-0000-0000-000000000004", xUserId: "x-dave", xHandle: "@dave", displayName: "Dave", avatar: "D" },
+    { id: "a0000000-0000-0000-0000-000000000005", xUserId: "x-eve", xHandle: "@eve", displayName: "Eve", avatar: "E" },
+    { id: "a0000000-0000-0000-0000-000000000006", xUserId: "x-frank", xHandle: "@frank", displayName: "Frank", avatar: "F" },
+    { id: "a0000000-0000-0000-0000-000000000007", xUserId: "x-grace", xHandle: "@grace", displayName: "Grace", avatar: "G" },
   ];
 
   for (const u of usersData) {

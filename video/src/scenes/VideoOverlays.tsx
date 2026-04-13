@@ -13,88 +13,83 @@ type Segment = {
   labelPosition?: "bottom" | "top" | "center";
   labelAccent?: string;
   blur?: boolean;
-  /** Zoom target: [originX%, originY%] - subtle zoom-in during this segment */
-  zoom?: [number, number];
+  /** Zoom pulse: [originX%, originY%, intensity] */
+  zoom?: [number, number, number];
 };
 
-const CHROME_OFFSET = 115;
+const CHROME_OFFSET = 140;
 
 const SEGMENTS: Segment[] = [
   // SKIP 0-2s (OBS studio)
-  // Landing hero
-  { sourceStart: 2, sourceEnd: 4, speed: 1.3,
+  // Landing hero — zoom out reveal
+  { sourceStart: 2, sourceEnd: 4, speed: 1.3, zoom: [50, 40, -0.1],
     label: "X communities are back", labelSize: "hero", labelAccent: COLORS.ACCENT_BLUE },
   // Landing scroll
   { sourceStart: 4, sourceEnd: 8, speed: 3 },
   // Approaching "Get started"
   { sourceStart: 8, sourceEnd: 9, speed: 2 },
-  // CLICK "Get started"
-  { sourceStart: 9, sourceEnd: 10, speed: 0.8, zoom: [55, 65] },
+  // CLICK "Get started" — zoom on button
+  { sourceStart: 9, sourceEnd: 10, speed: 0.8, zoom: [55, 65, 0.25] },
   // Connect X page
   { sourceStart: 10, sourceEnd: 11, speed: 2,
     label: "One-click login via X", labelAccent: COLORS.ACCENT_BLUE },
   // CLICK "Connect with X"
-  { sourceStart: 11, sourceEnd: 12, speed: 0.8, zoom: [50, 50] },
+  { sourceStart: 11, sourceEnd: 12, speed: 0.8, zoom: [50, 45, 0.25] },
   // OAuth loading
   { sourceStart: 12, sourceEnd: 14, speed: 3 },
   // OAuth page
   { sourceStart: 14, sourceEnd: 16, speed: 2,
     label: "Secure OAuth 2.0", labelSize: "medium", labelAccent: COLORS.ACCENT_GREEN },
-  // CLICK "Authorize app"
-  { sourceStart: 16, sourceEnd: 17.5, speed: 0.8, zoom: [50, 55] },
-  // Auth processing
-  { sourceStart: 17.5, sourceEnd: 18, speed: 2 },
+  // CLICK "Authorize app" + see it load
+  { sourceStart: 16, sourceEnd: 19, speed: 0.8, zoom: [50, 50, 0.2] },
   // SKIP 18-24s
   // Explore connected
   { sourceStart: 24, sourceEnd: 28, speed: 3,
     label: "You're in", labelSize: "medium", labelAccent: COLORS.ACCENT_GREEN },
   // CLICK "New Community"
-  { sourceStart: 28, sourceEnd: 29.5, speed: 0.8, zoom: [15, 35],
+  { sourceStart: 28, sourceEnd: 29.5, speed: 0.8, zoom: [15, 30, 0.3],
     label: "Create a community", labelAccent: COLORS.ACCENT_PINK },
   // Navigate to form
   { sourceStart: 29.5, sourceEnd: 30, speed: 2 },
-  // Form: typing name
-  { sourceStart: 30, sourceEnd: 34, speed: 3,
+  // Form: typing name — zoom on the form
+  { sourceStart: 30, sourceEnd: 34, speed: 3, zoom: [45, 35, 0.3],
     label: "Name your community", labelSize: "medium" },
   // CLICK name field
-  { sourceStart: 34, sourceEnd: 35, speed: 0.8, zoom: [50, 35] },
-  // Typing description
-  { sourceStart: 35, sourceEnd: 44, speed: 4 },
+  { sourceStart: 34, sourceEnd: 35, speed: 0.8, zoom: [45, 35, 0.3] },
+  // Typing description — zoom on form area
+  { sourceStart: 35, sourceEnd: 44, speed: 4, zoom: [45, 45, 0.25] },
   // CLICK banner upload
-  { sourceStart: 44, sourceEnd: 45.5, speed: 0.8, zoom: [50, 60],
+  { sourceStart: 44, sourceEnd: 45.5, speed: 0.8, zoom: [45, 55, 0.25],
     label: "Add a banner", labelSize: "medium" },
   // Banner upload rest
   { sourceStart: 45.5, sourceEnd: 48, speed: 3 },
   // File picker (banner)
   { sourceStart: 48, sourceEnd: 56, speed: 10 },
-  // Banner loaded
-  { sourceStart: 56, sourceEnd: 57, speed: 1.5 },
+  // Banner loaded — zoom on the banner
+  { sourceStart: 56, sourceEnd: 57, speed: 1.5, zoom: [45, 50, 0.2] },
   // CLICK "Create community"
-  { sourceStart: 57, sourceEnd: 58, speed: 0.8, zoom: [35, 80] },
-  // Community created
-  { sourceStart: 58, sourceEnd: 62, speed: 2,
+  { sourceStart: 57, sourceEnd: 58, speed: 0.8, zoom: [35, 75, 0.3] },
+  // Community created — zoom out reveal
+  { sourceStart: 58, sourceEnd: 62, speed: 2, zoom: [50, 40, -0.1],
     label: "Community ready", labelAccent: COLORS.ACCENT_GREEN },
   // SKIP 62-85s
-  // Composer ready
-  { sourceStart: 85, sourceEnd: 87, speed: 0.8,
+  // Composer ready — zoom on composer
+  { sourceStart: 85, sourceEnd: 87, speed: 0.8, zoom: [45, 40, 0.25],
     label: "Write, attach, post", labelAccent: COLORS.ACCENT_BLUE },
   // CLICK "Post"
-  { sourceStart: 87, sourceEnd: 88, speed: 0.6, zoom: [65, 80] },
-  // Post publishing
-  { sourceStart: 88, sourceEnd: 92, speed: 1.5,
+  { sourceStart: 87, sourceEnd: 88, speed: 0.6, zoom: [65, 65, 0.3] },
+  // Post publishing — zoom out to show result
+  { sourceStart: 88, sourceEnd: 92, speed: 1.5, zoom: [50, 50, -0.08],
     label: "Auto-synced to X", labelSize: "medium", labelAccent: COLORS.ACCENT_GREEN },
-  // CLICK like
-  { sourceStart: 92, sourceEnd: 93, speed: 0.7, zoom: [45, 85],
+  // CLICK like — zoom on interactions
+  { sourceStart: 92, sourceEnd: 93, speed: 0.7, zoom: [45, 80, 0.25],
     label: "Like, comment, retweet", labelAccent: COLORS.ACCENT_PINK },
-  // CLICK comment + RT
-  { sourceStart: 93, sourceEnd: 95, speed: 0.8, zoom: [45, 85] },
-  // After interactions
-  { sourceStart: 95, sourceEnd: 96, speed: 1.5 },
+  // SKIP src 93-96
   // CLICK post → X
-  { sourceStart: 96, sourceEnd: 97.5, speed: 0.8, zoom: [50, 40],
+  { sourceStart: 96, sourceEnd: 97.5, speed: 0.8, zoom: [50, 40, 0.2],
     label: "View on X", labelAccent: COLORS.ACCENT_BLUE },
-  // X.com synced
-  { sourceStart: 97.5, sourceEnd: 100, speed: 1,
+  // X.com synced — zoom out reveal
+  { sourceStart: 97.5, sourceEnd: 100, speed: 1, zoom: [50, 35, -0.1],
     label: "Everything syncs", labelSize: "hero", labelAccent: COLORS.ACCENT_GREEN },
 ];
 
@@ -165,8 +160,8 @@ const CroppedVideo: React.FC<{
   sourceEnd: number;
   fadeIn?: boolean;
   fadeOut?: boolean;
-  /** Zoom origin [x%, y%] — subtle zoom-in during this segment */
-  zoom?: [number, number];
+  /** Zoom: [originX%, originY%, intensity] — pulse zoom (sin curve, no jump) */
+  zoom?: [number, number, number];
 }> = ({ speed, sourceStart, sourceEnd, fadeIn, fadeOut, zoom }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -184,34 +179,43 @@ const CroppedVideo: React.FC<{
     }));
   }
 
-  // Zoom: animate from 1 to 1.08 scale over the segment duration
-  const zoomScale = zoom
-    ? interpolate(frame, [0, durationInFrames], [1, 1.08], {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
-      })
-    : 1;
+  // Zoom hold: ramp up 20%, hold 60%, ramp down 20%
+  let zoomScale = 1;
+  if (zoom) {
+    const progress = frame / durationInFrames;
+    if (progress < 0.2) {
+      // Ramp up
+      zoomScale = 1 + zoom[2] * (progress / 0.2);
+    } else if (progress < 0.8) {
+      // Hold
+      zoomScale = 1 + zoom[2];
+    } else {
+      // Ramp down
+      zoomScale = 1 + zoom[2] * (1 - (progress - 0.8) / 0.2);
+    }
+  }
   const zoomOrigin = zoom ? `${zoom[0]}% ${zoom[1]}%` : "50% 50%";
 
   return (
     <div
       style={{
         position: "absolute",
-        inset: 0,
+        top: 0,
+        left: 0,
+        width: VIDEO.WIDTH,
+        height: VIDEO.CONTENT_HEIGHT,
         overflow: "hidden",
         background: "#000",
         opacity,
-        transform: `scale(${zoomScale})`,
-        transformOrigin: zoomOrigin,
       }}
     >
       <Video
         src={staticFile("recording.mp4")}
         style={{
           width: VIDEO.WIDTH,
-          height: VIDEO.HEIGHT,
+          height: VIDEO.WIDTH * 720 / 1280, // maintain 16:9 from source
           position: "absolute",
-          top: -CHROME_OFFSET,
+          top: -CHROME_OFFSET * (VIDEO.CONTENT_HEIGHT / VIDEO.HEIGHT),
           left: 0,
         }}
         muted
@@ -225,7 +229,7 @@ const CroppedVideo: React.FC<{
           bottom: 0,
           left: 0,
           width: VIDEO.WIDTH,
-          height: CHROME_OFFSET + 50,
+          height: 80,
           background: "linear-gradient(to bottom, transparent 0%, #000 45%)",
           zIndex: 5,
         }}
@@ -290,7 +294,6 @@ export const VideoOverlays: React.FC = () => {
               enterFrame={frames(0.2)}
               exitFrame={seq.duration - frames(0.3)}
               size={seq.segment.labelSize || "large"}
-              position={seq.segment.labelPosition || "bottom"}
               accent={seq.segment.labelAccent}
             />
           )}

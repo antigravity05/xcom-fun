@@ -24,7 +24,7 @@ export const ProgressBar: React.FC = () => {
         bottom: 0,
         left: 0,
         width: VIDEO.WIDTH,
-        height: 3,
+        height: 4,
         background: "rgba(255,255,255,0.08)",
         zIndex: 1000,
         opacity,

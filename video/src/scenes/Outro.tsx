@@ -4,7 +4,13 @@ import {
   spring,
   interpolate,
 } from "remotion";
-import { COLORS, FONT_FAMILY } from "../utils/constants";
+import { loadFont } from "@remotion/google-fonts/Inter";
+import { COLORS } from "../utils/constants";
+
+const { fontFamily: FONT_FAMILY } = loadFont("normal", {
+  weights: ["400", "600", "800", "900"],
+  subsets: ["latin"],
+});
 
 export const Outro: React.FC = () => {
   const frame = useCurrentFrame();
@@ -170,7 +176,7 @@ export const Outro: React.FC = () => {
               letterSpacing: 1,
             }}
           >
-            Start for free — x-com.fun
+            Create your community
           </span>
         </div>
       </div>

@@ -4,7 +4,13 @@ import {
   spring,
   interpolate,
 } from "remotion";
-import { COLORS, FONT_FAMILY } from "../utils/constants";
+import { loadFont } from "@remotion/google-fonts/Inter";
+import { COLORS } from "../utils/constants";
+
+const { fontFamily: FONT_FAMILY } = loadFont("normal", {
+  weights: ["400", "600", "800", "900"],
+  subsets: ["latin"],
+});
 
 export const Intro: React.FC = () => {
   const frame = useCurrentFrame();
@@ -145,7 +151,7 @@ export const Intro: React.FC = () => {
             textTransform: "uppercase",
           }}
         >
-          X communities, supercharged
+          X communities are back.
         </span>
       </div>
     </div>

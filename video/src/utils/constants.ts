@@ -2,6 +2,8 @@ export const VIDEO = {
   WIDTH: 1920,
   HEIGHT: 1080,
   FPS: 30,
+  BANNER_HEIGHT: 70,
+  CONTENT_HEIGHT: 1010, // 1080 - 70
 } as const;
 
 // Screenshot dimensions and chrome crop values

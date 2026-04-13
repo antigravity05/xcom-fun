@@ -10,7 +10,7 @@ This guide covers deploying xcom.fun to production with Vercel + Neon PostgreSQL
 2. Create a new project (pick the region closest to your users)
 3. Copy the **connection string** — it looks like:
    ```
-   postgresql://neondb_owner:abc123@ep-cool-name-123456.us-east-2.aws.neon.tech/neondb?sslmode=require
+   postgresql://YOUR_USER:YOUR_PASSWORD@YOUR_HOST/YOUR_DB?sslmode=require
    ```
 4. Save it — this is your `DATABASE_URL`
 
