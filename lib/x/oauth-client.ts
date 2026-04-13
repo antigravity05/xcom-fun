@@ -148,6 +148,11 @@ export const getXUserProfile = async (accessToken: string): Promise<XUserProfile
     throw new Error(`Failed to fetch user profile: ${error}`);
   }
 
-  const data = await response.json() as { data: XUserProfile };
-  return data.data;
+  const data = await response.json() as { data: { id: string; username: string; name: string; profile_image_url?: string } };
+  return {
+    id: data.data.id,
+    username: data.data.username,
+    name: data.data.name,
+    profileImageUrl: data.data.profile_image_url,
+  };
 };

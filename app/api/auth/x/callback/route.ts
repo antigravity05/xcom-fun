@@ -252,16 +252,14 @@ export async function GET(request: Request) {
     );
 
     if (!user) {
+      const fallbackAvatar = userProfile.profileImageUrl
+        ?? `https://unavatar.io/twitter/${userProfile.username}`;
       const newUser: XcomStoreUser = {
         id: randomUUID(),
         xUserId: userProfile.id,
         xHandle: `@${userProfile.username}`,
         displayName: userProfile.name,
-        avatar: userProfile.name
-          .split(" ")
-          .slice(0, 2)
-          .map((part) => part.slice(0, 1).toUpperCase())
-          .join(""),
+        avatar: fallbackAvatar,
       };
 
       await upsertUserInDb(newUser);
@@ -273,6 +271,22 @@ export async function GET(request: Request) {
       }
 
       user = newUser;
+    } else if (userProfile.profileImageUrl && (!user.avatar || !user.avatar.startsWith("http"))) {
+      // Existing user without a proper avatar, update it
+      try {
+        if (process.env.DATABASE_URL) {
+          const { getDb } = await import("@/lib/database/client");
+          const { users: usersTable } = await import("@/drizzle/schema");
+          const { eq } = await import("drizzle-orm");
+          const db = getDb();
+          await db.update(usersTable).set({
+            avatarUrl: userProfile.profileImageUrl,
+          }).where(eq(usersTable.id, user.id));
+        }
+        user = { ...user, avatar: userProfile.profileImageUrl };
+      } catch (err) {
+        console.error("[auth/callback] Failed to update user avatar:", err);
+      }
     }
 
     const encryptedAccessToken = encryptToken(tokenResponse.access_token);
