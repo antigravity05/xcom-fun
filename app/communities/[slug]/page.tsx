@@ -14,7 +14,10 @@ import {
   setMemberRoleAction,
 } from "@/app/xcom-actions";
 import { CommunityHeader } from "@/components/community/community-header";
-import { CommunityComposerLauncher } from "@/components/community/community-composer-launcher";
+import {
+  CommunityComposerLauncher,
+  CommunityComposerSidebarButton,
+} from "@/components/community/community-composer-launcher";
 import { PostFeed } from "@/components/community/post-feed";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { XcomChrome } from "@/components/layout/xcom-chrome";
@@ -92,7 +95,9 @@ export default async function CommunityPage({
     viewerMembershipStatus === "active" &&
     !(viewerRole === "admin" && activeAdminCount <= 1);
 
-  return (
+  const canPost = viewerMembershipStatus === "active" && viewer;
+
+  const pageTree = (
     <XcomChrome
       active="community"
       viewer={
@@ -100,6 +105,7 @@ export default async function CommunityPage({
           ? { displayName: viewer.displayName, xHandle: viewer.xHandle, avatar: viewer.avatar }
           : null
       }
+      postTrigger={canPost ? <CommunityComposerSidebarButton /> : undefined}
     >
       <div className="grid w-full max-w-[990px] xl:grid-cols-[600px_350px]">
         <div className="min-w-0 lg:border-x border-white/[0.08]">
@@ -255,23 +261,6 @@ export default async function CommunityPage({
                 </div>
               ) : null}
 
-              {viewerMembershipStatus === "active" && viewer ? (
-                <CommunityComposerLauncher
-                  communitySlug={community.slug}
-                  communityName={community.name}
-                  communityThumbnailUrl={community.thumbnailUrl ?? null}
-                  activeTab={activeTab}
-                  viewer={{
-                    avatar: viewer.avatar,
-                    displayName: viewer.displayName,
-                  }}
-                  accentColor={community.accentColor}
-                  coverTo={community.coverTo}
-                  coverFrom={community.coverFrom}
-                  action={createPostAction}
-                />
-              ) : null}
-
               <section>
                 <PostFeed
                   posts={posts}
@@ -363,6 +352,31 @@ export default async function CommunityPage({
       </div>
     </XcomChrome>
   );
+
+  // Members who can post get the composer provider wrapping the whole tree —
+  // the sidebar "Post" button + mobile FAB + modal all live inside it.
+  if (canPost) {
+    return (
+      <CommunityComposerLauncher
+        communitySlug={community.slug}
+        communityName={community.name}
+        communityThumbnailUrl={community.thumbnailUrl ?? null}
+        activeTab={activeTab}
+        viewer={{
+          avatar: viewer.avatar,
+          displayName: viewer.displayName,
+        }}
+        accentColor={community.accentColor}
+        coverTo={community.coverTo}
+        coverFrom={community.coverFrom}
+        action={createPostAction}
+      >
+        {pageTree}
+      </CommunityComposerLauncher>
+    );
+  }
+
+  return pageTree;
 }
 
 const MemberRow = ({

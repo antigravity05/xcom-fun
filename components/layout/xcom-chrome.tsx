@@ -48,10 +48,21 @@ type XcomChromeProps = {
     xHandle: string;
     avatar?: string;
   } | null;
+  /**
+   * Optional page-specific sidebar CTA. On community pages this is the
+   * X-style "Post" button that opens the composer modal. Renders first in
+   * the primary nav group so it's the most prominent action.
+   */
+  postTrigger?: React.ReactNode;
   children: React.ReactNode;
 };
 
-export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
+export const XcomChrome = ({
+  active,
+  viewer,
+  postTrigger,
+  children,
+}: XcomChromeProps) => {
   const viewerAvatarUrl = viewer?.avatar?.startsWith("http") ? viewer.avatar : null;
   const viewerAvatarInitial = viewer?.displayName.slice(0, 1).toUpperCase() ?? "X";
 
@@ -100,13 +111,16 @@ export const XcomChrome = ({ active, viewer, children }: XcomChromeProps) => {
                 />
               ) : null}
 
+              {/* Page-specific CTA (e.g. "Post" on community pages) */}
+              {postTrigger}
+
               {viewer ? (
                 <Link
                   href="/create-community"
-                  className="mt-4 flex size-[50px] items-center justify-center rounded-full bg-accent-secondary text-white transition hover:brightness-110 xl:size-auto xl:px-6 xl:py-3.5"
+                  className="mt-2 flex size-[50px] items-center justify-center rounded-full border border-accent-secondary/40 text-accent-secondary transition hover:bg-accent-secondary/10 xl:size-auto xl:px-6 xl:py-3"
                 >
                   <PenSquare className="size-5 xl:hidden" />
-                  <span className="hidden text-[17px] font-bold xl:block">
+                  <span className="hidden text-[15px] font-bold xl:block">
                     New Community
                   </span>
                 </Link>
