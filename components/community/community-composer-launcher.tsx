@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { PenSquare, X } from "lucide-react";
 import PostComposer from "@/components/community/post-composer";
 
@@ -19,17 +26,27 @@ type Props = {
   coverTo: string;
   coverFrom: string;
   action: (formData: FormData) => Promise<void>;
+  /**
+   * Wrapped page tree. The launcher needs to enclose both the XcomChrome
+   * sidebar (where <CommunityComposerSidebarButton /> lives) and the page body,
+   * so the shared context can reach the trigger button.
+   */
+  children: React.ReactNode;
 };
+
+type ComposerContextValue = { open: () => void };
+const ComposerCtx = createContext<ComposerContextValue | null>(null);
 
 /**
  * X-style post launcher.
  *
- * Replaces the inline composer with:
- *   1. A compact "What's happening?" trigger bar in the timeline.
- *   2. A floating "+" FAB on mobile.
- *   3. A modal that hosts the full PostComposer when either is clicked.
+ * Wraps the page tree and provides:
+ *   1. A context so <CommunityComposerSidebarButton /> (rendered in the
+ *      sidebar via XcomChrome's `postTrigger` prop) can open the modal.
+ *   2. A mobile FAB at bottom-right (sidebar is hidden on mobile).
+ *   3. The modal itself, hosting PostComposer.
  *
- * The server action runs a `redirect()` on success, which unmounts the modal
+ * The server action calls `redirect()` on success, which unmounts the modal
  * via full navigation — no manual close-on-success needed.
  */
 export function CommunityComposerLauncher({
@@ -42,12 +59,10 @@ export function CommunityComposerLauncher({
   coverTo,
   coverFrom,
   action,
+  children,
 }: Props) {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-
-  const viewerAvatarUrl = viewer?.avatar?.startsWith("http") ? viewer.avatar : null;
-  const viewerInitial = viewer?.displayName?.[0]?.toUpperCase() ?? "X";
 
   // Body scroll lock while modal is open
   useEffect(() => {
@@ -59,7 +74,7 @@ export function CommunityComposerLauncher({
     };
   }, [open]);
 
-  // Escape to close + focus trap-lite
+  // Escape to close
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -75,48 +90,17 @@ export function CommunityComposerLauncher({
   const openModal = () => setOpen(true);
   const closeModal = () => setOpen(false);
 
+  const ctxValue = useMemo<ComposerContextValue>(
+    () => ({ open: openModal }),
+    [],
+  );
+
   return (
-    <>
-      {/* ── Inline trigger — mimics X's "What's happening?" bar ── */}
-      <button
-        type="button"
-        onClick={openModal}
-        className="group flex w-full items-center gap-3 border-b border-white/[0.08] px-3 py-3 text-left transition hover:bg-white/[0.02] sm:px-6 sm:py-4"
-        aria-label="Create a new post"
-      >
-        {/* Viewer avatar */}
-        <span
-          className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-white"
-          style={
-            viewerAvatarUrl
-              ? undefined
-              : {
-                  background: `linear-gradient(135deg, ${coverTo}, ${accentColor})`,
-                }
-          }
-        >
-          {viewerAvatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={viewerAvatarUrl}
-              alt={viewer.displayName}
-              className="size-full object-cover"
-            />
-          ) : (
-            viewerInitial
-          )}
-        </span>
+    <ComposerCtx.Provider value={ctxValue}>
+      {children}
 
-        <span className="flex-1 text-[17px] text-copy-soft transition group-hover:text-copy-muted sm:text-[20px]">
-          What&apos;s happening?
-        </span>
-
-        <span className="pointer-events-none rounded-full bg-accent-secondary px-5 py-2 text-[15px] font-bold text-white opacity-80 transition group-hover:opacity-100">
-          Post
-        </span>
-      </button>
-
-      {/* ── Mobile FAB ── */}
+      {/* ── Mobile FAB — sidebar is hidden on mobile, so we need a separate
+          trigger here. ── */}
       <button
         type="button"
         onClick={openModal}
@@ -168,7 +152,11 @@ export function CommunityComposerLauncher({
                 className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-md text-[10px] font-bold text-white"
                 style={
                   communityThumbnailUrl
-                    ? { backgroundImage: `url(${communityThumbnailUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+                    ? {
+                        backgroundImage: `url(${communityThumbnailUrl})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
                     : {
                         background: `linear-gradient(135deg, ${coverFrom}, ${accentColor})`,
                       }
@@ -197,6 +185,28 @@ export function CommunityComposerLauncher({
           </div>
         </div>
       ) : null}
-    </>
+    </ComposerCtx.Provider>
+  );
+}
+
+/**
+ * "Post" button for the desktop sidebar. Mimics X's Post button — sits in the
+ * left nav, opens the composer modal. Hidden on mobile (mobile uses the FAB).
+ *
+ * Must be rendered inside a <CommunityComposerLauncher> subtree.
+ */
+export function CommunityComposerSidebarButton() {
+  const ctx = useContext(ComposerCtx);
+  if (!ctx) return null;
+  return (
+    <button
+      type="button"
+      onClick={ctx.open}
+      aria-label="Create a new post"
+      className="mt-4 hidden size-[50px] items-center justify-center rounded-full bg-accent-secondary text-white transition hover:brightness-110 lg:flex xl:size-auto xl:gap-3 xl:px-6 xl:py-3.5"
+    >
+      <PenSquare className="size-5 xl:hidden" />
+      <span className="hidden text-[17px] font-bold xl:block">Post</span>
+    </button>
   );
 }
