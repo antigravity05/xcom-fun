@@ -37,8 +37,8 @@ const publishToX = async (
     const { getDb } = await import("@/lib/database/client");
     const { postPublications } = await import("@/drizzle/schema");
 
-    // Truncate body to 280 chars for X (add ellipsis if truncated)
-    const xBody = body.length > 280 ? body.slice(0, 277) + "..." : body;
+    // Truncate body to 25000 chars for X Premium (add ellipsis if truncated)
+    const xBody = body.length > 25000 ? body.slice(0, 24997) + "..." : body;
 
     const result = await queueXPublication({
       localPostId: postId,

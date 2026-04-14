@@ -17,7 +17,7 @@ type PostComposerProps = {
   action: (formData: FormData) => Promise<void>;
 };
 
-const CHAR_LIMIT = 280;
+const CHAR_LIMIT = 25000;
 
 export default function PostComposer({
   communitySlug,

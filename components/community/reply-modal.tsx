@@ -94,7 +94,7 @@ export const ReplyModal = ({
   const authorInitial = originalPost.authorName?.[0]?.toUpperCase() ?? "?";
 
   const charCount = body.length;
-  const charLimit = 280;
+  const charLimit = 25000;
   const isOverLimit = charCount > charLimit;
   const showCounter = charCount > 0;
   const canReply = body.trim().length > 0 && !isOverLimit;
