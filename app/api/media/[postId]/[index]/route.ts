@@ -1,10 +1,12 @@
 export const dynamic = "force-dynamic";
 
 /**
- * Serves a post image as a binary response.
+ * Serves a post image or video as a binary response.
  * URL: /api/media/{postId}/{index}
+ *   - images: index 0..3 (up to 4 per post)
+ *   - video:  index 0 only (single video per post)
  *
- * Lets us give Zernio a public URL for images stored as base64 in the DB.
+ * Lets us give Zernio a public URL for media stored as base64 in the DB.
  */
 export async function GET(
   _request: Request,
@@ -35,19 +37,28 @@ export async function GET(
       return new Response("Not found", { status: 404 });
     }
 
-    const media = row.mediaPayload as { kind?: string; urls?: string[] };
+    const media = row.mediaPayload as {
+      kind?: string;
+      urls?: string[];
+      url?: string;
+    };
 
-    if (media.kind !== "images" || !media.urls || !media.urls[index]) {
+    let dataUrl: string | undefined;
+    if (media.kind === "images" && media.urls && media.urls[index]) {
+      dataUrl = media.urls[index];
+    } else if (media.kind === "video" && index === 0 && media.url) {
+      dataUrl = media.url;
+    }
+
+    if (!dataUrl) {
       return new Response("Not found", { status: 404 });
     }
 
-    const dataUrl = media.urls[index];
-
-    // Parse data URL: data:image/jpeg;base64,/9j/4AAQ...
+    // Parse data URL: data:image/jpeg;base64,/9j/4AAQ... or data:video/mp4;base64,...
     const match = dataUrl.match(/^data:([^;]+);base64,([\s\S]+)$/);
 
     if (!match) {
-      return new Response("Invalid image data", { status: 500 });
+      return new Response("Invalid media data", { status: 500 });
     }
 
     const mimeType = match[1];
@@ -63,7 +74,7 @@ export async function GET(
       },
     });
   } catch (err) {
-    console.error("[api/media] Error serving image:", err);
+    console.error("[api/media] Error serving media:", err);
     return new Response("Internal error", { status: 500 });
   }
 }

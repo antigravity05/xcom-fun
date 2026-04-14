@@ -32,7 +32,7 @@ export default async function EditCommunityPage({
   const { slug } = await params;
   const view = await getCommunityTimelineView(slug);
 
-  if (!view || view.viewerRole !== "admin") {
+  if (!view || (view.viewerRole !== "admin" && view.viewerRole !== "moderator")) {
     notFound();
   }
 

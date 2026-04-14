@@ -99,10 +99,14 @@ export const postTweet = async (
   accessToken: string,
   text: string,
   mediaIds?: string[],
+  quoteTweetId?: string,
 ): Promise<{ id: string; text: string }> => {
   const payload: Record<string, unknown> = { text };
   if (mediaIds && mediaIds.length > 0) {
     payload.media = { media_ids: mediaIds };
+  }
+  if (quoteTweetId) {
+    payload.quote_tweet_id = quoteTweetId;
   }
 
   const response = await fetch(`${X_API_BASE}/tweets`, {

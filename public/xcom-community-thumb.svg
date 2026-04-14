@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <defs>
+    <linearGradient id="xGradSq" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4FC3F7"/>
+      <stop offset="50%" stop-color="#1d9bf0"/>
+      <stop offset="100%" stop-color="#0D47A1"/>
+    </linearGradient>
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#0a1628"/>
+      <stop offset="70%" stop-color="#000000"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Black square background with subtle glow -->
+  <rect width="400" height="400" fill="url(#bgGlow)"/>
+
+  <!-- Logo text, centered -->
+  <!-- Using two lines: "x-com" on top, ".fun" on bottom for better square fit -->
+  <g font-family="'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif" font-weight="900" letter-spacing="-4">
+    <!-- "x-com" -->
+    <text x="200" y="200" font-size="110" text-anchor="middle" fill="#ffffff">
+      <tspan fill="url(#xGradSq)">x</tspan><tspan fill="#ffffff">-com</tspan>
+    </text>
+    <!-- ".fun" -->
+    <text x="200" y="300" font-size="110" text-anchor="middle" fill="#1d9bf0">.fun</text>
+  </g>
+</svg>

@@ -80,6 +80,7 @@ export const readXcomStore = cache(async (): Promise<XcomStoreSnapshot> => {
     description: community.description,
     rules: community.rules,
     bannerUrl: community.bannerUrl ?? undefined,
+    thumbnailUrl: community.thumbnailUrl ?? undefined,
     contractAddress: community.contractAddress ?? undefined,
     createdByUserId: community.createdByUserId,
     memberCount: community.memberCount,
@@ -111,10 +112,11 @@ export const readXcomStore = cache(async (): Promise<XcomStoreSnapshot> => {
       body: post.body,
       media: post.mediaPayload as any,
       isPinned: post.isPinned || false,
+      quotedPostId: post.quotedPostId ?? undefined,
       replyCount: allReplies.filter((r) => r.postId === post.id).length,
       likeCount: allReactions.filter((r) => r.postId === post.id && r.kind === "like").length,
       repostCount: allReactions.filter((r) => r.postId === post.id && r.kind === "repost").length,
-      viewCount: 0,
+      viewCount: post.viewCount ?? 0,
       createdAt: post.createdAt.toISOString(),
       xSyncStatus,
       externalPostId: publication?.externalPostId ?? undefined,
@@ -233,6 +235,7 @@ export const applyUpdateCommunity = async (
       description: updatedCommunity.description,
       tagline: updatedCommunity.tagline,
       bannerUrl: updatedCommunity.bannerUrl,
+      thumbnailUrl: updatedCommunity.thumbnailUrl,
       contractAddress: updatedCommunity.contractAddress ?? null,
     })
     .where(eq(communities.id, community.id));
@@ -379,6 +382,7 @@ export const applyCreatePost = async (input: Parameters<typeof createPostOperati
     body: newPost.body,
     mediaPayload: newPost.media || null,
     isPinned: newPost.isPinned || false,
+    quotedPostId: newPost.quotedPostId || null,
     createdAt: new Date(newPost.createdAt),
   });
 

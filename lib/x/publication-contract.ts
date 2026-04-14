@@ -13,6 +13,8 @@ export type XPublicationIntent = {
   xAccountUserId: string;
   body: string;
   imageBase64Urls?: string[];
+  videoBase64Url?: string;
+  quoteTweetId?: string;
 };
 
 export type XPublicationResult = {
@@ -52,29 +54,35 @@ const publishViaZernio = async (
 
     const zernioAccountId = storedTokens.accessToken;
 
-    // If body is empty but we have images, use minimal text for X compatibility
+    // If body is empty but we have media, use minimal text for X compatibility
     const hasImages = intent.imageBase64Urls && intent.imageBase64Urls.length > 0;
-    const tweetBody = intent.body.trim() || (hasImages ? "" : "");
+    const hasVideo = Boolean(intent.videoBase64Url);
+    const tweetBody = intent.body.trim();
 
-    // Skip sync if no body and no images
-    if (!tweetBody && !hasImages) {
+    // Skip sync if no body and no media
+    if (!tweetBody && !hasImages && !hasVideo) {
       return {
         status: "published" as const,
         errorMessage: "Empty post — skipped X sync",
       };
     }
 
-    // Pass images to Zernio via public URLs from our media API
+    // Pass media to Zernio via public URLs from our media API
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.x-com.fun";
     let imageUrls: string[] | undefined;
-    if (hasImages) {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.x-com.fun";
+    let videoUrl: string | undefined;
+    if (hasVideo) {
+      // Video wins over images — X only supports one video per tweet
+      videoUrl = `${baseUrl}/api/media/${intent.localPostId}/0`;
+      console.log("[x-sync] Zernio video URL:", videoUrl);
+    } else if (hasImages) {
       imageUrls = intent.imageBase64Urls!.slice(0, 4).map(
         (_, i) => `${baseUrl}/api/media/${intent.localPostId}/${i}`,
       );
-      console.log("[x-sync] Zernio media URLs:", imageUrls);
+      console.log("[x-sync] Zernio image URLs:", imageUrls);
     }
 
-    const result = await zernioPostTweet(zernioAccountId, tweetBody, imageUrls);
+    const result = await zernioPostTweet(zernioAccountId, tweetBody, imageUrls, videoUrl);
 
     // Log the full Zernio response so we can see the exact shape
     console.log("[x-sync] Zernio postTweet full response:", JSON.stringify(result));
@@ -165,6 +173,13 @@ const publishViaDirectXApi = async (
       }
     }
 
+    // NOTE: Direct X API doesn't support video in this code path.
+    // Video requires chunked upload (INIT/APPEND/FINALIZE + status polling),
+    // not implemented here. Video sync only works via Zernio for now.
+    if (intent.videoBase64Url) {
+      console.warn("[x-sync] Video provided but direct X API path doesn't support video upload. Posting text only.");
+    }
+
     // Upload images if present
     let mediaIds: string[] | undefined;
     if (intent.imageBase64Urls && intent.imageBase64Urls.length > 0) {
@@ -199,7 +214,7 @@ const publishViaDirectXApi = async (
 
     // Try posting with media first, fallback to text-only if media causes error
     try {
-      const result = await xPostTweet(accessToken, tweetText, mediaIds);
+      const result = await xPostTweet(accessToken, tweetText, mediaIds, intent.quoteTweetId);
       return {
         status: "published",
         externalPostId: result.id,
@@ -210,7 +225,7 @@ const publishViaDirectXApi = async (
         console.error("[x-sync] Failed media_ids were:", JSON.stringify(mediaIds));
         // Fallback: post text only so we never lose the sync
         try {
-          const fallbackResult = await xPostTweet(accessToken, tweetText);
+          const fallbackResult = await xPostTweet(accessToken, tweetText, undefined, intent.quoteTweetId);
           return {
             status: "published",
             externalPostId: fallbackResult.id,

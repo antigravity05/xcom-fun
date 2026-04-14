@@ -229,12 +229,15 @@ export type ZernioPostResult = {
 
 /**
  * Publish a tweet via Zernio on behalf of a connected account.
- * Supports optional image attachments via mediaItems (public URLs).
+ * Supports optional image attachments (up to 4) or a single video via
+ * mediaItems (public URLs). X only allows image OR video per tweet,
+ * not both, so the video takes precedence if passed.
  */
 export const postTweet = async (
   accountId: string,
   content: string,
   imageUrls?: string[],
+  videoUrl?: string,
 ): Promise<ZernioPostResult> => {
   // Build the post payload
   const payload: Record<string, unknown> = {
@@ -249,8 +252,11 @@ export const postTweet = async (
     publishNow: true,
   };
 
-  // Attach images if present — Zernio accepts mediaItems with public URLs
-  if (imageUrls && imageUrls.length > 0) {
+  // Attach media via mediaItems (public URLs). Video takes precedence.
+  if (videoUrl) {
+    payload.mediaItems = [{ type: "video", url: videoUrl }];
+    console.log(`[zernio] postTweet: attaching video:`, videoUrl);
+  } else if (imageUrls && imageUrls.length > 0) {
     payload.mediaItems = imageUrls.slice(0, 4).map((url) => ({
       type: "image",
       url,

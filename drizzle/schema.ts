@@ -33,6 +33,12 @@ export const postSyncStatusEnum = pgEnum("post_sync_status", [
 
 export const reactionKindEnum = pgEnum("reaction_kind", ["like", "repost"]);
 
+export const bugReportStatusEnum = pgEnum("bug_report_status", [
+  "open",
+  "in_progress",
+  "resolved",
+]);
+
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   xUserId: text("x_user_id").notNull().unique(),
@@ -74,6 +80,7 @@ export const communities = pgTable(
     contractAddress: text("contract_address"),
     avatarUrl: text("avatar_url"),
     bannerUrl: text("banner_url"),
+    thumbnailUrl: text("thumbnail_url"),
     createdByUserId: uuid("created_by_user_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
@@ -126,6 +133,8 @@ export const posts = pgTable(
     body: text("body").notNull(),
     mediaPayload: jsonb("media_payload"),
     isPinned: boolean("is_pinned").default(false).notNull(),
+    quotedPostId: uuid("quoted_post_id"),
+    viewCount: integer("view_count").default(0).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
@@ -180,6 +189,26 @@ export const postReactions = pgTable(
     ),
     postIndex: index("post_reactions_post_id_idx").on(table.postId),
     userIndex: index("post_reactions_user_id_idx").on(table.userId),
+  }),
+);
+
+export const bugReports = pgTable(
+  "bug_reports",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    message: text("message").notNull(),
+    pageUrl: text("page_url"),
+    userAgent: text("user_agent"),
+    email: text("email"),
+    status: bugReportStatusEnum("status").default("open").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    bugReportsCreatedIndex: index("bug_reports_created_at_idx").on(table.createdAt),
+    bugReportsStatusIndex: index("bug_reports_status_idx").on(table.status),
   }),
 );
 

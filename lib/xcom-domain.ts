@@ -23,6 +23,7 @@ export type CommunityRecord = {
   description: string;
   rules: string[];
   bannerUrl?: string;
+  thumbnailUrl?: string;
   memberCount: number;
   activeNow: number;
   trendingRank: number;
@@ -57,6 +58,10 @@ export type CommunityPostMedia =
   | {
       kind: "images";
       urls: string[];
+    }
+  | {
+      kind: "video";
+      url: string;
     };
 
 export type CommunityReplyRecord = {
@@ -87,6 +92,12 @@ export type CommunityPostRecord = {
   xSyncStatus: PublicationStatus;
   externalPostId?: string;
   viewerRepostXSyncStatus?: PublicationStatus;
+  quotedPost?: {
+    id: string;
+    author: MemberIdentity;
+    body: string;
+    createdAt: string;
+  };
 };
 
 export const communityTabs: Array<{ id: CommunityTab; label: string }> = [

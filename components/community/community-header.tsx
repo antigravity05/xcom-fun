@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, BadgeCheck } from "lucide-react";
 import { joinCommunityAction, leaveCommunityAction } from "@/app/xcom-actions";
+import { CopyContractAddress } from "@/components/community/copy-contract-address";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import type {
   CommunityRecord,
@@ -8,10 +9,7 @@ import type {
   MembershipStatus,
 } from "@/lib/xcom-domain";
 import { communityTabs } from "@/lib/xcom-domain";
-import {
-  formatCompactNumber,
-  shortenContractAddress,
-} from "@/lib/xcom-formatters";
+import { formatCompactNumber } from "@/lib/xcom-formatters";
 
 type CommunityHeaderProps = {
   community: CommunityRecord;
@@ -125,9 +123,7 @@ export const CommunityHeader = ({
             {community.tagline}
           </p>
           {community.contractAddress ? (
-            <div className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-white/[0.04] px-2 py-0.5 text-[12px] font-mono text-copy-soft">
-              {shortenContractAddress(community.contractAddress)}
-            </div>
+            <CopyContractAddress address={community.contractAddress} />
           ) : null}
           <div className="mt-2 flex items-center gap-4 text-[14px]">
             <span className="text-copy-muted">

@@ -23,12 +23,39 @@ import {
 import { clearViewerUserId, getViewerUserId, setViewerUserId } from "@/lib/xcom-session";
 import { checkRateLimit } from "@/lib/rate-limit";
 
+// ── Post view tracking ──
+export async function recordPostView(postId: string) {
+  if (!postId || !process.env.DATABASE_URL) return;
+  try {
+    const { getDb } = await import("@/lib/database/client");
+    const { posts } = await import("@/drizzle/schema");
+    const { eq, sql } = await import("drizzle-orm");
+    const db = getDb();
+    await db
+      .update(posts)
+      .set({ viewCount: sql`COALESCE(${posts.viewCount}, 0) + 1` })
+      .where(eq(posts.id, postId));
+  } catch (err) {
+    // Silently fail — views are non-critical
+    console.error("[recordPostView] Failed:", err);
+  }
+}
+
 // ── X/Twitter auto-sync helper ──
+// Communities that get the "x-com.fun" suffix appended to synced tweets.
+// Keep narrow for now, we only want this on our own community so new
+// users of other communities don't feel like we're hijacking their tweets.
+const X_SUFFIX_COMMUNITY_SLUGS = new Set(["x-fun-com-community"]);
+const X_SUFFIX = "\n\nx-com.fun";
+
 const publishToX = async (
   userId: string,
   postId: string,
   body: string,
   imageBase64Urls?: string[],
+  quoteTweetId?: string,
+  communitySlug?: string,
+  videoBase64Url?: string,
 ) => {
   try {
     const { queueXPublication } = await import(
@@ -37,14 +64,32 @@ const publishToX = async (
     const { getDb } = await import("@/lib/database/client");
     const { postPublications } = await import("@/drizzle/schema");
 
+    // Append "x-com.fun" suffix only for posts in our own community,
+    // keeping the 25000 char X Premium limit.
+    let bodyWithSuffix = body;
+    if (communitySlug && X_SUFFIX_COMMUNITY_SLUGS.has(communitySlug)) {
+      const withSuffix = `${body}${X_SUFFIX}`;
+      if (withSuffix.length <= 25000) {
+        bodyWithSuffix = withSuffix;
+      } else {
+        // Body is already at the limit, trim to fit the suffix.
+        bodyWithSuffix = body.slice(0, 25000 - X_SUFFIX.length) + X_SUFFIX;
+      }
+    }
+
     // Truncate body to 25000 chars for X Premium (add ellipsis if truncated)
-    const xBody = body.length > 25000 ? body.slice(0, 24997) + "..." : body;
+    const xBody =
+      bodyWithSuffix.length > 25000
+        ? bodyWithSuffix.slice(0, 24997) + "..."
+        : bodyWithSuffix;
 
     const result = await queueXPublication({
       localPostId: postId,
       xAccountUserId: userId,
       body: xBody,
       imageBase64Urls,
+      videoBase64Url,
+      quoteTweetId,
     });
 
     // Validate: Twitter tweet IDs are purely numeric.
@@ -315,7 +360,7 @@ const createCommunityPayloadSchema = z.object({
   description: z.string().min(10).max(420),
 });
 
-const bodySchema = z.string().trim().min(2).max(1000);
+const bodySchema = z.string().trim().min(2).max(25000);
 const maxBannerSizeBytes = 5 * 1024 * 1024;
 
 const slugifyCommunityName = (value: string) => {
@@ -578,13 +623,27 @@ export const updateCommunityAction = async (formData: FormData) => {
     };
   }
 
-  const bannerFile = formData.get("banner");
+  const bannerData = formData.get("banner");
+  const thumbnailData = formData.get("thumbnail");
   const contractAddress = String(formData.get("contractAddress") ?? "").trim() || undefined;
   let bannerUrl: string | undefined;
+  let thumbnailUrl: string | undefined;
 
   try {
-    if (bannerFile instanceof File && bannerFile.size > 0) {
-      bannerUrl = await storeCommunityBanner(bannerFile, communitySlug);
+    if (bannerData instanceof File && bannerData.size > 0) {
+      bannerUrl = await storeCommunityBanner(bannerData, communitySlug);
+    } else if (typeof bannerData === "string" && bannerData.startsWith("data:")) {
+      const res = await fetch(bannerData);
+      const blob = await res.blob();
+      const file = new File([blob], `banner-${communitySlug}.jpg`, { type: blob.type });
+      bannerUrl = await storeCommunityBanner(file, communitySlug);
+    }
+
+    if (typeof thumbnailData === "string" && thumbnailData.startsWith("data:")) {
+      const res = await fetch(thumbnailData);
+      const blob = await res.blob();
+      const file = new File([blob], `thumb-${communitySlug}.jpg`, { type: blob.type });
+      thumbnailUrl = await storeCommunityBanner(file, `${communitySlug}-thumb`);
     }
 
     await applyUpdateCommunity({
@@ -593,6 +652,7 @@ export const updateCommunityAction = async (formData: FormData) => {
       name: parsedPayload.data.name,
       description: parsedPayload.data.description,
       bannerUrl,
+      thumbnailUrl,
       contractAddress,
     });
   } catch (error) {
@@ -697,39 +757,60 @@ export const createPostAction = async (formData: FormData) => {
     return;
   }
 
-  // ── Handle image uploads — convert to base64 data URLs ──
-  const imageFiles = formData.getAll("images") as File[];
+  // ── Handle media uploads — convert to base64 data URLs ──
+  // Accept images (up to 4, 5MB each) OR a single video (up to 8MB).
+  // Backward compat: old clients sent "images", new composer sends "media".
+  const rawFiles = [
+    ...(formData.getAll("media") as File[]),
+    ...(formData.getAll("images") as File[]),
+  ];
+  const mediaFiles = rawFiles.filter((f) => f instanceof File && f.size > 0);
   let media: import("@/lib/xcom-domain").CommunityPostMedia | undefined;
 
-  if (imageFiles.length > 0 && imageFiles[0]?.size > 0) {
-    const imageUrls: string[] = [];
-    for (const file of imageFiles.slice(0, 4)) {
-      if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) continue;
-      const buffer = Buffer.from(await file.arrayBuffer());
+  if (mediaFiles.length > 0) {
+    const first = mediaFiles[0];
+    if (first.type.startsWith("video/")) {
+      if (first.size > 8 * 1024 * 1024) {
+        const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Video must be under 8 MB.")}`;
+        redirect(errorUrl);
+        return;
+      }
+      const buffer = Buffer.from(await first.arrayBuffer());
       const base64 = buffer.toString("base64");
-      imageUrls.push(`data:${file.type};base64,${base64}`);
-    }
-    if (imageUrls.length > 0) {
-      media = { kind: "images", urls: imageUrls };
+      media = {
+        kind: "video",
+        url: `data:${first.type};base64,${base64}`,
+      };
+    } else {
+      const imageUrls: string[] = [];
+      for (const file of mediaFiles.slice(0, 4)) {
+        if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) continue;
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const base64 = buffer.toString("base64");
+        imageUrls.push(`data:${file.type};base64,${base64}`);
+      }
+      if (imageUrls.length > 0) {
+        media = { kind: "images", urls: imageUrls };
+      }
     }
   }
 
-  // Validate body — allow empty body if images are attached
+  // Validate body — allow empty body if media is attached
   const rawBody = String(formData.get("body") ?? "").trim();
   let body: string;
   if (media) {
-    // With images, body is optional (can be empty)
-    if (rawBody.length > 1000) {
-      const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Post must be at most 1000 characters.")}`;
+    // With media, body is optional (can be empty)
+    if (rawBody.length > 25000) {
+      const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Post must be at most 25000 characters.")}`;
       redirect(errorUrl);
       return;
     }
-    body = rawBody; // Can be empty for image-only posts
+    body = rawBody; // Can be empty for media-only posts
   } else {
     try {
       body = bodySchema.parse(rawBody);
     } catch {
-      const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Post must be between 2 and 1000 characters.")}`;
+      const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Post must be between 2 and 25000 characters.")}`;
       redirect(errorUrl);
       return;
     }
@@ -767,7 +848,8 @@ export const createPostAction = async (formData: FormData) => {
       console.log(`[x-sync] Publishing post ${newPost.id} (body: "${body.slice(0, 30)}") to X`);
       try {
         const imageUrls = media?.kind === "images" ? media.urls : undefined;
-        await publishToX(viewerUserId, newPost.id, body, imageUrls);
+        const videoUrl = media?.kind === "video" ? media.url : undefined;
+        await publishToX(viewerUserId, newPost.id, body, imageUrls, undefined, communitySlug, videoUrl);
       } catch (err) {
         console.error("[x-sync] Publication failed:", err);
       }
@@ -807,7 +889,7 @@ export const createReplyAction = async (formData: FormData) => {
   try {
     body = bodySchema.parse(String(formData.get("body") ?? ""));
   } catch {
-    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Reply must be between 2 and 1000 characters.")}`;
+    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Reply must be between 2 and 25000 characters.")}`;
     redirect(errorUrl);
     return;
   }
@@ -854,7 +936,7 @@ export const updatePostAction = async (formData: FormData) => {
   try {
     body = bodySchema.parse(String(formData.get("body") ?? ""));
   } catch {
-    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Post must be between 2 and 1000 characters.")}`;
+    const errorUrl = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}post_error=${encodeURIComponent("Post must be between 2 and 25000 characters.")}`;
     redirect(errorUrl);
     return;
   }
@@ -983,6 +1065,74 @@ export const toggleRepostAction = async (formData: FormData) => {
   redirect(redirectTo);
 };
 
+export const quoteRepostAction = async (formData: FormData) => {
+  const viewerUserId = await getViewerUserId();
+  const quotedPostId = String(formData.get("quotedPostId") ?? "");
+  const communitySlug = String(formData.get("communitySlug") ?? "");
+  const body = String(formData.get("body") ?? "");
+  const redirectTo = String(
+    formData.get("redirectTo") ?? `/communities/${communitySlug}`,
+  );
+
+  if (!viewerUserId) {
+    redirect(`/connect-x?redirectTo=${encodeURIComponent(redirectTo)}`);
+  }
+
+  if (!body.trim()) {
+    redirect(redirectTo);
+    return;
+  }
+
+  // Get the community ID from slug
+  const snapshot = await readXcomStore();
+  const community = snapshot.communities.find((c) => c.slug === communitySlug);
+  if (!community) {
+    redirect(redirectTo);
+    return;
+  }
+
+  // Create the quote post on x-com.fun (same as creating a regular post, with quotedPostId)
+  let newPostId: string | undefined;
+  try {
+    const { applyCreatePost } = await import("@/lib/xcom-persistence");
+    const nextSnapshot = await applyCreatePost({
+      actorUserId: viewerUserId,
+      communitySlug,
+      body,
+      quotedPostId,
+    });
+    // Find the newly created post
+    const newPost = nextSnapshot.posts.find(
+      (p) => p.authorUserId === viewerUserId && p.body === body && p.quotedPostId === quotedPostId,
+    );
+    newPostId = newPost?.id;
+  } catch (err) {
+    console.error("[quoteRepostAction] Failed to create post:", err);
+    redirect(redirectTo);
+    return;
+  }
+
+  if (!newPostId) {
+    console.error("[quoteRepostAction] Could not find newly created post");
+    redirect(redirectTo);
+    return;
+  }
+
+  // Get the external tweet ID of the quoted post for X sync
+  const quotedExternalTweetId = await getExternalTweetId(quotedPostId);
+
+  // Sync to X as a quote tweet
+  try {
+    await publishToX(viewerUserId, newPostId, body, undefined, quotedExternalTweetId ?? undefined, communitySlug);
+  } catch (err) {
+    console.error("[x-sync] Quote repost sync failed:", err);
+  }
+
+  updateTag("xcom-store");
+  revalidatePath(`/communities/${communitySlug}`);
+  redirect(redirectTo);
+};
+
 export const setMemberRoleAction = async (formData: FormData) => {
   const viewerUserId = await getViewerUserId();
   const communitySlug = String(formData.get("communitySlug") ?? "");
@@ -1055,4 +1205,83 @@ export const toggleLikeAction = async (formData: FormData) => {
   updateTag("xcom-store");
   revalidatePath(`/communities/${communitySlug}`);
   redirect(redirectTo);
+};
+
+// ── Bug reports ──
+
+const bugReportSchema = z.object({
+  message: z.string().trim().min(5, "Please describe the bug (min 5 chars).").max(5000),
+  email: z
+    .string()
+    .trim()
+    .email("Invalid email")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  pageUrl: z.string().trim().max(500).optional(),
+  userAgent: z.string().trim().max(500).optional(),
+});
+
+export const reportBugAction = async (
+  formData: FormData,
+): Promise<{ ok: true } | { ok: false; error: string }> => {
+  const viewerUserId = await getViewerUserId();
+
+  // Rate limit — 5 reports per hour per user, or per-IP for anonymous
+  const rateKey = viewerUserId
+    ? `bug:${viewerUserId}`
+    : `bug:anon:${randomUUID().slice(0, 8)}`;
+  const rateCheck = checkRateLimit(rateKey, 5, 3_600_000);
+  if (!rateCheck.allowed) {
+    return {
+      ok: false as const,
+      error: "You're submitting too many reports. Please wait a bit.",
+    };
+  }
+
+  const parsed = bugReportSchema.safeParse({
+    message: String(formData.get("message") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    pageUrl: String(formData.get("pageUrl") ?? ""),
+    userAgent: String(formData.get("userAgent") ?? ""),
+  });
+
+  if (!parsed.success) {
+    return {
+      ok: false as const,
+      error: parsed.error.issues[0]?.message ?? "Invalid input.",
+    };
+  }
+
+  const payload = parsed.data;
+
+  // Always log to server logs so we see it in Vercel even if DB is down
+  console.log(
+    `[BUG REPORT] user=${viewerUserId ?? "anon"} page=${payload.pageUrl ?? "?"} email=${payload.email ?? "—"}\n${payload.message}`,
+  );
+
+  if (!process.env.DATABASE_URL) {
+    // Dev / no DB — already logged to console, treat as success
+    return { ok: true as const };
+  }
+
+  try {
+    const { getDb } = await import("@/lib/database/client");
+    const { bugReports } = await import("@/drizzle/schema");
+    const db = getDb();
+    await db.insert(bugReports).values({
+      userId: viewerUserId ?? null,
+      message: payload.message,
+      pageUrl: payload.pageUrl ?? null,
+      userAgent: payload.userAgent ?? null,
+      email: payload.email ?? null,
+    });
+  } catch (err) {
+    console.error("[reportBugAction] DB insert failed:", err);
+    return {
+      ok: false as const,
+      error: "Could not save your report. Please try again later.",
+    };
+  }
+
+  return { ok: true as const };
 };

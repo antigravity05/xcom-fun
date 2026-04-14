@@ -25,9 +25,9 @@ export const CommunityCard = ({
       <div
         className="size-10 shrink-0 rounded-lg overflow-hidden"
         style={
-          community.bannerUrl
+          community.thumbnailUrl || community.bannerUrl
             ? {
-                backgroundImage: `url(${community.bannerUrl})`,
+                backgroundImage: `url(${community.thumbnailUrl || community.bannerUrl})`,
                 backgroundPosition: "center",
                 backgroundSize: "cover",
               }
