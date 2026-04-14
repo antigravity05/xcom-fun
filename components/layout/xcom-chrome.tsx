@@ -111,16 +111,13 @@ export const XcomChrome = ({
                 />
               ) : null}
 
-              {/* Page-specific CTA (e.g. "Post" on community pages) */}
-              {postTrigger}
-
               {viewer ? (
                 <Link
                   href="/create-community"
-                  className="mt-2 flex size-[50px] items-center justify-center rounded-full border border-accent-secondary/40 text-accent-secondary transition hover:bg-accent-secondary/10 xl:size-auto xl:px-6 xl:py-3"
+                  className="mt-4 flex size-[50px] items-center justify-center rounded-full bg-accent-secondary text-white transition hover:brightness-110 xl:size-auto xl:px-6 xl:py-3.5"
                 >
                   <PenSquare className="size-5 xl:hidden" />
-                  <span className="hidden text-[15px] font-bold xl:block">
+                  <span className="hidden text-[17px] font-bold xl:block">
                     New Community
                   </span>
                 </Link>
@@ -143,6 +140,10 @@ export const XcomChrome = ({
 
             {/* User / CTA at bottom */}
             <div className="mt-auto flex flex-col items-center gap-2 py-3 xl:items-stretch">
+              {/* Page-specific CTA (e.g. "Post" on community pages) — sits
+                  right above the profile card, mirroring X. */}
+              {postTrigger}
+
               {viewer ? (
                 <>
                   <Link
