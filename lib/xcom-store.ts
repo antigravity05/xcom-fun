@@ -22,6 +22,7 @@ export type XcomStoreCommunity = {
   description: string;
   rules: string[];
   bannerUrl?: string;
+  thumbnailUrl?: string;
   contractAddress?: string;
   createdByUserId: string;
   memberCount: number;
@@ -44,6 +45,7 @@ export type XcomStorePost = {
   body: string;
   media?: CommunityPostMedia;
   isPinned?: boolean;
+  quotedPostId?: string;
   replyCount: number;
   likeCount: number;
   repostCount: number;

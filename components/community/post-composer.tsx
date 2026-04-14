@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useFormStatus } from "react-dom";
-import { Image as ImageIcon, X } from "lucide-react";
+import { Image as ImageIcon, X, Smile } from "lucide-react";
 import { CharacterCounter } from "@/components/ui/character-counter";
+import { toggleBold, toggleItalic } from "@/lib/text-formatters";
 
 type PostComposerProps = {
   communitySlug: string;
@@ -15,6 +16,10 @@ type PostComposerProps = {
   accentColor: string;
   coverTo: string;
   action: (formData: FormData) => Promise<void>;
+  /** When true, auto-focuses the textarea on mount (used for modal). */
+  autoFocus?: boolean;
+  /** Extra classes applied to the <form> root. */
+  formClassName?: string;
 };
 
 const CHAR_LIMIT = 25000;
@@ -26,10 +31,14 @@ export default function PostComposer({
   accentColor,
   coverTo,
   action,
+  autoFocus = false,
+  formClassName,
 }: PostComposerProps) {
   const [body, setBody] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [mediaError, setMediaError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -38,9 +47,24 @@ export default function PostComposer({
   useEffect(() => {
     return () => {
       previews.forEach((p) => URL.revokeObjectURL(p));
+      if (videoPreview) URL.revokeObjectURL(videoPreview);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-focus textarea when mounted inside the modal
+  useEffect(() => {
+    if (!autoFocus) return;
+    const ta = textareaRef.current;
+    if (!ta) return;
+    // Delay so the modal transition finishes, then focus + move cursor to end
+    const id = requestAnimationFrame(() => {
+      ta.focus();
+      const len = ta.value.length;
+      ta.setSelectionRange(len, len);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [autoFocus]);
 
   const autoGrow = useCallback(() => {
     const textarea = textareaRef.current;
@@ -51,7 +75,25 @@ export default function PostComposer({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
+
+    // Clear previous previews
+    previews.forEach((p) => URL.revokeObjectURL(p));
+    if (videoPreview) URL.revokeObjectURL(videoPreview);
+    setPreviews([]);
+    setVideoPreview(null);
+    setMediaError(null);
+
+    const first = files[0];
+    if (first.type.startsWith("video/")) {
+      if (first.size > 8 * 1024 * 1024) {
+        setMediaError("Video must be under 8 MB.");
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+      setVideoPreview(URL.createObjectURL(first));
+      return;
+    }
 
     const newPreviews: string[] = [];
     for (let i = 0; i < Math.min(files.length, 4); i++) {
@@ -63,16 +105,64 @@ export default function PostComposer({
     setPreviews(newPreviews);
   };
 
-  const clearImages = () => {
+  const clearMedia = () => {
     previews.forEach((p) => URL.revokeObjectURL(p));
+    if (videoPreview) URL.revokeObjectURL(videoPreview);
     setPreviews([]);
+    setVideoPreview(null);
+    setMediaError(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  /**
+   * Apply bold/italic Unicode transform to the current selection inside the
+   * textarea. If nothing is selected, transform the whole body instead so a
+   * solo click on B/I isn't a no-op.
+   */
+  const applyFormat = (kind: "bold" | "italic") => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+
+    const transform = kind === "bold" ? toggleBold : toggleItalic;
+    const start = ta.selectionStart ?? 0;
+    const end = ta.selectionEnd ?? 0;
+
+    let nextBody: string;
+    let nextStart: number;
+    let nextEnd: number;
+
+    if (start === end) {
+      // No selection — transform whole body, keep cursor at end
+      nextBody = transform(body);
+      nextStart = nextEnd = nextBody.length;
+    } else {
+      const before = body.slice(0, start);
+      const selected = body.slice(start, end);
+      const after = body.slice(end);
+      const transformed = transform(selected);
+      nextBody = `${before}${transformed}${after}`;
+      nextStart = start;
+      nextEnd = start + [...transformed].reduce(
+        (acc, ch) => acc + ch.length,
+        0,
+      );
+    }
+
+    setBody(nextBody);
+    // Restore focus + selection after React commits
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(nextStart, nextEnd);
+      autoGrow();
+    });
   };
 
   const handleSubmit = async (formData: FormData) => {
     await action(formData);
     previews.forEach((p) => URL.revokeObjectURL(p));
+    if (videoPreview) URL.revokeObjectURL(videoPreview);
     setPreviews([]);
+    setVideoPreview(null);
     setBody("");
     setIsFocused(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -83,13 +173,17 @@ export default function PostComposer({
   const viewerAvatarUrl = viewer?.avatar?.startsWith("http") ? viewer.avatar : null;
   const viewerInitial = viewer?.displayName?.[0]?.toUpperCase() ?? "X";
   const isOverLimit = body.length > CHAR_LIMIT;
-  const canPost = body.trim().length > 0 && !isOverLimit;
+  const hasMedia = previews.length > 0 || videoPreview !== null;
+  const canPost = (body.trim().length > 0 || hasMedia) && !isOverLimit;
 
   return (
     <form
       ref={formRef}
       action={handleSubmit}
-      className="border-b border-white/[0.08] px-3 pb-2.5 pt-3 sm:px-6 sm:pb-3 sm:pt-4"
+      className={
+        formClassName ??
+        "border-b border-white/[0.08] px-3 pb-2.5 pt-3 sm:px-6 sm:pb-3 sm:pt-4"
+      }
     >
       <input type="hidden" name="communitySlug" value={communitySlug} />
       <input
@@ -132,6 +226,17 @@ export default function PostComposer({
             }}
             onFocus={() => setIsFocused(true)}
             onInput={autoGrow}
+            onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+                if (e.key === "b" || e.key === "B") {
+                  e.preventDefault();
+                  applyFormat("bold");
+                } else if (e.key === "i" || e.key === "I") {
+                  e.preventDefault();
+                  applyFormat("italic");
+                }
+              }
+            }}
             className="signal-focus min-h-[44px] w-full resize-none border-0 bg-transparent px-0 py-2 text-[17px] leading-6 text-white placeholder:text-copy-soft focus:outline-none sm:min-h-[52px] sm:text-[20px] sm:leading-7"
             placeholder="What's happening?"
           />
@@ -158,12 +263,35 @@ export default function PostComposer({
               </div>
               <button
                 type="button"
-                onClick={clearImages}
+                onClick={clearMedia}
                 className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90"
               >
                 <X className="size-4" />
               </button>
             </div>
+          )}
+
+          {/* Video preview */}
+          {videoPreview && (
+            <div className="relative mt-2">
+              <video
+                src={videoPreview}
+                controls
+                className="w-full max-h-[400px] overflow-hidden rounded-2xl bg-black"
+              />
+              <button
+                type="button"
+                onClick={clearMedia}
+                className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Media error */}
+          {mediaError && (
+            <p className="mt-2 text-[13px] text-danger-soft">{mediaError}</p>
           )}
 
           {/* Toolbar */}
@@ -173,8 +301,8 @@ export default function PostComposer({
                 ref={fileInputRef}
                 id="post-image-upload"
                 type="file"
-                name="images"
-                accept="image/jpeg,image/png,image/gif,image/webp"
+                name="media"
+                accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime,video/webm"
                 multiple
                 className="hidden"
                 onChange={handleFileChange}
@@ -185,6 +313,44 @@ export default function PostComposer({
               >
                 <ImageIcon className="size-[18px]" />
               </label>
+              <button
+                type="button"
+                className="flex size-[34px] items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10"
+                title="GIF"
+              >
+                <svg className="size-[18px]" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 5.5C3 4.119 4.12 3 5.5 3h13C19.88 3 21 4.119 21 5.5v13c0 1.381-1.12 2.5-2.5 2.5h-13C4.12 21 3 19.881 3 18.5v-13zM5.5 5c-.28 0-.5.224-.5.5v13c0 .276.22.5.5.5h13c.28 0 .5-.224.5-.5v-13c0-.276-.22-.5-.5-.5h-13zM15.5 10.25c0-.41.34-.75.75-.75s.75.34.75.75v3.5c0 .41-.34.75-.75.75s-.75-.34-.75-.75v-3.5zm-4.75-.75c.41 0 .75.34.75.75v3.5c0 .41-.34.75-.75.75s-.75-.34-.75-.75v-3.5c0-.41.34-.75.75-.75zm-3.25.75c0-.41.34-.75.75-.75H9.5c.41 0 .75.34.75.75s-.34.75-.75.75H8.25v.75H9c.41 0 .75.34.75.75s-.34.75-.75.75h-.75v.75c0 .41-.34.75-.75.75s-.75-.34-.75-.75v-3.5z" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="flex size-[34px] items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10"
+                title="Emoji"
+              >
+                <Smile className="size-[18px]" />
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormat("bold")}
+                title="Bold (Ctrl+B)"
+                aria-label="Bold"
+                className="flex size-[34px] items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10"
+              >
+                <span className="text-[15px] font-extrabold leading-none">
+                  B
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormat("italic")}
+                title="Italic (Ctrl+I)"
+                aria-label="Italic"
+                className="flex size-[34px] items-center justify-center rounded-full text-accent-secondary transition hover:bg-accent-secondary/10"
+              >
+                <span className="font-serif text-[16px] italic leading-none">
+                  I
+                </span>
+              </button>
             </div>
 
             <div className="flex items-center gap-3">

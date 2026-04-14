@@ -12,7 +12,6 @@ import {
 import {
   deletePostAction,
   togglePinnedPostAction,
-  toggleRepostAction,
   updatePostAction,
 } from "@/app/xcom-actions";
 import type { CommunityPostRecord } from "@/lib/xcom-domain";
@@ -27,6 +26,8 @@ import { BookmarkButton, ShareButton } from "@/components/community/post-actions
 import { LikeButton } from "@/components/community/like-button";
 import { ConnectCTAWrapper } from "@/components/community/connect-cta";
 import { PostMenu } from "@/components/community/post-menu";
+import { PostViewTracker } from "@/components/community/post-view-tracker";
+import { RepostButton } from "@/components/community/repost-button";
 
 type PostCardProps = {
   post: CommunityPostRecord & {
@@ -54,7 +55,8 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
       : null;
 
   return (
-    <article className="group/post border-b border-white/[0.08] px-3 py-2.5 transition-colors hover:bg-white/[0.02] sm:px-6 sm:py-3">
+    <article className="group/post relative border-b border-white/[0.08] px-3 py-2.5 transition-colors hover:bg-white/[0.02] sm:px-6 sm:py-3">
+      <PostViewTracker postId={post.id} />
       {/* Pinned indicator */}
       {post.isPinned ? (
         <div className="mb-1.5 flex items-center gap-2 pl-[52px] text-[13px] font-bold text-copy-muted">
@@ -269,6 +271,16 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
                 );
               })}
             </div>
+          ) : post.media?.kind === "video" ? (
+            <div className="mt-3 overflow-hidden rounded-2xl border border-white/[0.08] bg-black">
+              <video
+                src={post.media.url}
+                controls
+                preload="metadata"
+                playsInline
+                className="w-full max-h-[510px]"
+              />
+            </div>
           ) : post.media ? (
             <div className="mt-3 overflow-hidden rounded-2xl border border-white/[0.08] transition hover:border-white/15">
               <div className="bg-surface-secondary/60">
@@ -294,6 +306,27 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
             </div>
           ) : null}
 
+          {/* Quoted post embed */}
+          {post.quotedPost && (
+            <div className="mt-3 rounded-2xl border border-white/10 p-3 transition hover:bg-white/[0.02]">
+              <div className="flex items-center gap-2">
+                <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px] font-bold text-white overflow-hidden">
+                  {post.quotedPost.author.avatar?.startsWith("http") ? (
+                    <img src={post.quotedPost.author.avatar} alt="" className="size-full object-cover" />
+                  ) : (
+                    post.quotedPost.author.displayName[0]?.toUpperCase()
+                  )}
+                </div>
+                <span className="text-[13px] font-bold text-white">{post.quotedPost.author.displayName}</span>
+                <span className="text-[13px] text-copy-muted">{post.quotedPost.author.handle}</span>
+                <span className="text-[13px] text-copy-muted">· {formatRelativeTime(post.quotedPost.createdAt)}</span>
+              </div>
+              <p className="mt-1 text-[14px] leading-5 text-copy-soft line-clamp-4">
+                {post.quotedPost.body}
+              </p>
+            </div>
+          )}
+
           {/* Interaction bar — Twitter-style layout */}
           <div className="-ml-2 mt-1 flex items-center justify-between sm:max-w-[425px]">
             {/* Reply — opens modal like X */}
@@ -313,25 +346,23 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
               viewer={viewer}
             />
 
-            {/* Repost */}
+            {/* Repost / Quote */}
             {interaction?.canInteract ? (
-              <form action={toggleRepostAction}>
-                <input type="hidden" name="postId" value={post.id} />
-                <input type="hidden" name="communitySlug" value={interaction.communitySlug} />
-                <input type="hidden" name="redirectTo" value={interaction.redirectTo} />
-                <FormSubmitButton
-                  className={`group/btn flex min-w-[52px] items-center gap-1.5 rounded-full px-2 py-1.5 text-[13px] transition ${
-                    post.viewerHasReposted
-                      ? "text-accent-tertiary"
-                      : "text-copy-muted hover:text-accent-tertiary"
-                  }`}
-                >
-                  <span className="flex size-[34px] items-center justify-center rounded-full transition group-hover/btn:bg-accent-tertiary/10">
-                    <Repeat2 className="size-[18px]" />
-                  </span>
-                  <span className="-ml-1">{formatCompactNumber(post.metrics.reposts)}</span>
-                </FormSubmitButton>
-              </form>
+              <RepostButton
+                postId={post.id}
+                communitySlug={interaction.communitySlug}
+                redirectTo={interaction.redirectTo}
+                repostCount={post.metrics.reposts}
+                viewerHasReposted={post.viewerHasReposted ?? false}
+                quotedPost={{
+                  authorHandle: post.author.handle ?? "",
+                  authorName: post.author.displayName,
+                  authorAvatar: post.author.avatar,
+                  body: post.body,
+                  createdAt: post.createdAt,
+                }}
+                viewer={viewer}
+              />
             ) : (
               <ConnectCTAWrapper>
                 <div className="flex min-w-[52px] items-center gap-1.5 px-2 py-1.5 text-[13px] text-copy-muted hover:text-accent-tertiary transition">

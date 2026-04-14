@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Loader2 } from "lucide-react";
 import { updateCommunityAction } from "@/app/communities/actions";
+import { BannerCropModal } from "@/components/forms/banner-crop-modal";
 
 type EditCommunityFormProps = {
   communitySlug: string;
@@ -26,7 +27,12 @@ export const EditCommunityForm = ({
   const [bannerPreview, setBannerPreview] = useState<string | null>(
     currentBannerUrl ?? null,
   );
+  const [rawImage, setRawImage] = useState<string | null>(null);
+  const [cropStep, setCropStep] = useState<"banner" | "thumbnail" | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const croppedInputRef = useRef<HTMLInputElement>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
   const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -39,9 +45,28 @@ export const EditCommunityForm = ({
     setServerMessage(null);
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setBannerPreview(ev.target?.result as string);
+      setRawImage(ev.target?.result as string);
+      setCropStep("banner");
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleBannerCropComplete = (croppedImage: string) => {
+    setBannerPreview(croppedImage);
+    if (croppedInputRef.current) {
+      croppedInputRef.current.value = croppedImage;
+    }
+    // Move to thumbnail crop step
+    setCropStep("thumbnail");
+  };
+
+  const handleThumbnailCropComplete = (croppedImage: string) => {
+    setThumbnailPreview(croppedImage);
+    if (thumbnailInputRef.current) {
+      thumbnailInputRef.current.value = croppedImage;
+    }
+    setCropStep(null);
+    setRawImage(null);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -164,14 +189,63 @@ export const EditCommunityForm = ({
             <input
               ref={fileInputRef}
               type="file"
-              name="banner"
+              name="bannerFile"
               accept="image/png,image/jpeg,image/webp,image/gif"
               onChange={handleBannerChange}
               className="hidden"
             />
+            <input
+              ref={croppedInputRef}
+              type="hidden"
+              name="banner"
+              defaultValue=""
+            />
+            <input
+              ref={thumbnailInputRef}
+              type="hidden"
+              name="thumbnail"
+              defaultValue=""
+            />
+
+            {/* Thumbnail preview */}
+            {thumbnailPreview && (
+              <div className="mt-2 flex items-center gap-3">
+                <div
+                  className="size-10 shrink-0 rounded-lg overflow-hidden bg-cover bg-center"
+                  style={{ backgroundImage: `url(${thumbnailPreview})` }}
+                />
+                <span className="text-[12px] text-copy-soft">Thumbnail preview</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {cropStep === "banner" && rawImage && (
+        <BannerCropModal
+          imageSrc={rawImage}
+          onCropComplete={handleBannerCropComplete}
+          onClose={() => {
+            setCropStep(null);
+            setRawImage(null);
+          }}
+          aspect={3 / 1}
+          title="Crop Image"
+        />
+      )}
+
+      {cropStep === "thumbnail" && rawImage && (
+        <BannerCropModal
+          imageSrc={rawImage}
+          onCropComplete={handleThumbnailCropComplete}
+          onClose={() => {
+            setCropStep(null);
+            setRawImage(null);
+          }}
+          aspect={1}
+          title="Crop Thumbnail"
+        />
+      )}
 
       <div className="px-4 py-5 sm:px-6">
         <div className="flex flex-wrap items-center gap-4 border-t border-white/10 pt-5">

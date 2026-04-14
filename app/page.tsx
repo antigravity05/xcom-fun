@@ -447,7 +447,7 @@ export default async function Home({ searchParams }: HomePageProps) {
         <aside className="hidden xl:block">
           <div className="sticky top-0 space-y-3 px-5 pt-3">
             {/* Trending widget */}
-            <section className="rounded-2xl border border-white/[0.04] bg-surface-secondary py-3">
+            <section className="rounded-2xl border border-white/10 bg-background py-3">
               <h2 className="px-4 text-[20px] font-extrabold text-white">
                 Trending
               </h2>

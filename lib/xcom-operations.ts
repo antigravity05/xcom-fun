@@ -18,6 +18,7 @@ type UpdateCommunityInput = {
   name: string;
   description: string;
   bannerUrl?: string;
+  thumbnailUrl?: string;
   contractAddress?: string;
 };
 
@@ -41,6 +42,7 @@ type CreatePostInput = {
   communitySlug: string;
   body: string;
   media?: import("./xcom-domain").CommunityPostMedia;
+  quotedPostId?: string;
 };
 
 type CreateReplyInput = {
@@ -284,7 +286,10 @@ export const updateCommunity = (
   assertUserExists(state, input.actorUserId);
 
   const community = getCommunityBySlug(state, input.communitySlug);
-  assertCommunityAdmin(state, community.id, input.actorUserId);
+  const membership = assertActiveMembership(state, community.id, input.actorUserId);
+  if (membership.role !== "admin" && membership.role !== "moderator") {
+    throw new Error("Only admins or moderators can edit this community.");
+  }
 
   const nextState = cloneState(state);
   const communityIndex = nextState.communities.findIndex(
@@ -299,6 +304,8 @@ export const updateCommunity = (
       tagline: input.description.trim().slice(0, 90),
       bannerUrl:
         input.bannerUrl ?? nextState.communities[communityIndex].bannerUrl,
+      thumbnailUrl:
+        input.thumbnailUrl ?? nextState.communities[communityIndex].thumbnailUrl,
       contractAddress:
         input.contractAddress !== undefined
           ? input.contractAddress || undefined
@@ -452,6 +459,7 @@ export const createPost = (
     authorUserId: input.actorUserId,
     body: input.body,
     media: input.media,
+    quotedPostId: input.quotedPostId,
     replyCount: 0,
     likeCount: 0,
     repostCount: 0,

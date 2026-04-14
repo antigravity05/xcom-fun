@@ -14,9 +14,8 @@ import {
   setMemberRoleAction,
 } from "@/app/xcom-actions";
 import { CommunityHeader } from "@/components/community/community-header";
-import PostComposer from "@/components/community/post-composer";
+import { CommunityComposerLauncher } from "@/components/community/community-composer-launcher";
 import { PostFeed } from "@/components/community/post-feed";
-import { ScrollToComposeFab } from "@/components/community/scroll-to-compose-fab";
 import { FormSubmitButton } from "@/components/ui/form-submit-button";
 import { XcomChrome } from "@/components/layout/xcom-chrome";
 import type { CommunityMemberRecord, CommunityTab } from "@/lib/xcom-domain";
@@ -257,8 +256,10 @@ export default async function CommunityPage({
               ) : null}
 
               {viewerMembershipStatus === "active" && viewer ? (
-                <PostComposer
+                <CommunityComposerLauncher
                   communitySlug={community.slug}
+                  communityName={community.name}
+                  communityThumbnailUrl={community.thumbnailUrl ?? null}
                   activeTab={activeTab}
                   viewer={{
                     avatar: viewer.avatar,
@@ -266,6 +267,7 @@ export default async function CommunityPage({
                   }}
                   accentColor={community.accentColor}
                   coverTo={community.coverTo}
+                  coverFrom={community.coverFrom}
                   action={createPostAction}
                 />
               ) : null}
@@ -282,11 +284,6 @@ export default async function CommunityPage({
                   viewer={viewer ? { displayName: viewer.displayName, avatar: viewer.avatar } : null}
                 />
               </section>
-
-              {/* Mobile FAB — scroll to composer */}
-              {viewerMembershipStatus === "active" ? (
-                <ScrollToComposeFab />
-              ) : null}
             </>
           )}
         </div>
@@ -294,7 +291,7 @@ export default async function CommunityPage({
         <aside className="hidden xl:block">
           <div className="sticky top-0 space-y-3 px-5 pt-3">
             {/* About */}
-            <section className="rounded-2xl bg-surface-secondary border border-white/[0.04] py-3">
+            <section className="rounded-2xl bg-background border border-white/10 py-3">
               <h2 className="px-4 text-[20px] font-extrabold text-white">About</h2>
               <p className="mt-2 px-4 text-[13px] leading-5 text-copy-muted">
                 {community.description}
@@ -322,7 +319,7 @@ export default async function CommunityPage({
 
             {/* Related */}
             {relatedCommunities.length > 0 ? (
-              <section className="rounded-2xl bg-surface-secondary border border-white/[0.04] py-3">
+              <section className="rounded-2xl bg-background border border-white/10 py-3">
                 <h2 className="px-4 text-[20px] font-extrabold text-white">
                   You might like
                 </h2>

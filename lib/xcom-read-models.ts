@@ -27,6 +27,15 @@ type CommunityVisualProfile = {
 
 const communityVisualProfiles: Record<string, CommunityVisualProfile> = {};
 
+/**
+ * Slug → thumbnail URL overrides. Used to pin a bespoke logo on our own
+ * community (and any partner communities) without touching DB records.
+ * Takes precedence over whatever's stored on the community row.
+ */
+const communityThumbnailOverrides: Record<string, string> = {
+  "x-fun-com-community": "/xcom-community-thumb.svg",
+};
+
 const defaultVisualProfile = (name: string): CommunityVisualProfile => {
   return {
     avatar: name
@@ -236,6 +245,8 @@ export const listCommunityCards = async () => {
         description: community.description,
         rules: community.rules,
         bannerUrl: community.bannerUrl,
+        thumbnailUrl:
+          communityThumbnailOverrides[community.slug] ?? community.thumbnailUrl,
         memberCount: community.memberCount,
         activeNow: Math.max(1, Math.round(community.memberCount * 0.08)),
         trendingRank: 0,
@@ -257,6 +268,37 @@ export const listCommunityCards = async () => {
 
 export const listTrendingCommunityCards = async () => {
   return (await listCommunityCards()).slice(0, 3);
+};
+
+/**
+ * List communities the current viewer has actively joined, sorted by most
+ * recently joined first. Returns [] if no viewer is logged in.
+ */
+export const listMyCommunities = async () => {
+  const viewerId = await getViewerUserId();
+  if (!viewerId) return [];
+
+  const { snapshot, idx } = await getIndexedSnapshot();
+  const memberships = idx.membershipsByUser.get(viewerId) ?? [];
+  const activeMemberships = memberships.filter((m) => m.status === "active");
+
+  const allCards = await listCommunityCards();
+  const cardBySlug = new Map(allCards.map((c) => [c.slug, c]));
+
+  return activeMemberships
+    .map((membership) => {
+      const community = idx.communitiesById.get(membership.communityId);
+      if (!community) return null;
+      const card = cardBySlug.get(community.slug);
+      if (!card) return null;
+      return {
+        ...card,
+        role: membership.role,
+        joinedAt: membership.createdAt,
+      };
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+    .sort((left, right) => Date.parse(right.joinedAt) - Date.parse(left.joinedAt));
 };
 
 const toPostRecord = (
@@ -339,6 +381,26 @@ const toPostRecord = (
     viewerRepostXSyncStatus: viewerRepostReaction?.xSyncStatus,
     viewerHasLiked: Boolean(viewerLikeReaction),
     viewerHasReposted: Boolean(viewerRepostReaction),
+    quotedPost: post.quotedPostId ? (() => {
+      const qp = idx.postsByIdMap.get(post.quotedPostId);
+      if (!qp) return undefined;
+      const qpAuthor = idx.usersById.get(qp.authorUserId);
+      if (!qpAuthor) return undefined;
+      const qpCommunity = idx.communitiesById.get(qp.communityId);
+      const qpMembership = qpCommunity
+        ? idx.membershipByCommunityUser.get(`${qpCommunity.id}:${qpAuthor.id}`)
+        : undefined;
+      return {
+        id: qp.id,
+        author: toMemberIdentity(
+          qpAuthor,
+          qpMembership?.status === "active" ? qpMembership?.role : undefined,
+          verifiedHandles.has(qpAuthor.xHandle),
+        ),
+        body: qp.body,
+        createdAt: qp.createdAt,
+      };
+    })() : undefined,
   } satisfies CommunityPostRecord & {
     viewerHasLiked: boolean;
     viewerHasReposted: boolean;
