@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { Search } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { PostCard } from "@/components/community/post-card";
 import type { CommunityPostRecord } from "@/lib/xcom-domain";
 
@@ -34,22 +33,10 @@ export function PostFeed({
   viewer,
 }: PostFeedProps) {
   const [visibleCount, setVisibleCount] = useState(POSTS_PER_PAGE);
-  const [searchQuery, setSearchQuery] = useState("");
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const filteredPosts = useMemo(() => {
-    if (!searchQuery.trim()) return posts;
-    const query = searchQuery.toLowerCase();
-    return posts.filter(
-      (post) =>
-        post.body.toLowerCase().includes(query) ||
-        post.author.displayName.toLowerCase().includes(query) ||
-        post.author.handle?.toLowerCase().includes(query),
-    );
-  }, [posts, searchQuery]);
-
-  const visiblePosts = filteredPosts.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredPosts.length;
+  const visiblePosts = posts.slice(0, visibleCount);
+  const hasMore = visibleCount < posts.length;
 
   // Infinite scroll via IntersectionObserver
   const loadMore = useCallback(() => {
@@ -104,33 +91,6 @@ export function PostFeed({
 
   return (
     <>
-      {/* Search bar — only show when there are enough posts */}
-      {posts.length > 3 ? (
-        <div className="border-b border-white/[0.08] px-4 py-2.5 sm:px-6">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-copy-soft" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setVisibleCount(POSTS_PER_PAGE);
-              }}
-              placeholder="Search posts..."
-              className="w-full rounded-full border border-white/[0.08] bg-surface-secondary/50 py-2 pl-9 pr-4 text-[14px] text-white placeholder:text-copy-soft focus:border-accent-secondary/40 focus:outline-none"
-            />
-          </div>
-        </div>
-      ) : null}
-
-      {searchQuery && filteredPosts.length === 0 ? (
-        <div className="px-4 py-8 text-center sm:px-6">
-          <div className="text-[15px] text-copy-muted">
-            No posts matching &ldquo;{searchQuery}&rdquo;
-          </div>
-        </div>
-      ) : null}
-
       {visiblePosts.map((post) => (
         <PostCard
           key={post.id}

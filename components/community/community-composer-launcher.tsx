@@ -203,7 +203,7 @@ export function CommunityComposerSidebarButton() {
       type="button"
       onClick={ctx.open}
       aria-label="Create a new post"
-      className="mt-4 hidden size-[50px] items-center justify-center rounded-full bg-accent-secondary text-white transition hover:brightness-110 lg:flex xl:size-auto xl:gap-3 xl:px-6 xl:py-3.5"
+      className="hidden size-[50px] items-center justify-center rounded-full bg-white text-black transition hover:bg-white/90 lg:flex xl:size-auto xl:gap-3 xl:px-6 xl:py-3.5"
     >
       <PenSquare className="size-5 xl:hidden" />
       <span className="hidden text-[17px] font-bold xl:block">Post</span>
