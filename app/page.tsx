@@ -98,11 +98,7 @@ export default async function Home({ searchParams }: HomePageProps) {
                 {isXCommunitiesShutdownActive() ? (
                   <>
                     {/* Urgency badge */}
-                    <div className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-red-300">
-                      <span className="relative flex size-2">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                        <span className="relative inline-flex size-2 rounded-full bg-red-500" />
-                      </span>
+                    <div className="inline-flex animate-pulse items-center rounded-full border border-red-500/30 bg-red-500/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-red-300">
                       X Communities Shutdown
                     </div>
 
