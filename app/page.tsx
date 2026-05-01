@@ -89,9 +89,13 @@ export default async function Home({ searchParams }: HomePageProps) {
         <div className="w-full max-w-[990px]">
           {/* ── HERO ── */}
           <section className="relative overflow-hidden border-b border-white/[0.08]">
-            {/* Gradient background */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-accent-secondary/[0.07] via-transparent to-transparent" />
-            <div className="pointer-events-none absolute -right-32 -top-32 size-[500px] rounded-full bg-accent-secondary/[0.04] blur-[120px]" />
+            {/* Gradient background — hidden during countdown for a cleaner look */}
+            {!isXCommunitiesShutdownActive() ? (
+              <>
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-accent-secondary/[0.07] via-transparent to-transparent" />
+                <div className="pointer-events-none absolute -right-32 -top-32 size-[500px] rounded-full bg-accent-secondary/[0.04] blur-[120px]" />
+              </>
+            ) : null}
 
             <div className="relative px-4 pb-12 pt-16 sm:px-8 sm:pb-16 sm:pt-20">
               <div className="mx-auto max-w-xl text-center">
@@ -115,7 +119,7 @@ export default async function Home({ searchParams }: HomePageProps) {
                     </div>
 
                     {/* Subtitle */}
-                    <p className="mx-auto mt-7 max-w-xl text-[18px] font-semibold leading-[1.45] text-white sm:text-[24px]">
+                    <p className="mx-auto mt-7 max-w-xl text-[16px] font-semibold leading-[1.45] text-white sm:text-[20px]">
                       Once your community is gone, your members{" "}
                       <span className="whitespace-nowrap text-red-400">can&apos;t be regrouped</span>.
                       Move them here while you still can.
