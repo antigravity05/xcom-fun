@@ -137,15 +137,17 @@ export default async function Home({ searchParams }: HomePageProps) {
                   </>
                 )}
 
-                {/* CTA group */}
+                {/* CTA group — Connect X button hidden during countdown */}
                 <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-                  <Link
-                    href="/connect-x"
-                    className="inline-flex items-center gap-2.5 rounded-full bg-accent-secondary px-7 py-3.5 text-[16px] font-bold text-white shadow-lg shadow-accent-secondary/20 transition hover:brightness-110"
-                  >
-                    <span className="text-[20px] font-black">𝕏</span>
-                    Connect your X account
-                  </Link>
+                  {isXCommunitiesShutdownActive() ? null : (
+                    <Link
+                      href="/connect-x"
+                      className="inline-flex items-center gap-2.5 rounded-full bg-accent-secondary px-7 py-3.5 text-[16px] font-bold text-white shadow-lg shadow-accent-secondary/20 transition hover:brightness-110"
+                    >
+                      <span className="text-[20px] font-black">𝕏</span>
+                      Connect your X account
+                    </Link>
+                  )}
                   <a
                     href="#communities"
                     className="inline-flex items-center gap-2 rounded-full border border-white/[0.12] px-6 py-3.5 text-[15px] font-bold text-white transition hover:bg-white/[0.04]"
