@@ -119,9 +119,9 @@ export default async function Home({ searchParams }: HomePageProps) {
                     </div>
 
                     {/* Subtitle */}
-                    <p className="mx-auto mt-7 max-w-md text-[16px] leading-7 text-copy-muted sm:text-[18px]">
+                    <p className="mx-auto mt-7 max-w-xl text-[18px] font-semibold leading-[1.45] text-white sm:text-[24px]">
                       Once your community is gone, your members{" "}
-                      <span className="font-bold text-white">can&apos;t be regrouped</span>.
+                      <span className="text-red-400">can&apos;t be regrouped</span>.
                       Move them here while you still can.
                     </p>
                   </>
