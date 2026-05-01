@@ -144,13 +144,23 @@ export default async function Home({ searchParams }: HomePageProps) {
 
                 {/* CTA group */}
                 <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-                  <Link
-                    href="/connect-x"
-                    className="inline-flex items-center gap-2.5 rounded-full bg-accent-secondary px-7 py-3.5 text-[16px] font-bold text-white shadow-lg shadow-accent-secondary/20 transition hover:brightness-110"
-                  >
-                    <span className="text-[20px] font-black">𝕏</span>
-                    Connect your X account
-                  </Link>
+                  {isXCommunitiesShutdownActive() ? (
+                    <Link
+                      href="/create-community"
+                      className="inline-flex items-center gap-2.5 rounded-full bg-accent-secondary px-7 py-3.5 text-[16px] font-bold text-white shadow-lg shadow-accent-secondary/20 transition hover:brightness-110"
+                    >
+                      Migrate your community to x-com.fun
+                      <ArrowRight className="size-4" />
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/connect-x"
+                      className="inline-flex items-center gap-2.5 rounded-full bg-accent-secondary px-7 py-3.5 text-[16px] font-bold text-white shadow-lg shadow-accent-secondary/20 transition hover:brightness-110"
+                    >
+                      <span className="text-[20px] font-black">𝕏</span>
+                      Connect your X account
+                    </Link>
+                  )}
                   <a
                     href="#communities"
                     className="inline-flex items-center gap-2 rounded-full border border-white/[0.12] px-6 py-3.5 text-[15px] font-bold text-white transition hover:bg-white/[0.04]"
@@ -375,23 +385,46 @@ export default async function Home({ searchParams }: HomePageProps) {
 
             {/* Bottom CTA */}
             <div className="border-t border-white/[0.08] px-4 py-12 text-center sm:py-16">
-              <h2 className="text-[24px] font-extrabold text-white sm:text-[28px]">
-                Ready to join?
-              </h2>
-              <p className="mx-auto mt-2 max-w-sm text-[15px] leading-6 text-copy-muted">
-                Connect your X account and start posting in communities
-                today. No signup needed.
-              </p>
-              <Link
-                href="/connect-x"
-                className="mt-6 inline-flex items-center gap-2.5 rounded-full bg-accent-secondary px-7 py-3.5 text-[16px] font-bold text-white shadow-lg shadow-accent-secondary/20 transition hover:brightness-110"
-              >
-                <span className="text-[20px] font-black">𝕏</span>
-                Get started — it&apos;s free
-              </Link>
-              <p className="mt-3 text-[12px] text-copy-soft">
-                One-click login via X. No email, no password.
-              </p>
+              {isXCommunitiesShutdownActive() ? (
+                <>
+                  <h2 className="text-[24px] font-extrabold text-white sm:text-[28px]">
+                    Don&apos;t lose your members on May 6.
+                  </h2>
+                  <p className="mx-auto mt-2 max-w-sm text-[15px] leading-6 text-copy-muted">
+                    Move your community here while you can still tell them where you&apos;re going.
+                  </p>
+                  <Link
+                    href="/create-community"
+                    className="mt-6 inline-flex items-center gap-2.5 rounded-full bg-accent-secondary px-7 py-3.5 text-[16px] font-bold text-white shadow-lg shadow-accent-secondary/20 transition hover:brightness-110"
+                  >
+                    Migrate your community to x-com.fun
+                    <ArrowRight className="size-4" />
+                  </Link>
+                  <p className="mt-3 text-[12px] text-copy-soft">
+                    One-click login via X. No email, no password.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-[24px] font-extrabold text-white sm:text-[28px]">
+                    Ready to join?
+                  </h2>
+                  <p className="mx-auto mt-2 max-w-sm text-[15px] leading-6 text-copy-muted">
+                    Connect your X account and start posting in communities
+                    today. No signup needed.
+                  </p>
+                  <Link
+                    href="/connect-x"
+                    className="mt-6 inline-flex items-center gap-2.5 rounded-full bg-accent-secondary px-7 py-3.5 text-[16px] font-bold text-white shadow-lg shadow-accent-secondary/20 transition hover:brightness-110"
+                  >
+                    <span className="text-[20px] font-black">𝕏</span>
+                    Get started — it&apos;s free
+                  </Link>
+                  <p className="mt-3 text-[12px] text-copy-soft">
+                    One-click login via X. No email, no password.
+                  </p>
+                </>
+              )}
             </div>
           </section>
         </div>

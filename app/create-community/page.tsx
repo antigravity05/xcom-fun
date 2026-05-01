@@ -2,14 +2,26 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CreateCommunityForm } from "@/components/forms/create-community-form";
 import { XcomChrome } from "@/components/layout/xcom-chrome";
+import { isXCommunitiesShutdownActive } from "@/lib/x-communities-deadline";
 import { getViewer } from "@/lib/xcom-read-models";
 
-export const metadata: Metadata = {
-  title: "Create community",
-  description: "Create a community for your crypto project. Group all posts about your coin in one place.",
-};
+export function generateMetadata(): Metadata {
+  if (isXCommunitiesShutdownActive()) {
+    return {
+      title: "Migrate your community to x-com.fun",
+      description:
+        "X kills Communities on May 6. Move yours to x-com.fun before your members can't be regrouped.",
+    };
+  }
+  return {
+    title: "Create community",
+    description:
+      "Create a community for your crypto project. Group all posts about your coin in one place.",
+  };
+}
 
 export default async function CreateCommunityPage() {
+  const isMigrating = isXCommunitiesShutdownActive();
   let viewer;
   try {
     viewer = await getViewer();
@@ -47,7 +59,7 @@ export default async function CreateCommunityPage() {
           <div className="sticky top-[53px] z-20 border-b border-white/[0.08] bg-background/85 backdrop-blur lg:top-0">
             <div className="flex min-h-[53px] items-center px-4 sm:px-6">
               <h1 className="text-[20px] font-extrabold text-white">
-                New community
+                {isMigrating ? "Migrate your community" : "New community"}
               </h1>
             </div>
           </div>
@@ -57,7 +69,9 @@ export default async function CreateCommunityPage() {
           ) : (
             <div className="px-4 py-12 text-center sm:px-6">
               <p className="text-[15px] text-copy-muted">
-                Connect X to create a community.
+                {isMigrating
+                  ? "Connect X to migrate your community."
+                  : "Connect X to create a community."}
               </p>
               <Link
                 href="/connect-x?redirectTo=/create-community"

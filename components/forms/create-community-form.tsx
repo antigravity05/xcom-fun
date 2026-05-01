@@ -3,20 +3,15 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Loader2 } from "lucide-react";
-import { ShareCommunityModal } from "@/components/community/share-community-modal";
-
-interface CreatedCommunity {
-  slug: string;
-  name: string;
-}
+import { isXCommunitiesShutdownActive } from "@/lib/x-communities-deadline";
 
 export const CreateCommunityForm = () => {
   const router = useRouter();
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
-  const [created, setCreated] = useState<CreatedCommunity | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isMigrating = isXCommunitiesShutdownActive();
 
   const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,11 +61,8 @@ export const CreateCommunityForm = () => {
         return;
       }
 
-      const submittedName = formData.get("name");
-      setCreated({
-        slug: result.slug,
-        name: typeof submittedName === "string" ? submittedName : "Your community",
-      });
+      router.push(`/communities/${result.slug}`);
+      router.refresh();
     } catch (err) {
       setServerMessage(
         err instanceof Error ? err.message : "Something went wrong.",
@@ -80,21 +72,15 @@ export const CreateCommunityForm = () => {
     }
   };
 
-  const handleShareModalClose = () => {
-    if (!created) return;
-    router.push(`/communities/${created.slug}`);
-    router.refresh();
-  };
-
   return (
-    <>
-      <form onSubmit={handleSubmit} className="border-b border-white/10">
-        <div className="px-4 py-5 sm:px-6">
-          <p className="text-[15px] leading-6 text-copy-muted">
-            Launch your community in seconds. Give it a name and description
-            &mdash; you can always update these later.
-          </p>
-        </div>
+    <form onSubmit={handleSubmit} className="border-b border-white/10">
+      <div className="px-4 py-5 sm:px-6">
+        <p className="text-[15px] leading-6 text-copy-muted">
+          {isMigrating
+            ? "Move your X community here before May 6. Add a name, description, and banner — you can always update these later."
+            : "Launch your community in seconds. Give it a name and description — you can always update these later."}
+        </p>
+      </div>
 
       <div className="space-y-0">
         <div className="signal-divider px-4 py-4 sm:px-6">
@@ -182,8 +168,10 @@ export const CreateCommunityForm = () => {
             {isPending ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Creating...
+                {isMigrating ? "Migrating..." : "Creating..."}
               </>
+            ) : isMigrating ? (
+              "Migrate my community"
             ) : (
               "Create community"
             )}
@@ -195,14 +183,7 @@ export const CreateCommunityForm = () => {
           ) : null}
         </div>
       </div>
-      </form>
-      <ShareCommunityModal
-        isOpen={!!created}
-        communitySlug={created?.slug ?? ""}
-        communityName={created?.name ?? ""}
-        onClose={handleShareModalClose}
-      />
-    </>
+    </form>
   );
 };
 
