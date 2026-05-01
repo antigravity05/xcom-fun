@@ -7,18 +7,29 @@ import {
 } from "lucide-react";
 import { CommunityCard } from "@/components/community/community-card";
 import { XcomChrome } from "@/components/layout/xcom-chrome";
+import { ShutdownCountdown } from "@/components/landing/shutdown-countdown";
 import { formatCompactNumber } from "@/lib/xcom-formatters";
+import { isXCommunitiesShutdownActive } from "@/lib/x-communities-deadline";
 import {
   getViewer,
   listCommunityCards,
   listTrendingCommunityCards,
 } from "@/lib/xcom-read-models";
 
-export const metadata: Metadata = {
-  title: "x-com.fun — Crypto Communities",
-  description:
-    "X Communities are back. One place for every crypto project — post here, it syncs to X.",
-};
+export function generateMetadata(): Metadata {
+  if (isXCommunitiesShutdownActive()) {
+    return {
+      title: "X kills Communities May 6 — move yours to x-com.fun",
+      description:
+        "X is deleting Communities on May 6. Once gone, your members can't be regrouped. Save your community now on x-com.fun.",
+    };
+  }
+  return {
+    title: "x-com.fun — Crypto Communities",
+    description:
+      "X Communities are back. One place for every crypto project — post here, it syncs to X.",
+  };
+}
 
 type HomePageProps = {
   searchParams: Promise<{ q?: string }>;
@@ -84,18 +95,52 @@ export default async function Home({ searchParams }: HomePageProps) {
 
             <div className="relative px-4 pb-12 pt-16 sm:px-8 sm:pb-16 sm:pt-20">
               <div className="mx-auto max-w-xl text-center">
-                {/* Title */}
-                <h1 className="mt-6 text-[36px] font-extrabold leading-[1.1] tracking-tight text-white sm:text-[52px]">
-                  X communities
-                  <br />
-                  <span className="text-accent-secondary">are back.</span>
-                </h1>
+                {isXCommunitiesShutdownActive() ? (
+                  <>
+                    {/* Urgency badge */}
+                    <div className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-red-300">
+                      <span className="relative flex size-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex size-2 rounded-full bg-red-500" />
+                      </span>
+                      X Communities Shutdown
+                    </div>
 
-                {/* Subtitle */}
-                <p className="mx-auto mt-5 max-w-md text-[16px] leading-7 text-copy-muted sm:text-[18px]">
-                  Twitter killed Communities. We rebuilt them. One place for
-                  every crypto project — post here, it syncs to X.
-                </p>
+                    {/* Title */}
+                    <h1 className="mt-6 text-[36px] font-extrabold leading-[1.1] tracking-tight text-white sm:text-[52px]">
+                      X kills Communities
+                      <br />
+                      <span className="text-red-400">on May 6.</span>
+                    </h1>
+
+                    {/* Countdown */}
+                    <div className="mt-8">
+                      <ShutdownCountdown />
+                    </div>
+
+                    {/* Subtitle */}
+                    <p className="mx-auto mt-7 max-w-md text-[16px] leading-7 text-copy-muted sm:text-[18px]">
+                      Once your community is gone, your members{" "}
+                      <span className="font-bold text-white">can&apos;t be regrouped</span>.
+                      Move them here while you still can.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    {/* Title */}
+                    <h1 className="mt-6 text-[36px] font-extrabold leading-[1.1] tracking-tight text-white sm:text-[52px]">
+                      X communities
+                      <br />
+                      <span className="text-accent-secondary">are back.</span>
+                    </h1>
+
+                    {/* Subtitle */}
+                    <p className="mx-auto mt-5 max-w-md text-[16px] leading-7 text-copy-muted sm:text-[18px]">
+                      Twitter killed Communities. We rebuilt them. One place for
+                      every crypto project — post here, it syncs to X.
+                    </p>
+                  </>
+                )}
 
                 {/* CTA group */}
                 <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
