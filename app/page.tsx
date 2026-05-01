@@ -101,11 +101,6 @@ export default async function Home({ searchParams }: HomePageProps) {
               <div className="mx-auto max-w-xl text-center">
                 {isXCommunitiesShutdownActive() ? (
                   <>
-                    {/* Urgency badge */}
-                    <div className="inline-flex animate-pulse items-center rounded-full border border-red-500/30 bg-red-500/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-red-300">
-                      X Communities Shutdown
-                    </div>
-
                     {/* Title */}
                     <h1 className="mt-6 text-[36px] font-extrabold leading-[1.1] tracking-tight text-white sm:text-[52px]">
                       X kills Communities
