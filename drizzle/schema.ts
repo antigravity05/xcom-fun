@@ -127,14 +127,22 @@ export const posts = pgTable(
     communityId: uuid("community_id")
       .notNull()
       .references(() => communities.id, { onDelete: "cascade" }),
-    authorUserId: uuid("author_user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    authorUserId: uuid("author_user_id").references(() => users.id, {
+      onDelete: "cascade",
+    }),
     body: text("body").notNull(),
     mediaPayload: jsonb("media_payload"),
     isPinned: boolean("is_pinned").default(false).notNull(),
     quotedPostId: uuid("quoted_post_id"),
     viewCount: integer("view_count").default(0).notNull(),
+    // ── Import fields (NULL for native posts) ──
+    externalTweetId: text("external_tweet_id"),
+    externalAuthorHandle: text("external_author_handle"),
+    externalAuthorDisplayName: text("external_author_display_name"),
+    externalAuthorAvatarUrl: text("external_author_avatar_url"),
+    externalEngagementLikes: integer("external_engagement_likes"),
+    externalEngagementReposts: integer("external_engagement_reposts"),
+    externalPostedAt: timestamp("external_posted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
@@ -144,6 +152,13 @@ export const posts = pgTable(
       table.createdAt,
     ),
     authorIndex: index("posts_author_user_id_idx").on(table.authorUserId),
+    externalTweetUniqueIndex: uniqueIndex("posts_external_tweet_unique").on(
+      table.communityId,
+      table.externalTweetId,
+    ),
+    externalAuthorHandleIndex: index("posts_external_author_handle_idx").on(
+      table.externalAuthorHandle,
+    ),
   }),
 );
 
@@ -209,6 +224,26 @@ export const bugReports = pgTable(
   (table) => ({
     bugReportsCreatedIndex: index("bug_reports_created_at_idx").on(table.createdAt),
     bugReportsStatusIndex: index("bug_reports_status_idx").on(table.status),
+  }),
+);
+
+export const importTokens = pgTable(
+  "import_tokens",
+  {
+    token: text("token").primaryKey(),
+    communityId: uuid("community_id")
+      .notNull()
+      .references(() => communities.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    importTokensCommunityIndex: index("import_tokens_community_idx").on(table.communityId),
+    importTokensUserIndex: index("import_tokens_user_idx").on(table.userId),
   }),
 );
 
@@ -299,4 +334,12 @@ export const postReactionsRelations = relations(postReactions, ({ one }) => ({
 
 export const postPublicationsRelations = relations(postPublications, ({ one }) => ({
   post: one(posts, { fields: [postPublications.postId], references: [posts.id] }),
+}));
+
+export const importTokensRelations = relations(importTokens, ({ one }) => ({
+  community: one(communities, {
+    fields: [importTokens.communityId],
+    references: [communities.id],
+  }),
+  user: one(users, { fields: [importTokens.userId], references: [users.id] }),
 }));
