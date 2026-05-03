@@ -105,6 +105,19 @@ export const readXcomStore = cache(async (): Promise<XcomStoreSnapshot> => {
       ? (publication.status as PublicationStatus)
       : "pending";
 
+    const isImport = Boolean(post.externalTweetId);
+    const externalSnapshot = isImport
+      ? {
+          tweetId: post.externalTweetId as string,
+          authorHandle: post.externalAuthorHandle ?? "",
+          authorDisplayName: post.externalAuthorDisplayName ?? "",
+          authorAvatarUrl: post.externalAuthorAvatarUrl ?? null,
+          likes: post.externalEngagementLikes ?? null,
+          reposts: post.externalEngagementReposts ?? null,
+          postedAt: (post.externalPostedAt ?? post.createdAt).toISOString(),
+        }
+      : undefined;
+
     return {
       id: post.id,
       communityId: post.communityId,
@@ -117,9 +130,12 @@ export const readXcomStore = cache(async (): Promise<XcomStoreSnapshot> => {
       likeCount: allReactions.filter((r) => r.postId === post.id && r.kind === "like").length,
       repostCount: allReactions.filter((r) => r.postId === post.id && r.kind === "repost").length,
       viewCount: post.viewCount ?? 0,
-      createdAt: post.createdAt.toISOString(),
+      // Imports show up in the timeline at the original X posting time so
+      // the feed reads chronologically the way it did on X.
+      createdAt: (post.externalPostedAt ?? post.createdAt).toISOString(),
       xSyncStatus,
       externalPostId: publication?.externalPostId ?? undefined,
+      external: externalSnapshot,
     };
   });
 

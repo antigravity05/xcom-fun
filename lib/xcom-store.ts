@@ -41,7 +41,12 @@ export type XcomStoreMembership = {
 export type XcomStorePost = {
   id: string;
   communityId: string;
-  authorUserId: string;
+  /**
+   * Set for native posts and for imported tweets whose author has a
+   * x-com.fun account. NULL for "ghost" imports (X user not yet on the
+   * platform). Filled in retroactively on signup.
+   */
+  authorUserId: string | null;
   body: string;
   media?: CommunityPostMedia;
   isPinned?: boolean;
@@ -53,6 +58,16 @@ export type XcomStorePost = {
   createdAt: string;
   xSyncStatus: PublicationStatus;
   externalPostId?: string;
+  /** Snapshot of the original X tweet, set on import. NULL for native posts. */
+  external?: {
+    tweetId: string;
+    authorHandle: string;
+    authorDisplayName: string;
+    authorAvatarUrl: string | null;
+    likes: number | null;
+    reposts: number | null;
+    postedAt: string;
+  };
 };
 
 export type XcomStoreReply = {

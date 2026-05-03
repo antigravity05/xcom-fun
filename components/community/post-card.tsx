@@ -49,10 +49,14 @@ type PostCardProps = {
 
 export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
   // Build tweet URL: https://x.com/handle/status/tweetId
+  // Native posts use post.externalPostId (set when sync to X completes).
+  // Imported posts use post.imported.tweetId (set at import time).
+  const tweetIdForLink = post.externalPostId ?? post.imported?.tweetId ?? null;
   const xTweetUrl =
-    post.externalPostId && post.author.handle
-      ? `https://x.com/${post.author.handle.replace(/^@/, "")}/status/${post.externalPostId}`
+    tweetIdForLink && post.author.handle
+      ? `https://x.com/${post.author.handle.replace(/^@/, "")}/status/${tweetIdForLink}`
       : null;
+  const isImported = Boolean(post.imported);
 
   return (
     <article className="group/post relative border-b border-white/[0.08] px-3 py-2.5 transition-colors hover:bg-white/[0.02] sm:px-6 sm:py-3">
@@ -96,7 +100,27 @@ export const PostCard = ({ post, viewer, interaction }: PostCardProps) => {
                   {post.author.role}
                 </span>
               ) : null}
-              <span className="shrink-0 truncate text-copy-muted">{post.author.handle}</span>
+              <span className="shrink-0 truncate text-copy-muted">
+                {post.author.handle.startsWith("@")
+                  ? post.author.handle
+                  : `@${post.author.handle}`}
+              </span>
+              {isImported ? (
+                <span
+                  className="ml-0.5 hidden shrink-0 items-center gap-0.5 rounded bg-white/[0.06] px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-copy-muted sm:inline-flex"
+                  title="Imported from X"
+                >
+                  <svg
+                    className="size-2.5"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden
+                  >
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                  from X
+                </span>
+              ) : null}
               <span className="shrink-0 text-copy-soft">·</span>
               {xTweetUrl ? (
                 <a

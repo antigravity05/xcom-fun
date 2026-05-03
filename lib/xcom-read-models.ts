@@ -16,6 +16,7 @@ import type {
   XcomStoreMembership,
   XcomStoreReaction,
   XcomStoreReply,
+  XcomStorePost,
 } from "@/lib/xcom-store";
 
 type CommunityVisualProfile = {
@@ -72,6 +73,17 @@ const toMemberIdentity = (
     avatar: user.avatar,
     role,
     verified,
+  };
+};
+
+const toGhostIdentity = (
+  external: NonNullable<XcomStorePost["external"]>,
+) => {
+  return {
+    displayName: external.authorDisplayName || external.authorHandle,
+    handle: external.authorHandle,
+    avatar: external.authorAvatarUrl ?? "",
+    isGhost: true as const,
   };
 };
 
@@ -301,6 +313,27 @@ export const listMyCommunities = async () => {
     .sort((left, right) => Date.parse(right.joinedAt) - Date.parse(left.joinedAt));
 };
 
+const resolvePostAuthor = (
+  idx: SnapshotIndex,
+  post: XcomStorePost,
+) => {
+  const linked = post.authorUserId ? idx.usersById.get(post.authorUserId) : undefined;
+  if (linked) {
+    const membership = idx.membershipByCommunityUser.get(
+      `${post.communityId}:${linked.id}`,
+    );
+    return toMemberIdentity(
+      linked,
+      membership?.status === "active" ? membership?.role : undefined,
+      verifiedHandles.has(linked.xHandle),
+    );
+  }
+  if (post.external) {
+    return toGhostIdentity(post.external);
+  }
+  return null;
+};
+
 const toPostRecord = (
   idx: SnapshotIndex,
   postId: string,
@@ -312,13 +345,14 @@ const toPostRecord = (
     return null;
   }
 
-  const author = idx.usersById.get(post.authorUserId);
   const community = idx.communitiesById.get(post.communityId);
-  const membership = idx.membershipByCommunityUser.get(
-    `${post.communityId}:${post.authorUserId}`,
-  );
+  if (!community) {
+    return null;
+  }
 
-  if (!author || !community) {
+  const authorIdentity = resolvePostAuthor(idx, post);
+  if (!authorIdentity) {
+    // Author not on x-com.fun and no external snapshot — broken post, skip.
     return null;
   }
 
@@ -360,11 +394,7 @@ const toPostRecord = (
   return {
     id: post.id,
     communitySlug: community.slug,
-    author: toMemberIdentity(
-      author,
-      membership?.status === "active" ? membership?.role : undefined,
-      verifiedHandles.has(author.xHandle),
-    ),
+    author: authorIdentity,
     body: post.body,
     createdAt: post.createdAt,
     isPinned: post.isPinned,
@@ -381,26 +411,28 @@ const toPostRecord = (
     viewerRepostXSyncStatus: viewerRepostReaction?.xSyncStatus,
     viewerHasLiked: Boolean(viewerLikeReaction),
     viewerHasReposted: Boolean(viewerRepostReaction),
-    quotedPost: post.quotedPostId ? (() => {
-      const qp = idx.postsByIdMap.get(post.quotedPostId);
-      if (!qp) return undefined;
-      const qpAuthor = idx.usersById.get(qp.authorUserId);
-      if (!qpAuthor) return undefined;
-      const qpCommunity = idx.communitiesById.get(qp.communityId);
-      const qpMembership = qpCommunity
-        ? idx.membershipByCommunityUser.get(`${qpCommunity.id}:${qpAuthor.id}`)
-        : undefined;
-      return {
-        id: qp.id,
-        author: toMemberIdentity(
-          qpAuthor,
-          qpMembership?.status === "active" ? qpMembership?.role : undefined,
-          verifiedHandles.has(qpAuthor.xHandle),
-        ),
-        body: qp.body,
-        createdAt: qp.createdAt,
-      };
-    })() : undefined,
+    imported: post.external
+      ? {
+          tweetId: post.external.tweetId,
+          originalLikes: post.external.likes,
+          originalReposts: post.external.reposts,
+          postedAt: post.external.postedAt,
+        }
+      : undefined,
+    quotedPost: post.quotedPostId
+      ? (() => {
+          const qp = idx.postsByIdMap.get(post.quotedPostId);
+          if (!qp) return undefined;
+          const qpAuthor = resolvePostAuthor(idx, qp);
+          if (!qpAuthor) return undefined;
+          return {
+            id: qp.id,
+            author: qpAuthor,
+            body: qp.body,
+            createdAt: qp.createdAt,
+          };
+        })()
+      : undefined,
   } satisfies CommunityPostRecord & {
     viewerHasLiked: boolean;
     viewerHasReposted: boolean;

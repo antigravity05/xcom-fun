@@ -12,6 +12,8 @@ export type MemberIdentity = {
   avatar: string;
   role?: CommunityRole;
   verified?: boolean;
+  /** True for imported tweets whose original X author has no x-com.fun account yet. */
+  isGhost?: boolean;
 };
 
 export type CommunityRecord = {
@@ -97,6 +99,13 @@ export type CommunityPostRecord = {
     author: MemberIdentity;
     body: string;
     createdAt: string;
+  };
+  /** Original-X metadata for tweets imported from a migrated X community. */
+  imported?: {
+    tweetId: string;
+    originalLikes: number | null;
+    originalReposts: number | null;
+    postedAt: string;
   };
 };
 
