@@ -1,13 +1,18 @@
 {
   "manifest_version": 3,
   "name": "x-com.fun importer (POC)",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Imports your X community tweets to x-com.fun before May 6.",
   "permissions": ["activeTab", "storage", "scripting"],
   "host_permissions": [
     "https://x.com/*",
-    "https://twitter.com/*"
+    "https://twitter.com/*",
+    "https://x-com.fun/*",
+    "https://www.x-com.fun/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": [

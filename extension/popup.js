@@ -5,12 +5,16 @@ const stopButton = $("stop");
 const scanNowButton = $("scan-now");
 const dumpButton = $("dump");
 const subEl = $("sub");
-const countEl = $("count");
+const accumulatedEl = $("count-accumulated");
+const sentEl = $("count-sent");
 const passesEl = $("passes");
 const statusPillEl = $("status-pill");
 const statusEl = $("status");
 const hintEl = $("hint");
 const outputEl = $("output");
+const tokenInputEl = $("token-input");
+const tokenSaveButton = $("token-save");
+const tokenStatusEl = $("token-status");
 
 let activeTabId = null;
 let pollTimer = null;
@@ -22,6 +26,7 @@ const PILL_LABELS = {
   throttled: "Throttled",
   stopped: "Stopped",
   error: "Error",
+  auth_failed: "Auth failed",
 };
 
 const showHint = (msg) => {
@@ -51,16 +56,25 @@ const formatRelativeTime = (iso) => {
   return new Date(iso).toLocaleTimeString();
 };
 
+const renderTokenStatus = (hasToken) => {
+  if (hasToken) {
+    tokenStatusEl.textContent = "Token set — batches will be sent to x-com.fun.";
+    tokenStatusEl.classList.add("has-token");
+  } else {
+    tokenStatusEl.textContent = "No token set — tweets accumulate locally only.";
+    tokenStatusEl.classList.remove("has-token");
+  }
+};
+
 const renderState = (state) => {
-  countEl.textContent = String(state.accumulated ?? 0);
+  accumulatedEl.textContent = String(state.accumulated ?? 0);
+  sentEl.textContent = String(state.sent ?? 0);
   passesEl.textContent = String(state.passes ?? 0);
+  renderTokenStatus(state.hasToken);
 
   let pillKind = "idle";
   if (state.running) pillKind = state.throttled ? "throttled" : "running";
-  else if (state.completion === "done") pillKind = "done";
-  else if (state.completion === "throttled") pillKind = "throttled";
-  else if (state.completion === "stopped") pillKind = "stopped";
-  else if (state.completion === "error") pillKind = "error";
+  else if (state.completion) pillKind = state.completion;
   renderPill(pillKind);
 
   if (state.running) {
@@ -74,7 +88,9 @@ const renderState = (state) => {
       state.accumulated > 0 ? "Restart import" : "Start auto-import";
   }
 
-  if (state.running) {
+  if (state.lastSendError) {
+    setStatus(`Send error: ${state.lastSendError}`, "error");
+  } else if (state.running) {
     if (state.throttled) {
       setStatus(
         `X is throttling — backing off (reason: ${state.throttleReason || "?"}).`,
@@ -86,8 +102,11 @@ const renderState = (state) => {
       setStatus("Running…");
     }
   } else if (state.completion === "done") {
+    const sentText = state.hasToken
+      ? `${state.sent} sent to x-com.fun.`
+      : "No token set, nothing sent.";
     setStatus(
-      `Done. ${state.accumulated} tweets collected over ${state.passes} passes.`,
+      `Done. ${state.accumulated} tweets collected over ${state.passes} passes. ${sentText}`,
       "ok",
     );
   } else if (state.completion === "throttled") {
@@ -95,9 +114,14 @@ const renderState = (state) => {
       "Stopped — X is rate-limiting this account. Wait 30 min and retry.",
       "warn",
     );
+  } else if (state.completion === "auth_failed") {
+    setStatus(
+      "Auth failed — token rejected by x-com.fun. Re-paste a fresh token.",
+      "error",
+    );
   } else if (state.completion === "stopped") {
     setStatus(
-      `Stopped manually. ${state.accumulated} tweets collected so far.`,
+      `Stopped manually. ${state.accumulated} accumulated, ${state.sent} sent.`,
     );
   } else {
     setStatus("Ready.");
@@ -173,10 +197,34 @@ dumpButton.addEventListener("click", async () => {
     setStatus("Nothing to dump.", "error");
     return;
   }
-  setStatus(`Dumped ${res.tweets.length} tweets to console + popup.`);
+  setStatus(`Dumped ${res.tweets.length} tweets to console + popup preview.`);
   console.log("[xcom-fun popup] Dumped tweets:", res.tweets);
   outputEl.textContent = JSON.stringify(res.tweets.slice(0, 5), null, 2);
   outputEl.style.display = "block";
+});
+
+tokenSaveButton.addEventListener("click", async () => {
+  const token = tokenInputEl.value.trim();
+  const res = await sendToTab({ type: "XCOM_FUN_SET_TOKEN", token });
+  if (res?.ok) {
+    tokenInputEl.value = "";
+    if (token) {
+      setStatus("Token saved.", "ok");
+      renderTokenStatus(true);
+    } else {
+      setStatus("Token cleared.");
+      renderTokenStatus(false);
+    }
+  } else {
+    setStatus(res?.error || "Failed to save token.", "error");
+  }
+});
+
+tokenInputEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    tokenSaveButton.click();
+  }
 });
 
 // Live progress messages from the content script
@@ -197,6 +245,7 @@ chrome.runtime.onMessage.addListener((message) => {
     startButton.disabled = true;
     scanNowButton.disabled = true;
     dumpButton.disabled = true;
+    // Token can still be checked
     return;
   }
   activeTabId = tab.id;

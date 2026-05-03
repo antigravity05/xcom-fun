@@ -59,28 +59,40 @@
       button.danger {
         background: #b91c1c;
       }
-      .live-counter {
+      .counters {
         margin: 14px 0 6px;
-        text-align: center;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
       }
-      .live-counter .count {
-        font-size: 38px;
+      .counter {
+        text-align: center;
+        background: #0a0a0a;
+        border: 1px solid #1a1a1a;
+        border-radius: 10px;
+        padding: 10px 4px;
+      }
+      .counter .count {
+        font-size: 28px;
         font-weight: 900;
         line-height: 1;
         font-variant-numeric: tabular-nums;
       }
-      .live-counter .label {
+      .counter .label {
         margin-top: 4px;
-        font-size: 11px;
+        font-size: 10px;
         text-transform: uppercase;
         letter-spacing: 0.18em;
         color: #888;
+      }
+      .counter.sent .count {
+        color: #34d399;
       }
       .meta {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 6px;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
       }
       .meta .row {
         background: #111;
@@ -141,7 +153,12 @@
         background: rgba(251, 191, 36, 0.15);
         color: #fbbf24;
       }
-      .pill.error {
+      .pill.stopped {
+        background: #1a1a1a;
+        color: #888;
+      }
+      .pill.error,
+      .pill.auth_failed {
         background: rgba(239, 68, 68, 0.15);
         color: #fca5a5;
       }
@@ -158,6 +175,45 @@
         border: none;
         border-top: 1px solid #1a1a1a;
         margin: 14px 0 10px;
+      }
+      .section-title {
+        font-size: 11px;
+        color: #666;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .token-row {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .token-row input {
+        flex: 1;
+        padding: 8px 10px;
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
+        background: #0a0a0a;
+        color: #fff;
+        font-size: 11px;
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      }
+      .token-row input:focus {
+        outline: none;
+        border-color: #1d9bf0;
+      }
+      .token-row button {
+        flex: 0 0 auto;
+        padding: 8px 12px;
+        font-size: 11px;
+      }
+      .token-status {
+        font-size: 11px;
+        margin-top: 4px;
+        color: #888;
+      }
+      .token-status.has-token {
+        color: #34d399;
       }
       .debug-row {
         display: flex;
@@ -193,9 +249,15 @@
       <button id="stop" class="danger" style="display: none">Stop</button>
     </div>
 
-    <div class="live-counter">
-      <div class="count" id="count">0</div>
-      <div class="label">Tweets accumulated</div>
+    <div class="counters">
+      <div class="counter">
+        <div class="count" id="count-accumulated">0</div>
+        <div class="label">Accumulated</div>
+      </div>
+      <div class="counter sent">
+        <div class="count" id="count-sent">0</div>
+        <div class="label">Sent</div>
+      </div>
     </div>
 
     <div class="meta">
@@ -214,7 +276,16 @@
 
     <hr />
 
-    <div style="font-size: 11px; color: #666; margin-bottom: 6px">Debug</div>
+    <div class="section-title">Import token</div>
+    <div class="token-row">
+      <input id="token-input" type="password" placeholder="Paste token from x-com.fun" />
+      <button id="token-save" class="secondary">Save</button>
+    </div>
+    <div class="token-status" id="token-status">No token set — tweets accumulate locally only.</div>
+
+    <hr />
+
+    <div class="section-title">Debug</div>
     <div class="debug-row">
       <button id="scan-now" class="secondary">Scan visible now</button>
       <button id="dump" class="secondary">Dump JSON</button>

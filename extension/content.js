@@ -23,6 +23,8 @@
   const THROTTLE_BACKOFF_MS = 90_000;      // after a throttle signal
   const STOP_AFTER_EMPTY_PASSES = 4;       // give up after N consecutive empty passes
   const SCROLL_FRACTION = 0.85;            // fraction of viewport per scroll
+  const BATCH_SIZE = 50;                   // send to backend every N unsent tweets
+  const TOKEN_STORAGE_KEY = "xcomFunImportToken";
 
   // ── DOM extraction ────────────────────────────────────────────────────
 
@@ -197,6 +199,9 @@
     return {
       running: false,
       accumulated: new Map(), // externalTweetId -> tweet
+      sent: new Set(), // externalTweetIds that were successfully POSTed
+      sendErrors: [], // last few send errors, for surfacing in popup
+      lastSendError: null,
       passes: 0,
       emptyPasses: 0,
       throttled: false,
@@ -204,6 +209,7 @@
       completion: null, // null while running; "done" | "throttled" | "stopped"
       startedAt: null,
       lastPassAt: null,
+      token: null,
     };
   }
 
@@ -211,6 +217,7 @@
     return {
       running: state.running,
       accumulated: state.accumulated.size,
+      sent: state.sent.size,
       passes: state.passes,
       emptyPasses: state.emptyPasses,
       throttled: state.throttled,
@@ -218,6 +225,8 @@
       completion: state.completion,
       startedAt: state.startedAt,
       lastPassAt: state.lastPassAt,
+      lastSendError: state.lastSendError,
+      hasToken: Boolean(state.token),
       sampleTweets: Array.from(state.accumulated.values()).slice(-3),
     };
   }
@@ -230,10 +239,65 @@
       });
   }
 
+  async function loadToken() {
+    try {
+      const stored = await chrome.storage.local.get(TOKEN_STORAGE_KEY);
+      return stored?.[TOKEN_STORAGE_KEY] || null;
+    } catch (e) {
+      warn("Failed to read token from storage", e);
+      return null;
+    }
+  }
+
+  async function flushBatch({ force = false } = {}) {
+    if (!state.token) return;
+    const unsent = [];
+    for (const tweet of state.accumulated.values()) {
+      if (!state.sent.has(tweet.externalTweetId)) {
+        unsent.push(tweet);
+        if (unsent.length >= BATCH_SIZE) break;
+      }
+    }
+    if (!unsent.length) return;
+    if (!force && unsent.length < BATCH_SIZE) return;
+
+    const result = await chrome.runtime
+      .sendMessage({
+        type: "XCOM_FUN_SEND_BATCH",
+        tweets: unsent,
+        token: state.token,
+      })
+      .catch((e) => ({ ok: false, error: String(e?.message || e) }));
+
+    if (result?.ok) {
+      for (const t of unsent) state.sent.add(t.externalTweetId);
+      log(
+        `Batch OK: imported=${result.imported} duplicates=${result.duplicates} total=${result.total}`,
+      );
+      state.lastSendError = null;
+    } else {
+      state.lastSendError = result?.error || "unknown";
+      state.sendErrors.push(state.lastSendError);
+      if (state.sendErrors.length > 5) state.sendErrors.shift();
+      warn("Batch send failed:", state.lastSendError);
+      // 401 means the token is dead — stop the import
+      if (result?.status === 401 || /token/i.test(state.lastSendError)) {
+        state.running = false;
+        state.completion = "auth_failed";
+      }
+    }
+    broadcast();
+  }
+
   async function runAutoImport() {
     state.running = true;
     state.startedAt = new Date().toISOString();
-    log("Auto-import started.");
+    state.token = await loadToken();
+    log(
+      state.token
+        ? "Auto-import started with token — will POST batches."
+        : "Auto-import started without token — accumulating locally only.",
+    );
 
     try {
       while (state.running) {
@@ -273,8 +337,13 @@
         }
 
         log(
-          `pass=${state.passes} new=${newCount} total=${state.accumulated.size} emptyPasses=${state.emptyPasses}`,
+          `pass=${state.passes} new=${newCount} total=${state.accumulated.size} sent=${state.sent.size} emptyPasses=${state.emptyPasses}`,
         );
+
+        // Send a batch if we've accumulated enough new tweets
+        await flushBatch();
+        if (!state.running) break; // flushBatch may have set running=false on auth fail
+
         broadcast();
 
         // Stop if no new tweets after several empty passes
@@ -301,8 +370,14 @@
       state.completion = "error";
     } finally {
       state.running = false;
+      // Final flush of any remaining unsent tweets
+      try {
+        await flushBatch({ force: true });
+      } catch (e) {
+        warn("Final flush failed:", e);
+      }
       log(
-        `Auto-import finished: completion=${state.completion} total=${state.accumulated.size} passes=${state.passes}`,
+        `Auto-import finished: completion=${state.completion} total=${state.accumulated.size} sent=${state.sent.size} passes=${state.passes}`,
       );
       broadcast();
     }
@@ -355,6 +430,33 @@
         ok: true,
         tweets: Array.from(state.accumulated.values()),
       });
+      return true;
+    }
+
+    if (message?.type === "XCOM_FUN_SET_TOKEN") {
+      const token = (message.token || "").trim();
+      if (token) {
+        chrome.storage.local
+          .set({ [TOKEN_STORAGE_KEY]: token })
+          .then(() => sendResponse({ ok: true }))
+          .catch((e) =>
+            sendResponse({ ok: false, error: String(e?.message || e) }),
+          );
+      } else {
+        chrome.storage.local
+          .remove(TOKEN_STORAGE_KEY)
+          .then(() => sendResponse({ ok: true, cleared: true }))
+          .catch((e) =>
+            sendResponse({ ok: false, error: String(e?.message || e) }),
+          );
+      }
+      return true; // async
+    }
+
+    if (message?.type === "XCOM_FUN_GET_TOKEN_STATUS") {
+      loadToken().then((token) =>
+        sendResponse({ ok: true, hasToken: Boolean(token) }),
+      );
       return true;
     }
   });
