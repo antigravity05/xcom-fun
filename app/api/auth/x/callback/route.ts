@@ -11,6 +11,26 @@ import { encryptToken } from "@/lib/x/token-encryption";
 import { saveUserTokens } from "@/lib/x/token-store";
 import { readXcomStore, updateXcomStore } from "@/lib/xcom-persistence";
 import type { XcomStoreUser } from "@/lib/xcom-store";
+import { linkImportedPostsToUser } from "@/lib/import-tweets";
+
+const lazyLinkImportedPosts = async (user: { id: string; xHandle: string }) => {
+  if (!process.env.DATABASE_URL) return;
+  try {
+    const handle = user.xHandle.replace(/^@/, "");
+    if (!handle) return;
+    const { linked } = await linkImportedPostsToUser({
+      userId: user.id,
+      xHandle: handle,
+    });
+    if (linked > 0) {
+      console.log(
+        `[auth/callback] Lazy-linked ${linked} imported posts to ${user.xHandle}`,
+      );
+    }
+  } catch (err) {
+    console.error("[auth/callback] Lazy-link failed:", err);
+  }
+};
 
 const upsertUserInDb = async (newUser: XcomStoreUser) => {
   if (!process.env.DATABASE_URL) return;
@@ -166,6 +186,8 @@ export async function GET(request: Request) {
       }
 
       user = newUser;
+      // Retro-link any imported tweets whose X handle matches this user.
+      await lazyLinkImportedPosts(user);
     } else if (avatarUrl && (!user.avatar || !user.avatar.startsWith("http"))) {
       // User exists but doesn't have a profile image yet — update it
       try {
@@ -271,6 +293,8 @@ export async function GET(request: Request) {
       }
 
       user = newUser;
+      // Retro-link any imported tweets whose X handle matches this user.
+      await lazyLinkImportedPosts(user);
     } else if (userProfile.profileImageUrl && (!user.avatar || !user.avatar.startsWith("http"))) {
       // Existing user without a proper avatar, update it
       try {

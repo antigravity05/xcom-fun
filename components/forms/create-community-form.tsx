@@ -4,7 +4,23 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Loader2 } from "lucide-react";
 
-export const CreateCommunityForm = () => {
+interface CreateCommunityFormProps {
+  /**
+   * Override the default redirect-to-the-new-community behavior.
+   * If provided, called instead of router.push after a successful
+   * community creation. Used by the /migrate wizard so it can advance
+   * to the next step in-place rather than navigating away.
+   */
+  onSuccess?: (result: { slug: string; name: string }) => void;
+  submitLabel?: string;
+  pendingLabel?: string;
+}
+
+export const CreateCommunityForm = ({
+  onSuccess,
+  submitLabel,
+  pendingLabel,
+}: CreateCommunityFormProps = {}) => {
   const router = useRouter();
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -59,8 +75,16 @@ export const CreateCommunityForm = () => {
         return;
       }
 
-      router.push(`/communities/${result.slug}`);
-      router.refresh();
+      const submittedName = formData.get("name");
+      const name =
+        typeof submittedName === "string" ? submittedName.trim() : "Your community";
+
+      if (onSuccess) {
+        onSuccess({ slug: result.slug, name });
+      } else {
+        router.push(`/communities/${result.slug}`);
+        router.refresh();
+      }
     } catch (err) {
       setServerMessage(
         err instanceof Error ? err.message : "Something went wrong.",
@@ -165,10 +189,10 @@ export const CreateCommunityForm = () => {
             {isPending ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Creating...
+                {pendingLabel ?? "Creating..."}
               </>
             ) : (
-              "Create community"
+              submitLabel ?? "Create community"
             )}
           </button>
           {serverMessage ? (

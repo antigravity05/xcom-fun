@@ -137,9 +137,17 @@ export default async function Home({ searchParams }: HomePageProps) {
                   </>
                 )}
 
-                {/* CTA group — Connect X button hidden during countdown */}
+                {/* CTA group */}
                 <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-                  {isXCommunitiesShutdownActive() ? null : (
+                  {isXCommunitiesShutdownActive() ? (
+                    <Link
+                      href="/migrate"
+                      className="inline-flex items-center gap-2.5 rounded-full bg-accent-secondary px-7 py-3.5 text-[16px] font-bold text-white shadow-lg shadow-accent-secondary/20 transition hover:brightness-110"
+                    >
+                      Migrate to x-com.fun
+                      <ArrowRight className="size-4" />
+                    </Link>
+                  ) : (
                     <Link
                       href="/connect-x"
                       className="inline-flex items-center gap-2.5 rounded-full bg-accent-secondary px-7 py-3.5 text-[16px] font-bold text-white shadow-lg shadow-accent-secondary/20 transition hover:brightness-110"
