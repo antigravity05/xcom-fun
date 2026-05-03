@@ -1,7 +1,12 @@
-// x-com.fun importer — content script (POC)
-// Runs on https://x.com/i/communities/* and extracts visible tweets from
-// the DOM when prompted. No network calls in the POC — everything is
-// returned to the popup which logs it for inspection.
+// x-com.fun importer — content script
+// Runs on https://x.com/i/communities/* and provides two modes:
+//  1. One-shot scan of currently visible tweets (debug button in popup).
+//  2. Auto-import: scrolls down at human pace, accumulates unique tweets,
+//     and reports progress to the popup until no new tweets appear.
+//
+// No network calls yet — accumulated tweets stay in this script's memory
+// and can be inspected from the popup. The next iteration will POST
+// batches to x-com.fun's /api/import/community-tweets endpoint.
 
 (function () {
   "use strict";
@@ -10,11 +15,19 @@
   const log = (...args) => console.log(TAG, ...args);
   const warn = (...args) => console.warn(TAG, ...args);
 
+  // ── Tunables ──────────────────────────────────────────────────────────
+
+  const SCROLL_DELAY_MIN_MS = 3_000;
+  const SCROLL_DELAY_MAX_MS = 5_000;
+  const EMPTY_PASS_DELAY_MS = 8_000;       // after a pass with 0 new tweets
+  const THROTTLE_BACKOFF_MS = 90_000;      // after a throttle signal
+  const STOP_AFTER_EMPTY_PASSES = 4;       // give up after N consecutive empty passes
+  const SCROLL_FRACTION = 0.85;            // fraction of viewport per scroll
+
   // ── DOM extraction ────────────────────────────────────────────────────
 
-  function getTextContent(node) {
-    return (node?.textContent || "").replace(/\s+/g, " ").trim();
-  }
+  const getTextContent = (node) =>
+    (node?.textContent || "").replace(/\s+/g, " ").trim();
 
   function parseCompactNumber(raw) {
     if (!raw) return null;
@@ -33,18 +46,16 @@
 
   function parseEngagementCount(button) {
     if (!button) return null;
-    const ariaLabel = button.getAttribute("aria-label") || "";
-    // Try aria-label first ("123 likes")
-    const ariaMatch = ariaLabel.match(/^([\d,.]+\s*[KMB]?)/i);
+    const aria = button.getAttribute("aria-label") || "";
+    const ariaMatch = aria.match(/^([\d,.]+\s*[KMB]?)/i);
     if (ariaMatch) {
       const parsed = parseCompactNumber(ariaMatch[1]);
       if (parsed !== null) return parsed;
     }
-    // Fallback: visible text inside the button
-    const visibleText =
+    const visible =
       button.querySelector('[data-testid="app-text-transition-container"]')
         ?.textContent || button.textContent || "";
-    return parseCompactNumber(visibleText);
+    return parseCompactNumber(visible);
   }
 
   function extractAuthorBlock(article) {
@@ -72,44 +83,37 @@
   }
 
   function extractAvatarUrl(article) {
-    const avatarImg = article.querySelector(
-      'img[src*="profile_images"], img[src*="pbs.twimg.com/profile_images"]',
+    const img = article.querySelector(
+      'img[src*="pbs.twimg.com/profile_images"], img[src*="profile_images"]',
     );
-    return avatarImg?.src || "";
+    return img?.src || "";
   }
 
   function extractBody(article) {
-    const tweetTextEl = article.querySelector('[data-testid="tweetText"]');
-    return getTextContent(tweetTextEl);
+    const el = article.querySelector('[data-testid="tweetText"]');
+    return getTextContent(el);
   }
 
   function extractTimestamp(article) {
-    const timeEl = article.querySelector("time[datetime]");
-    return timeEl?.getAttribute("datetime") || "";
+    return article.querySelector("time[datetime]")?.getAttribute("datetime") || "";
   }
 
   function extractMedia(article) {
     const out = [];
     const seen = new Set();
 
-    // Images: tweet photos use pbs.twimg.com/media URLs
-    article
-      .querySelectorAll('img[src*="pbs.twimg.com/media"]')
-      .forEach((img) => {
-        const url = img.src;
-        if (!seen.has(url)) {
-          seen.add(url);
-          out.push({ kind: "image", url });
-        }
-      });
+    article.querySelectorAll('img[src*="pbs.twimg.com/media"]').forEach((img) => {
+      if (!seen.has(img.src)) {
+        seen.add(img.src);
+        out.push({ kind: "image", url: img.src });
+      }
+    });
 
-    // Videos: <video> elements have <source> children or a poster
     article.querySelectorAll("video").forEach((video) => {
-      const sourceUrl =
-        video.querySelector("source")?.src || video.src || video.poster || "";
-      if (sourceUrl && !seen.has(sourceUrl)) {
-        seen.add(sourceUrl);
-        out.push({ kind: "video", url: sourceUrl });
+      const src = video.querySelector("source")?.src || video.src || video.poster || "";
+      if (src && !seen.has(src)) {
+        seen.add(src);
+        out.push({ kind: "video", url: src });
       }
     });
 
@@ -118,7 +122,7 @@
 
   function parseArticle(article) {
     const author = extractAuthorBlock(article);
-    if (!author || !author.handle) return null;
+    if (!author?.handle) return null;
 
     const idMatch = author.permalink.match(/\/status\/(\d+)/);
     const externalTweetId = idMatch ? idMatch[1] : "";
@@ -131,11 +135,6 @@
     const postedAt = extractTimestamp(article);
     if (!postedAt) return null;
 
-    const likeButton = article.querySelector('button[data-testid="like"]');
-    const repostButton = article.querySelector(
-      'button[data-testid="retweet"]',
-    );
-
     return {
       externalTweetId,
       authorHandle: author.handle,
@@ -144,8 +143,8 @@
       body,
       media,
       postedAt,
-      likes: parseEngagementCount(likeButton),
-      reposts: parseEngagementCount(repostButton),
+      likes: parseEngagementCount(article.querySelector('button[data-testid="like"]')),
+      reposts: parseEngagementCount(article.querySelector('button[data-testid="retweet"]')),
     };
   }
 
@@ -160,7 +159,7 @@
         if (parsed) tweets.push(parsed);
         else parseFailures += 1;
       } catch (e) {
-        warn("Failed to parse article", e);
+        warn("parse error", e);
         parseFailures += 1;
       }
     });
@@ -175,21 +174,187 @@
     };
   }
 
-  // ── Message bridge with the popup ─────────────────────────────────────
+  // ── Throttle detection ────────────────────────────────────────────────
+
+  function detectThrottleSignal() {
+    const txt = document.body.textContent || "";
+    if (/Something went wrong\.?\s*Try reloading/i.test(txt)) return "error_banner";
+    if (/Rate limit exceeded/i.test(txt)) return "rate_limit";
+    if (/You are over the limit for tweets/i.test(txt)) return "tweet_limit";
+    return null;
+  }
+
+  // ── Auto-import state machine ─────────────────────────────────────────
+
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const jitter = (min, max) => min + Math.random() * (max - min);
+
+  // Module-level state. Survives between popup opens (popup queries it via
+  // GET_STATE), but resets when the page is reloaded.
+  let state = createIdleState();
+
+  function createIdleState() {
+    return {
+      running: false,
+      accumulated: new Map(), // externalTweetId -> tweet
+      passes: 0,
+      emptyPasses: 0,
+      throttled: false,
+      throttleReason: null,
+      completion: null, // null while running; "done" | "throttled" | "stopped"
+      startedAt: null,
+      lastPassAt: null,
+    };
+  }
+
+  function snapshot() {
+    return {
+      running: state.running,
+      accumulated: state.accumulated.size,
+      passes: state.passes,
+      emptyPasses: state.emptyPasses,
+      throttled: state.throttled,
+      throttleReason: state.throttleReason,
+      completion: state.completion,
+      startedAt: state.startedAt,
+      lastPassAt: state.lastPassAt,
+      sampleTweets: Array.from(state.accumulated.values()).slice(-3),
+    };
+  }
+
+  function broadcast() {
+    chrome.runtime
+      .sendMessage({ type: "XCOM_FUN_PROGRESS", ...snapshot() })
+      .catch(() => {
+        // popup probably closed — ignore
+      });
+  }
+
+  async function runAutoImport() {
+    state.running = true;
+    state.startedAt = new Date().toISOString();
+    log("Auto-import started.");
+
+    try {
+      while (state.running) {
+        // Detect throttle before scrolling
+        const signal = detectThrottleSignal();
+        if (signal) {
+          state.throttled = true;
+          state.throttleReason = signal;
+          warn("Throttle signal:", signal, "— backing off");
+          broadcast();
+          await sleep(THROTTLE_BACKOFF_MS);
+          if (!state.running) break;
+          if (detectThrottleSignal()) {
+            state.completion = "throttled";
+            break;
+          }
+          state.throttled = false;
+          state.throttleReason = null;
+        }
+
+        // Parse current viewport
+        const before = state.accumulated.size;
+        const { tweets } = extractVisibleTweets();
+        for (const t of tweets) {
+          if (!state.accumulated.has(t.externalTweetId)) {
+            state.accumulated.set(t.externalTweetId, t);
+          }
+        }
+        const newCount = state.accumulated.size - before;
+
+        state.passes += 1;
+        state.lastPassAt = new Date().toISOString();
+        if (newCount === 0) {
+          state.emptyPasses += 1;
+        } else {
+          state.emptyPasses = 0;
+        }
+
+        log(
+          `pass=${state.passes} new=${newCount} total=${state.accumulated.size} emptyPasses=${state.emptyPasses}`,
+        );
+        broadcast();
+
+        // Stop if no new tweets after several empty passes
+        if (state.emptyPasses >= STOP_AFTER_EMPTY_PASSES) {
+          state.completion = "done";
+          break;
+        }
+
+        // Scroll down
+        window.scrollBy({
+          top: window.innerHeight * SCROLL_FRACTION,
+          behavior: "smooth",
+        });
+
+        // Wait — longer when no progress (gives X time to load + looks more human)
+        const delay =
+          state.emptyPasses > 0
+            ? EMPTY_PASS_DELAY_MS + Math.random() * 2_000
+            : jitter(SCROLL_DELAY_MIN_MS, SCROLL_DELAY_MAX_MS);
+        await sleep(delay);
+      }
+    } catch (e) {
+      warn("Auto-import error:", e);
+      state.completion = "error";
+    } finally {
+      state.running = false;
+      log(
+        `Auto-import finished: completion=${state.completion} total=${state.accumulated.size} passes=${state.passes}`,
+      );
+      broadcast();
+    }
+  }
+
+  // ── Message bridge ────────────────────────────────────────────────────
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type === "XCOM_FUN_PING") {
+      sendResponse({ ok: true, url: location.href });
+      return true;
+    }
+
     if (message?.type === "XCOM_FUN_SCAN_NOW") {
       const result = extractVisibleTweets();
       log(
         `Scan: found ${result.stats.articlesFound} articles, parsed ${result.stats.parsed}, failed ${result.stats.parseFailures}`,
       );
-      log("Sample tweet:", result.tweets[0]);
       sendResponse({ ok: true, ...result });
       return true;
     }
 
-    if (message?.type === "XCOM_FUN_PING") {
-      sendResponse({ ok: true, url: location.href });
+    if (message?.type === "XCOM_FUN_GET_STATE") {
+      sendResponse({ ok: true, ...snapshot() });
+      return true;
+    }
+
+    if (message?.type === "XCOM_FUN_START_IMPORT") {
+      if (state.running) {
+        sendResponse({ ok: false, error: "Already running" });
+        return true;
+      }
+      state = createIdleState();
+      runAutoImport();
+      sendResponse({ ok: true });
+      return true;
+    }
+
+    if (message?.type === "XCOM_FUN_STOP_IMPORT") {
+      if (state.running) {
+        state.running = false;
+        state.completion = "stopped";
+      }
+      sendResponse({ ok: true, ...snapshot() });
+      return true;
+    }
+
+    if (message?.type === "XCOM_FUN_DUMP") {
+      sendResponse({
+        ok: true,
+        tweets: Array.from(state.accumulated.values()),
+      });
       return true;
     }
   });
