@@ -31,7 +31,7 @@ interface MigrateWizardProps {
   };
 }
 
-const EXTENSION_ZIP_URL = "https://github.com/antigravity05/xcom-fun/releases/latest";
+const EXTENSION_ZIP_URL = "/xcom-fun-importer.zip";
 
 export function MigrateWizard({ viewer }: MigrateWizardProps) {
   const [step, setStep] = useState<WizardStep>("form");
@@ -145,7 +145,7 @@ export function MigrateWizard({ viewer }: MigrateWizardProps) {
         <Section
           n={2}
           title="Install the importer"
-          subtitle={`Hey @${viewer.xHandle}, install our small Chrome extension. It scrolls your X community for you and copies the tweets here.`}
+          subtitle={`Hey ${viewer.xHandle.startsWith("@") ? viewer.xHandle : "@" + viewer.xHandle}, install our small Chrome extension. It scrolls your X community for you and copies the tweets here.`}
         >
           <div className="space-y-4">
             <ExtensionStatusBanner status={extensionStatus} />
@@ -156,12 +156,11 @@ export function MigrateWizard({ viewer }: MigrateWizardProps) {
                 extension zip:{" "}
                 <a
                   href={EXTENSION_ZIP_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  download="xcom-fun-importer.zip"
                   className="inline-flex items-center gap-1 text-accent-secondary hover:underline"
                 >
                   <Download className="size-3.5" />
-                  GitHub release
+                  xcom-fun-importer.zip
                 </a>
               </li>
               <li>
