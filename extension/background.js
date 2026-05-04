@@ -3,7 +3,18 @@
 // Running fetch from a content script on x.com hits CORS; from a service
 // worker with host_permissions on x-com.fun, it doesn't.
 
-const API_BASE = "https://x-com.fun";
+// Default fallback if the bridge hasn't stored a canonical origin yet.
+const FALLBACK_API_BASE = "https://www.x-com.fun";
+const ORIGIN_STORAGE_KEY = "xcomFunOrigin";
+
+const resolveApiBase = async () => {
+  try {
+    const stored = await chrome.storage.local.get(ORIGIN_STORAGE_KEY);
+    return stored?.[ORIGIN_STORAGE_KEY] || FALLBACK_API_BASE;
+  } catch {
+    return FALLBACK_API_BASE;
+  }
+};
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "XCOM_FUN_SEND_BATCH") {
@@ -22,8 +33,10 @@ async function handleSendBatch({ tweets, token }) {
     return { ok: true, imported: 0, duplicates: 0, total: 0 };
   }
 
+  const apiBase = await resolveApiBase();
+
   try {
-    const res = await fetch(`${API_BASE}/api/import/community-tweets`, {
+    const res = await fetch(`${apiBase}/api/import/community-tweets`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

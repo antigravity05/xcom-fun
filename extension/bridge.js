@@ -9,6 +9,7 @@
 
   const TAG = "[xcom-fun bridge]";
   const TOKEN_STORAGE_KEY = "xcomFunImportToken";
+  const ORIGIN_STORAGE_KEY = "xcomFunOrigin";
 
   window.addEventListener("message", (event) => {
     // Only accept messages from the same window/origin as us.
@@ -20,10 +21,21 @@
     if (data.type === "IMPORT_TOKEN") {
       const token = typeof data.token === "string" ? data.token.trim() : "";
       if (!token) return;
+      // Store the canonical origin alongside the token so the background
+      // worker hits the same hostname the user actually browses (avoids
+      // cross-origin redirects that strip the Authorization header).
       chrome.storage.local
-        .set({ [TOKEN_STORAGE_KEY]: token })
+        .set({
+          [TOKEN_STORAGE_KEY]: token,
+          [ORIGIN_STORAGE_KEY]: window.location.origin,
+        })
         .then(() => {
-          console.log(TAG, "Token stored. Importer is ready.");
+          console.log(
+            TAG,
+            "Token stored for origin",
+            window.location.origin,
+            "— importer ready.",
+          );
           // Acknowledge so the wizard can advance its UI.
           window.postMessage(
             { source: "xcom-fun-extension", type: "IMPORT_TOKEN_ACK" },
